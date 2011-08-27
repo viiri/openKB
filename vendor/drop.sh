@@ -25,3 +25,5 @@ if [ ! -d ${WORKDIR}${DROP_NAME} ]; then
 	tar xzf ${WORKDIR}${FILE_NAME} --directory ${WORKDIR}
 
 fi
+
+exit 0
