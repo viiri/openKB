@@ -24,7 +24,7 @@
 
 #include "SDL/SDL.h"
 
-#define KB_BYTE_ORDER SDL_BYTE_ORDER
+#define KB_BYTE_ORDER SDL_BYTEORDER
 #define KB_LIL_ENDIAN SDL_LIL_ENDIAN
 #define KB_BIG_ENDIAN SDL_BIG_ENDIAN
 
@@ -62,7 +62,7 @@ typedef uint8_t 	byte  ;
 
 #define ROTATE_LEFT_16_BE ROTATE_RIGHT_16_LE
 
-#define UNPACK_32_LE(C1, C2) (\
+#define UNPACK_16_LE(C1, C2) (\
 		((C2 & 0xFF) << 8) | (C1 & 0xFF) \
 	)
 
@@ -72,7 +72,7 @@ typedef uint8_t 	byte  ;
 		 (C1 & 0xFF) \
 	)
 
-#define UNPACK_16_LE(C1, C2, C3, C4) (\
+#define UNPACK_32_LE(C1, C2, C3, C4) (\
 		((C4 & 0xFF) << 24)	| \
 		((C3 & 0xFF) << 16)	| \
 		((C2 & 0xFF) << 8)	| \
@@ -125,5 +125,10 @@ typedef uint8_t 	byte  ;
 #define KB_UNPACK_DWORDBE UNPACK_32_LE
 
 #endif
+
+#define READ_BYTE(PTR) *PTR++
+#define READ_WORD(PTR) KB_UNPACK_WORD(*PTR, *(PTR+1)); PTR+=2
+#define READ_SWORD(PTR) KB_UNPACK_SWORD(*PTR, *(PTR+1), *(PTR+2)); PTR+=3
+#define READ_DWORD(PTR) KB_UNPACK_DWORD(*PTR, *(PTR+1), *(PTR+2), *(PTR+3)); PTR+=4
 
 #endif /* _OPENKB_LIBKB_SYS */
