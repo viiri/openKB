@@ -491,7 +491,7 @@ printf("GNU RESOLVE: %d, %d\n", id, sub_id);
 	switch (id) {
 		case GR_LOGO:
 		{
-			image_name = "kblogo.png";
+			image_name = "nwcp.png";
 		}
 		break;
 		default: break;
@@ -504,10 +504,13 @@ printf("GNU RESOLVE: %d, %d\n", id, sub_id);
 		realname[0] = '\0';
 		strcpy(realname, mod->slotA_name);
 		strcat(realname, image_name);
-		
-		printf("FILE: %s\n", realname);
-		
+
+		printf("? FREE IMG FILE: %s\n", realname);
+
 		SDL_Surface *surf = IMG_Load(realname);
+
+		if (surf == NULL) printf("> FAILED TO OPEN\n");
+
 		return surf;
 	}
 
