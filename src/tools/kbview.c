@@ -401,7 +401,7 @@ int main( int argc, char* args[] )
 
     SDL_Init( SDL_INIT_VIDEO );
 
-    screen = SDL_SetVideoMode( 800, 600, 32, SDL_SWSURFACE  ) ;
+    screen = SDL_SetVideoMode( 800, 1400, 32, SDL_SWSURFACE  ) ;
 
 	int done = 0;
 	int redraw = 1;

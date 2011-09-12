@@ -1,9 +1,3 @@
-/*
- * proof-of-concept .CC file reader
- * Public Domain
- * 
- * THIS CODE IS DIRT.
- */
 #include "stdio.h"
 #include "string.h"
 
@@ -78,18 +72,19 @@ int match_name(word crc) {
  */
 void add_filenames(char* ext) {
 
-	char *archlist[] = {
+	char archlist[GRAPHICS_KEPT][9] = {
 		"peas","spri","mili","wolf","skel","zomb","gnom","orcs","arcr","elfs",
 		"pike","noma","dwar","ghos","kght","ogre","brbn","trol","cavl","drui",
 		"arcm","vamp","gian","demo","drag","mury","hack","ammi","baro","drea",
 		"cane","mora","barr","barg","rina","ragf","mahk","auri","czar","magu",
 		"urth","arec","knig","pala","sorc","barb","nwcp","title","select",
 		"tileseta","tilesetb","tilesalt","cursor","town","cstl","plai",
-		"frst","dngn","cave","comtiles","view","endpic", NULL,
+		"frst","dngn","cave","comtiles","view","endpic","land",	"org",
 	};
+	//char ext[3][5] = { ".4", ".16", ".256\0" }; 
 
 	int i, j;
-	for (i = 0; i < archlist[i][0] != '\0'; i++) {
+	for (i = 0; i < GRAPHICS_KEPT; i++) {
 
 		list_names[list_count + i][0] = 0;
 		strcpy(list_names[list_count + i], archlist[i]);
@@ -103,6 +98,11 @@ void add_filenames(char* ext) {
 void add_filename(char *filename) {
 	strcpy(list_names[list_count], filename);
 	list_keys[list_count] = crcFilename(filename);
+	list_count++;
+}
+void add_fake_filename(char *filename, word crc) {
+	strcpy(list_names[list_count], filename);
+	list_keys[list_count] = crc;
 	list_count++;
 }
 
@@ -260,7 +260,7 @@ void list_infiles(char *archivename) {
 	load_ccHeader(&head, archivename);
 
 	/* Printf it */
-	printf(" NAME       \tOFFSET\t??\tLEN\t??\n");	
+	printf(" NAME       \tOFFSET\t??\tLEN\tKEY\n");	
 
 	f = fopen(archivename, "rb");
 	if (!f) {
@@ -290,8 +290,25 @@ void list_infiles(char *archivename) {
 		word bkey[2];
 		fread(bkey, sizeof(word), 2, f);
 
+		long bdunno = 0;
+		//long bdunno = head.files[i].dunno;
+		//bdunno &= 0x00FFFF00;
+		//bdunno <<= 16;
+		//bdunno |= head.files[i]._align;
+		
+		if (i < head.ccTableLen-1) {
+		int noffset = head.files[i+1].page;
+		noffset <<= 16;
+		noffset &= 0x00FF0000;
+		noffset |= head.files[i+1].offset;
+		bdunno = noffset - offset;
+		}
+		
+		
+
 		/* Output! */
-		printf("%12s\t%06x\t%02x\t%04x\t%04x\n", name , offset, head.files[i].dunno, bkey[0], bkey[1]);
+//		printf("%12s\t%06x\t%06x\t%04x\t%04x\n", name , offset, bdunno, bkey[0], head.files[i].key);
+		printf("%s\n", name);
 		
 		//printf("Offset: %04x, File %d = key %04x = offset %04x = page %04x = unknown %04x\n", i*8+2, i, head.files[i].key, head.files[i].offset, head.files[i].page, head.files[i].dunno);
 	}
@@ -555,7 +572,7 @@ printf("%04d\t0x%04X:%01X\t", pos, byte_pos, bit_pos);
 	{
 		printf("WARNING!! Filesize mismatch, most likely an error occured in %s.\n",filename);
 	}
-	
+	printf("COMP LEN: %d, %04x | UN LEN: %04x\n", byte_pos, byte_pos, res_pos, res_pos);
 	return res_pos;
 }
 
