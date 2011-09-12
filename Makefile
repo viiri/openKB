@@ -3,10 +3,10 @@ CC=gcc
 CFLAGS=-g `sdl-config --cflags` -DHAVE_SDL
 LFLAGS=`sdl-config --libs` -lSDL_image
 
-LIB_SOURCES=src/lib/kbdos.c
+LIB_SOURCES=src/lib/kbauto.c src/lib/kbconf.c src/lib/kbres.c src/lib/kbfile.c src/lib/kbdir.c src/lib/dos-cc.c src/lib/dos-img.c
 LIB_BINARY=src/libkb.a
 
-GAME_SOURCES=src/main.c
+GAME_SOURCES=src/main.c src/save.c src/game.c src/bounty.c src/inprint.c
 GAME_BINARY=openkb
 
 LIB_OBJECTS=$(LIB_SOURCES:.c=.o)
