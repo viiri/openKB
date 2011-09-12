@@ -24,12 +24,14 @@
 
 #include <sys/stat.h> 
 
+#include "SDL_image.h"
+
 #include "kbres.h"
 #include "kbauto.h"
 #include "kbfile.h" //:/
 #include "kbdir.h"
 KBmodule *main_module = NULL;
-KBmodule modules[16];
+KBmodule modules[MAX_MODULES];
 int num_modules = 0;
 
 #define KBFAMILY_GNU	0x0F
@@ -223,7 +225,9 @@ void discover_modules(const char *path) {
 	
 	/* GNU */
 	strcpy(modules[0].name, "Free");
-	strcpy(modules[0].slotA_name, "free/");
+	strcpy(modules[0].slotA_name, path);
+	strcat(modules[0].slotA_name, "free/");
+	modules[0].kb_family = KBFAMILY_GNU;
 	num_modules++;
 
 	/* Commodore64 */
@@ -475,6 +479,39 @@ void* DOS_Resolve(int id, int sub_id) {
 }
 
 void* GNU_Resolve(int id, int sub_id) {
+
+printf("GNU RESOLVE: %d, %d\n", id, sub_id);
+
+	char *image_name = NULL;
+
+	KBmodule *mod;
+
+	mod = main_module;
+
+	switch (id) {
+		case GR_LOGO:
+		{
+			image_name = "kblogo.png";
+		}
+		break;
+		default: break;
+	}
+
+	if (image_name) {
+	
+		char realname[1024];
+
+		realname[0] = '\0';
+		strcpy(realname, mod->slotA_name);
+		strcat(realname, image_name);
+		
+		printf("FILE: %s\n", realname);
+		
+		SDL_Surface *surf = IMG_Load(realname);
+		return surf;
+	}
+
+	return NULL;
 
 }
 
