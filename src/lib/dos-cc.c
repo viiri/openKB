@@ -1,0 +1,637 @@
+#include "kbsys.h"
+#include "kbdir.h"
+
+#include "malloc.h"
+
+#define MAX_CC_FILES	133
+#define HEADER_SIZE_CC 1122
+
+KB_File * KB_fopenCC_in( const char * filename, const char * mode, KB_DIR *dirp );
+KB_File * KB_fopenCC_by( int i, KB_DIR *dirp );
+
+word KB_ccHash(const char *filename) {
+	word key = 0;
+	byte next;	
+
+	while ((next = *filename++)) 
+	{
+		next &= 0x7F;
+		if (next >= 0x60) 
+			next -= 0x20;
+
+		/* Swap high and low bits */
+		key = ((key >> 8) & 0x00FF) | ((key << 8) & 0xFF00);
+
+		/* Rotate left by 1 bit */
+		key = (key << 1) | ((key >> 15) & 0x0001);
+
+		key += next;
+	}
+
+	return key;
+}
+
+struct ccGroup {
+
+	struct ccHeader {	/* 1122 bytes header */
+
+		word num_files;
+
+		struct ccFile {	/* 8 bytes per file entry */
+
+			word key;
+			sword offset;
+			sword size;
+
+		} files[MAX_CC_FILES];
+
+		char unknown[64];/* Could be more files, could be something else */
+	} head;
+
+	KB_File *top;	//driver
+	FILE *f;	//actual file
+	int i;		//iterator
+
+	char name_list[MAX_CC_FILES][16];	//name list
+	dword size_list[MAX_CC_FILES];	//size list
+};
+
+int KB_append_CC_list(struct ccGroup *grp, const char *filename) {
+
+	char listfile[1024];
+	int i;
+	
+	FILE *f;
+
+	/* Clean list */
+	for (i = 0; i < MAX_CC_FILES; i++) {
+		grp->name_list[i][0] = '\0';
+	}
+
+	/* Prepare filename */
+	strcpy(listfile, filename);
+	strcat(listfile, (filename[strlen(filename)-1] == 'C' ? "L" : "l"));
+
+	/* Try reading */
+	f = fopen(listfile, "r");
+	if (f != NULL) {
+		char buf[1024] = { 0 };
+		while (fgets(buf, 1024, f) != NULL) {
+			int j;
+			word key;
+			for (j = 0; j < 16; j++) {
+				if (buf[j] == '\n') buf[j] = '\0';
+				if (!isascii(buf[j])) buf[j] = '\0';
+			}
+			key = KB_ccHash(buf);
+			for (j = 0; j < grp->head.num_files; j++) {
+				if (grp->head.files[j].key == key) {
+					strcpy(grp->name_list[j], buf);
+					break;
+				}
+			}
+		}
+		fclose(f);
+	} else {
+		fprintf(stdout, "%s not found\n", listfile);
+		return 1;
+	}
+	return 0;
+}
+
+KB_DIR * KB_opendirCC(const char *filename) {
+	KB_DIR * dirp;
+
+	char buf[1122];
+
+	int i, j;
+
+	struct ccGroup *grp;
+	struct ccHeader *head;
+
+	KB_File *f;
+	int n;
+
+	f = KB_fopen(filename, "rb");
+
+	if (!f) { fprintf(stderr, "Can't open %s\n", filename); return NULL; }
+
+	n = KB_fread(buf, sizeof(char), 1122, f);
+
+	if (n != 1122) { perror("fread"); return NULL; }
+
+	grp = malloc(sizeof(struct ccGroup));
+
+	if (grp == NULL) {
+		KB_fclose(f);
+		return NULL;
+	}
+
+	head = &grp->head;
+
+	dirp = malloc(sizeof(KB_Entry));
+
+	if (dirp == NULL) {
+		free(grp);
+		KB_fclose(f);
+		return NULL;
+	}
+
+	dirp->type = KBDTYPE_GRPCC;
+	dirp->d = (void*)grp;
+
+	/* Parse data */
+	char *p = &buf[0];	
+
+	/* Number of files */
+	head->num_files = 0;
+	head->num_files = READ_WORD(p);
+
+	if (head->num_files > MAX_CC_FILES) {
+		free(grp);
+		free(dirp);
+		KB_fclose(f);
+		return NULL;
+	}
+
+	/* Files entries */
+	for (i = 0; i < head->num_files; i++ ) {
+		head->files[i].key = READ_WORD(p);
+		head->files[i].offset = READ_SWORD(p);
+		head->files[i].size = READ_SWORD(p);
+		grp->size_list[i] = 0; // unknown full size
+	}
+
+	/* Keep table length in "len" */
+	dirp->len = head->num_files;
+
+	/* Save FILE handler, reset iterator */
+	grp->top = f;
+	grp->i = 0;
+
+	/* Attempt to read the list file */
+	KB_append_CC_list(grp, filename);
+
+	return dirp;
+}
+
+void KB_seekdirCC(KB_DIR *dirp, long loc) {
+
+}
+
+long KB_telldirCC(KB_DIR *dirp) {
+
+}
+
+
+struct KB_Entry * KB_readdirCC(KB_DIR *dirp)
+{
+	KB_Entry *entry = &dirp->dit;
+	struct ccGroup *grp = (struct ccGroup *)dirp->d;
+
+	if (grp->i >= grp->head.num_files) return NULL;
+
+	entry->d_ino = grp->head.files[grp->i].key;
+
+	/* Name */
+	if (grp->name_list[grp->i][0] != '\0')
+	strcpy(entry->d_name, grp->name_list[grp->i]);
+	else
+	sprintf(entry->d_name, "file.%d-%04x", grp->i, grp->head.files[grp->i].key);
+
+	/* Read out "uncompressed size" if we haven't already */
+	if (!grp->size_list[grp->i]) {
+		char buf[4];
+
+		KB_fseek(grp->top, grp->head.files[grp->i].offset, SEEK_SET);
+		KB_fread(buf, 1, 4, grp->top);
+
+		grp->size_list[grp->i] = KB_UNPACK_DWORD(buf[0],buf[1],buf[2],buf[3]);
+	}
+
+	/* Extra data */
+	entry->d_info.cmp.cmpSize = grp->head.files[grp->i].size;
+	entry->d_info.cmp.fullSize = grp->size_list[grp->i];
+
+
+	grp->i++;
+
+	return entry;
+}
+
+KB_File * KB_eopenCC(KB_DIR *dirp, KB_Entry *entry)
+{
+	int j;
+	struct ccGroup *grp = (struct ccGroup *)dirp->d;
+	
+	for (j = 0; j < grp->head.num_files; j++) {
+		if (grp->head.files[j].key == entry->d_ino) {
+
+			return KB_fopenCC_by( j, dirp );
+
+		}
+	}
+
+	return NULL;
+}
+
+KB_File * KB_fopenCC( const char * filename, const char * mode )
+{
+	return NULL;
+}
+
+
+struct lzwStream {
+
+	//KB_File *f;
+	int size;
+	int pos;
+	char *data;
+
+};
+
+
+/* Open file "filename" in CC directory "dirp" */
+KB_File * KB_fopenCC_in( const char * filename, const char * mode, KB_DIR *dirp )
+{
+	if (dirp == NULL || dirp->type != KBDTYPE_GRPCC) {
+		fprintf(stderr, "Error! Unable to read CC file, incorrect CC directory %p.\n", filename, dirp);
+		return NULL;
+	}
+	struct ccGroup *grp = (struct ccGroup *)dirp->d;
+	word hash = KB_ccHash(filename);
+	int i;
+
+	for (i = 0; i < grp->head.num_files; i++) {
+		if (grp->head.files[i].key == hash) {
+			return KB_fopenCC_by( i, dirp );
+		} 
+	}
+
+	return NULL;
+}
+
+KB_File * KB_fopenCC_by( int i, KB_DIR *dirp )
+{
+	struct ccGroup *grp = (struct ccGroup *)dirp->d;
+
+	KB_File *stream;
+	struct lzwStream *str;
+
+	if (grp->top == NULL) return NULL;
+
+	stream = malloc(sizeof(KB_File));
+
+	if (stream == NULL) return NULL;
+
+	str = malloc(sizeof(struct lzwStream));
+
+	if (str == NULL) { free(stream); return NULL; }
+
+	KB_File *real = grp->top;
+//	real = malloc(sizeof(KB_File));
+//	if (real == NULL) { free(stream); return NULL; }
+
+	/* Public view: */
+	stream->type = KBFTYPE_INCC;
+	stream->f = NULL;
+	stream->pos = 0;
+	stream->len = 0;
+
+	/* Private view: */
+	str->pos = 0;
+	str->size = grp->size_list[i];
+	str->data = malloc(sizeof(char) * str->size);
+
+	KB_funLZW(real, str->data);
+//	KB_fclose(real);
+
+	/* Save pointer */
+	stream->d = (void*)str;
+
+	stream->len = str->size;
+
+printf("[%02x][%02x][%02x][%02x]\n", str->data[0], str->data[1], str->data[2], str->data[3]);
+	return stream;
+}
+
+size_t KB_freadCC ( void * ptr, size_t size, size_t count, KB_File * stream )
+{
+	struct lzwStream *str = (struct lzwStream *)stream->d;
+
+	/* Bytes left */
+	size_t rcount = str->size - str->pos;
+
+	printf("Guy asked for %d bytes, I'm gonna give em to him, (have %d)\n", count, rcount);
+
+	/* If he asked more than that */
+	if (count > rcount) count = rcount;
+
+	/* --read-- */
+	memcpy(ptr, &str->data[str->pos], count);
+
+	/* Private view: */
+	str->pos += count;
+
+	/* Public view: */
+	stream->pos += count;
+
+	return count;
+}
+
+int KB_fseekCC(KB_File * stream, long int offset, int origin)
+{
+	struct lzwStream *str = stream->d;
+	printf("Seeking inside stream into %d\n", offset);
+	str->pos = offset;
+	stream->pos = offset;
+	return 0;
+}
+
+#define MBUFFER_SIZE 1024
+#define MBUFFER_EDGE (MBUFFER_SIZE - 3) 
+
+/*
+ * Returns Number of bytes read, 0 on error 
+ */
+int KB_funLZW(KB_File *f, char *result) {
+
+	int i, n, j;
+
+	unsigned long long res_pos = 0;
+
+	/*
+	 * The data is kept in BIT-positioned "blocks".
+	 * We use several variables to iterate it with some
+	 * level of sanity:
+	 */
+	int pos = 0;	/* Position in bits */
+
+	int byte_pos = 0; /* Position in bytes */
+	int bit_pos = 0; /* Extra shift in bits */
+
+	/*
+	 * Each "block" can take from 9 to 12 bits of data.
+	 * Last 8 bits are "the value" 
+	 * First N bits are "the key"
+	 */
+	int step = 9;	/* Bits per step */
+
+	/* Those masks help us get the relevant bits */ 
+	word keyMask[4] = {
+		0x01FF, 	// 0001 1111 
+		0x03FF,		// 0011 1111
+		0x07FF,		// 0111 1111
+		0x0FFF,		// 1111 1111
+	};
+
+	/*
+	 * If the "the key" is unset (00), the value is read as-is.
+	 * Otherwise, the whole "block" (N+8 bytes) is treated
+	 * as a dictionary key, and the dictionary is queried.
+	 * The exceptions are the 0x0100 value, which means
+	 * the dictionary must be cleared, and the 0x0101 value,
+	 * which marks END OF FILE.
+	 */
+
+	/*
+	 * The dictionary.
+	 * Each entry consists of an index to a previous entry
+	 * and a value, forming a tree.
+	 */
+	word dict_key[768 * 16] = { 0 };
+	char dict_val[768 * 16];
+	word dict_index = 0x0102; /* Start populating dictionary from 0x0102 */
+	word dict_range = 0x0200; /* Allow that much entries before increasing step */
+
+	/* Since data stored this way is backwards, we need a small queue */
+	char queue[0xFF];
+	int queued = 0;
+
+	/* Read buffer */ 
+	char mbuffer[MBUFFER_SIZE];
+
+	/* Data */
+	word next_index = 0;	/* block of data we currently examine */
+
+	char last_char  = 0;	/* value from previous iteration */
+	word last_index = 0;	/* block from previous iteration */
+
+	sword big_index;	/* temp. variable to safely load and shift 3 bytes */
+	word keep_index;	/* temp. variable to keep "next_index" before making it "last_index" */
+	int reset_hack=0;	/* HACK -- delay dictionary reset to next iteration */ 
+
+	/* Read first chunk of data */
+	n = KB_fread(mbuffer, sizeof(char), MBUFFER_SIZE, f);
+
+	/* Decompress */
+	while (1)
+	{
+		/* We need a dictionary reset */
+		if (reset_hack) 
+		{
+			step = 9;
+			dict_range = 0x0200;
+			dict_index = 0x0102;
+		}
+
+		/* Since "pos" is in bits, we get position in bytes + small offset in bits */
+		byte_pos = pos / 8;
+		bit_pos = pos % 8;
+
+		pos += step;	/* And advance to the next chunk */
+
+		/* Edge of buffer, read more data from file */
+		if (byte_pos >= MBUFFER_EDGE)
+		{
+				int bytes_extra = MBUFFER_SIZE - byte_pos;//~= 3
+				int bytes_left = MBUFFER_SIZE - bytes_extra;//~= 1021
+
+				/* Copy leftovers */
+				for (j = 0; j < bytes_extra; j++) mbuffer[j] = mbuffer[bytes_left + j];
+
+				/* Read in the rest */				
+				n = KB_fread(&mbuffer[bytes_extra], sizeof(char), bytes_left, f);
+
+				/* Reset cursor */
+				pos = bit_pos + step;	/* Add all unused bits */
+				byte_pos = 0;
+				/* On dictionary reset, use byte offset as bit offset*/
+				if (reset_hack) bit_pos = bytes_extra;
+		}
+#ifdef DEBUG
+printf("%04d\t0x%04X:%01X\t", pos, byte_pos, bit_pos);
+#endif
+		/* Read index from position "byte_pos", bit offset "bit_pos" */
+		big_index = 
+			((mbuffer[byte_pos+2] & 0x00FF) << 16) | 
+			((mbuffer[byte_pos+1] & 0x00FF) << 8) | 
+			(mbuffer[byte_pos] & 0x00FF);
+
+		big_index >>= bit_pos;
+		big_index &= 0x0000FFFF;
+
+		next_index = big_index;
+		next_index &= keyMask[ (step - 9) ];
+
+		/* Apply the value as-is, continuing with dictionary reset, C) */
+		if (reset_hack) 
+		{
+			/* Save index */
+			last_index = next_index;
+			/* Output char value */
+			last_char = (next_index & 0x00FF);
+			result[res_pos++] = last_char;
+			/* We're done with the hack */
+			reset_hack = 0;
+			continue;
+		}
+
+		if (next_index == 0x0101)	/* End Of File */
+		{
+			/* DONE */
+			break;
+		}
+
+		if (next_index == 0x0100) 	/* Reset dictionary */
+		{
+			/* Postpone it into next iteration */
+			reset_hack = 1;
+			/* Note: this hack avoids code duplication, but	makes the algorithm
+			 * harder to follow. Basically, what happens, when the "reset" 
+			 * command is being hit, is that 
+			 * A) the dictionary is reset
+			 * B) one more value is being read (this is the code duplication bit)
+			 * C) the value is applied to output as-is
+			 * D) we continue as normal
+			 */
+			continue;
+		}
+
+		/* Remember *real* "next_index" */
+		keep_index = next_index;
+
+		/* No dictionary entry to query, step back */
+		if (next_index >= dict_index)
+		{
+			next_index = last_index;
+			/* Queue 1 char */
+			queue[queued++] = last_char;
+		}
+
+		/* Quering dictionary? */
+		while (next_index > 0x00ff)
+		{
+			/* Queue 1 char */
+			queue[queued++] = dict_val[next_index];
+			/* Next query: */
+			next_index = dict_key[next_index];
+		}
+
+		/* Queue 1 char */
+		last_char = (next_index & 0x00FF);
+		queue[queued++] = last_char;
+
+		/* Unqueue */
+		while (queued) 
+		{
+			result[res_pos++] = queue[--queued];
+		}
+
+		/* Save value to the dictionary */
+		dict_key[dict_index] = last_index; /* "goto prev entry" */
+		dict_val[dict_index] = last_char;  /* the value */
+		dict_index++;
+
+		/* Save *real* "next_index" */
+		last_index = keep_index;
+
+		/* Edge of dictionary, increase the bit-step, making range twice as large. */
+		if (dict_index >= dict_range && step < 12) 
+		{
+			step += 1;
+			dict_range *= 2;
+		}
+	}
+
+	return res_pos;
+}
+
+
+/* Open CC-directory "filename" in abstract directory "dirs" */
+KB_DIR * KB_opendirCC_in(const char *filename, KB_DIR *dirs)
+{
+	printf("Must open %s dir! in directoy %d\n", filename, dirs);
+	KB_File * noob = KB_fopenCC_in( filename, "rb", dirs );	
+
+	KB_DIR * dirp;
+
+	char buf[HEADER_SIZE_CC];
+
+	int i, j;
+
+	struct ccGroup *grp;
+	struct ccHeader *head;
+
+	KB_File *f = noob;
+	int n;
+
+	if (!f) { printf("Can't open %s\n", filename); return NULL; }
+
+	n = KB_fread(buf, sizeof(char), HEADER_SIZE_CC, noob);
+
+	if (n < HEADER_SIZE_CC) { printf("Can't read header!\n"); return NULL; }
+
+	grp = malloc(sizeof(struct ccGroup));
+
+	if (grp == NULL) {
+		KB_fclose(f);
+		return NULL;
+	}
+
+	head = &grp->head;
+
+	dirp = malloc(sizeof(KB_Entry));
+
+	if (dirp == NULL) {
+		free(grp);
+		KB_fclose(f);
+		return NULL;
+	}
+
+	dirp->type = KBDTYPE_GRPIMG;
+	dirp->d = (void*)grp;
+
+	/* Parse data */
+	char *p = &buf[0];	
+
+	/* Number of files */
+	head->num_files = 0;
+	head->num_files = READ_WORD(p);
+
+printf("Files: %d\n", head->num_files);
+	if (head->num_files > MAX_CC_FILES) {
+
+		free(grp);
+		free(dirp);
+		KB_fclose(f);
+
+		return NULL;
+	}
+
+	/* Files entries */
+	for (i = 0; i < head->num_files; i++ ) {
+		head->files[i].key = READ_WORD(p);
+		head->files[i].offset = READ_SWORD(p);
+		head->files[i].size = READ_SWORD(p);
+	}
+
+	/* Keep table length in "len" */
+	dirp->len = head->num_files;
+
+	/* Save FILE handler, reset iterator */
+	grp->top = f;
+	grp->i = 0;
+
+	return dirp;
+}
