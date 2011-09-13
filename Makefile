@@ -5,8 +5,8 @@ LDFLAGS=`sdl-config --libs` -lSDL_image
 
 VERSION=$(shell sed -nr '/define\s+VERSION/ s/.*"(.*?)"/\1/p' src/main.c)
 
-MSYS_TEST=`uname -so | grep -i msys | grep -i mingw32`
-ifneq ( $(MSYS_TEST) , "" )
+MSYS_TEST=$(shell uname -so | grep -i msys | grep -i mingw32)
+ifneq ("$(MSYS_TEST)","")
 	CFLAGS+=-I/mingw/include/SDL -DUSE_WINAPI
 endif
 
