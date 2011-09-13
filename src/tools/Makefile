@@ -20,7 +20,7 @@ kbplay:
 	gcc $(SDL_CFLAGS) kb_play.c -o kbplay $(SDL_LFLAGS)
 
 kbrowse:
-	gcc $(SDL_CFLAGS) kbrowse.c ../print.c $(LIB_SOURCES) -o kbrowse $(SDL_LFLAGS)
+	gcc $(SDL_CFLAGS) kbrowse.c ../inprint.c $(LIB_SOURCES) -o kbrowse $(SDL_LFLAGS)
 
 clean:
 	rm -rf *.o *.a kbcc kbview kbplay kbrowse
