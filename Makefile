@@ -53,5 +53,7 @@ dist: vendor clean
 	cp Makefile $(GAME_DIST)
 	cp -r data $(GAME_DIST)
 	cp -r src $(GAME_DIST)
+	mkdir $(GAME_DIST)/vendor
+	cp vendor/*.c vendor/*.h $(GAME_DIST)/vendor/
 	tar -cvzf $(GAME_DIST).tar.gz $(GAME_DIST)
 	rm -rf $(GAME_DIST)/
