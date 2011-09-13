@@ -1,4 +1,3 @@
-#define VERSION "0.0.1"
 /*
  *  main.c -- the openkb game itself
  *  Copyright (C) 2011 Vitaly Driedfruit

@@ -3,7 +3,7 @@ CC=gcc
 CFLAGS=-g `sdl-config --cflags` -DHAVE_SDL
 LDFLAGS=`sdl-config --libs` -lSDL_image
 
-VERSION=$(shell sed -nr '/VERSION/ s/.*"(.*?)"/\1/p' src/main.c)
+VERSION=$(shell sed -nr '/define\s+VERSION/ s/.*"(.*?)"/\1/p' src/main.c)
 
 MSYS_TEST=`uname -so | grep -i msys | grep -i mingw32`
 ifneq ( $(MSYS_TEST) , "" )
