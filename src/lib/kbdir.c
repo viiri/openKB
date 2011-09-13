@@ -106,10 +106,11 @@ long KB_telldir(KB_DIR *dirp)
 	return NULL;
 }
 
+void KB_seekdirD(KB_DIR *dirp, long loc);
 void KB_seekdir(KB_DIR *dirp, int loc)
 {
 	switch (dirp->type) {
-		case KBDTYPE_DIR:	return KB_seekdirD( dirp, loc );
+		case KBDTYPE_DIR:	KB_seekdirD( dirp, (long) loc );
 		case KBDTYPE_GRPCC:	return KB_seekdirCC( dirp, loc );
 		case KBDTYPE_GRPIMG:	return KB_seekdirIMG( dirp, loc );				
 	}

@@ -32,6 +32,13 @@
 #define KBFTYPE_INCC	0x10
 #define KBFTYPE_INIMG	0x11
 
+#ifndef PATH_MAX
+#define PATH_MAX 260
+#endif
+#ifndef NAME_MAX
+#define NAME_MAX 255
+#endif
+
 //#include "kbdir.h"
 
 typedef struct KB_File {

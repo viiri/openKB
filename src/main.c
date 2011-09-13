@@ -17,6 +17,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with openkb.  If not, see <http://www.gnu.org/licenses/>.
  */
+#define VERSION "0.0.1"
 #include "lib/kbconf.h"
 
 #include "string.h"

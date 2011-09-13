@@ -147,7 +147,6 @@ byte filename_to_bpp(const char *filename) {
 	int l = strlen(filename);
 	
 	printf("Convert: %s to bpp: %d\n", filename, 2);
-	sleep(2);	
 	
 	return 2;
 }

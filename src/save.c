@@ -245,8 +245,9 @@ KBgame* KB_loadDAT(const char* filename) {
 	memcpy(game->map, p, n);
 	p += n;
 
+	if (p - &buf[0] != DAT_SIZE)
 	fprintf(stdout, "Save file: %d bytes (needed %d)\n", p - &buf[0], DAT_SIZE);
-	if (p - &buf[0] != DAT_SIZE) sleep(1);
+
 	return game;
 }
 
