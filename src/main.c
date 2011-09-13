@@ -1,3 +1,4 @@
+#define VERSION "0.0.1"
 /*
  *  main.c -- the openkb game itself
  *  Copyright (C) 2011 Vitaly Driedfruit
@@ -19,9 +20,7 @@
  */
 #include "lib/kbconf.h"
 
-#include "string.h"
-
-#include "stdio.h"
+#include "lib/kbstd.h"
 
 struct KBconfig KBconf;
 
@@ -32,12 +31,12 @@ int main(int argc, char* argv[]) {
 	int playing = 1;	/* Play 1 game of KB */
 
 	/* Lots of very boring things must happen for a proper initialisation... */
+	KB_stdlog("openKB version " VERSION "\n");
+	KB_stdlog("=====================================================\n");
 
 	/* Let's start by searching for a config file,
 	 * then see if there're "data" and "save" directories, and finally
 	 * if we could load any usable data from "data" */
-
-	/* All this strcat code reeks of error, but please bear with it */
 	struct KBconfig CMDconf;
 
 	/* Some defaults */
@@ -53,7 +52,7 @@ int main(int argc, char* argv[]) {
 	{
 		if (test_config(CMDconf.config_file, 0)) 
 		{
-			fprintf(stderr, "Unable to read config file '%s'\n", CMDconf.config_file); 
+			KB_errlog("[config] Unable to read config file '%s'\n", &CMDconf.config_file[0]); 
 			exit(1);
 		}
 	}
@@ -67,9 +66,15 @@ int main(int argc, char* argv[]) {
 	if (!test_config(KBconf.config_file, 0)) {
 		struct KBconfig FILEconf;
 
-		fprintf(stdout, "Reading config from file '%s'\n", KBconf.config_file);
+		wipe_config(&FILEconf);
+		
+		KB_stdlog("Reading config from file '%s'\n", KBconf.config_file);
 
-		read_file_config(&FILEconf, KBconf.config_file);
+		if ( read_file_config(&FILEconf, KBconf.config_file) )
+		{
+			KB_errlog("[config] Unable to read config file '%s'\n", KBconf.config_file); 
+			return 1;
+		}
 
 		/* Apply it */
 		apply_config(&KBconf, &FILEconf);
@@ -79,28 +84,28 @@ int main(int argc, char* argv[]) {
 	apply_config(&KBconf, &CMDconf);
 
 	/* Output final config to stdout */
-	fprintf(stdout, "\n");
+	KB_stdlog("\n");
 	report_config(&KBconf);
-	fprintf(stdout, "\n");
+	KB_stdlog("\n");
 
 	/* Verify data dir */
 	if (test_directory(KBconf.data_dir, 0)) {
-		fprintf(stderr, "Unable to read '%s' directory\n", KBconf.data_dir);
-		exit(1);  
+		KB_errlog("Unable to read '%s' directory\n", KBconf.data_dir);
+		return 1;
 	}
 
 	/* Verify save dir */
 	if (test_directory(KBconf.save_dir, 1)) {
-		fprintf(stderr, "Unable to read/write '%s' directory\n", KBconf.save_dir);
-		exit(1);  
+		KB_errlog("Unable to read/write '%s' directory\n", KBconf.save_dir);
+		return 1;
 	}
 
 	/* Play the game! */
 	while (playing > 0)
 		playing = run_game(&KBconf);
 
-	if (!playing) fprintf(stdout, "Thank you for playing!\n");
-	else fprintf(stderr, "A Fatal Error has occured, terminating!\n");
+	if (!playing) KB_stdlog("Thank you for playing!\n");
+	else KB_errlog("A Fatal Error has occured, terminating!\n");
 
 	return playing;
 }
