@@ -10,7 +10,7 @@ ifneq ( $(MSYS_TEST) , "" )
 	CFLAGS+=-I/mingw/include/SDL -DUSE_WINAPI
 endif
 
-LIB_SOURCES=src/lib/kbauto.c src/lib/kbconf.c src/lib/kbres.c src/lib/kbfile.c src/lib/kbdir.c src/lib/dos-cc.c src/lib/dos-img.c
+LIB_SOURCES=src/lib/kbauto.c src/lib/kbconf.c src/lib/kbres.c src/lib/kbfile.c src/lib/kbdir.c src/lib/dos-cc.c src/lib/dos-img.c src/lib/kbstd.c
 LIB_BINARY=src/libkb.a
 
 GAME_SOURCES=src/main.c src/save.c src/game.c src/bounty.c src/inprint.c vendor/scale2x-2.4/contrib/sdl/scale2x.c
