@@ -38,4 +38,16 @@
 
 #define SN_TUNE		0x60	/* subId - tune index (0-10) */
 
+#include "SDL.h"
+extern SDL_Surface* KB_LoadIMG8(int id, int sub_id);
+
+/* From dos-img.c: */
+extern void SDL_add_DOS_palette(SDL_Surface *surf, int bpp);
+extern void SDL_blitRAWIMG(SDL_Surface *surf, SDL_Rect *destrect, char *buf, int bpp, word offset, word mask_pos);
+
+extern SDL_Surface* SDL_loadRAWCH(char *buf, int len);
+extern SDL_Surface* SDL_loadRAWIMG(char *buf, int len, int bpp);
+#include "kbdir.h"
+extern SDL_Surface* SDL_loadROWIMG(KB_DIR *dirp, word first, word frames, byte bpp); 
+
 #endif /* _OPENKB_LIBKB_RESOURCES */

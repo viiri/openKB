@@ -17,6 +17,9 @@
  *  You should have received a copy of the GNU General Public License
  *  along with openkb.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include "malloc.h"
+#include "string.h" 
+ 
 #include <stdio.h>
 
 #include <sys/types.h> 
@@ -40,7 +43,7 @@ KB_DIR * KB_opendir_in(const char *filename, KB_DIR *top)
 
 	printf("- User asked for DIR path %s\n", filename);
 	int n = 0, e = 0;
-	KB_DIR *middle = KB_follow_path(filename, &n, &e);
+	KB_DIR *middle = KB_follow_path(filename, &n, &e, top);
 	printf("- TOP directory: %p \n", top);
 	printf("- MIDDLE directory: %p [%d]\n", middle, n);
 
@@ -49,7 +52,7 @@ KB_DIR * KB_opendir_in(const char *filename, KB_DIR *top)
 		return KB_opendir_in(filename, middle);
 	}
 
-	char *ext = &filename[e + 1];
+	const char *ext = &filename[e + 1];
 
 	if (!strcasecmp(ext, "cc")) {
 		type = KBDTYPE_GRPCC;
@@ -83,7 +86,7 @@ int KB_readdir_r(KB_DIR *dirp, struct KB_Entry *entry, struct KB_Entry **result)
 	switch (dirp->type) {
 		case KBDTYPE_DIR:	return KB_readdir_rD( dirp , entry, result );
 	}
-	return NULL;
+	return 0;
 }
 
 KB_File * KB_eopen(KB_DIR *dirp, KB_Entry *entry)
@@ -103,17 +106,17 @@ long KB_telldir(KB_DIR *dirp)
 		case KBDTYPE_GRPCC:	return KB_telldirCC( dirp );
 		case KBDTYPE_GRPIMG:	return KB_telldirIMG( dirp );				
 	}
-	return NULL;
+	return 0;
 }
 
 void KB_seekdir(KB_DIR *dirp, int loc)
 {
 	switch (dirp->type) {
-		case KBDTYPE_DIR:	return KB_seekdirD( dirp, loc );
-		case KBDTYPE_GRPCC:	return KB_seekdirCC( dirp, loc );
-		case KBDTYPE_GRPIMG:	return KB_seekdirIMG( dirp, loc );				
+		case KBDTYPE_DIR:	 KB_seekdirD( dirp, loc );
+		case KBDTYPE_GRPCC:	 KB_seekdirCC( dirp, loc );
+		case KBDTYPE_GRPIMG: KB_seekdirIMG( dirp, loc );				
 	}
-	return NULL;
+	return;
 }
 
 void KB_rewinddir(KB_DIR *dirp)

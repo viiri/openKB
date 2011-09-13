@@ -65,10 +65,21 @@ typedef struct KB_DIR {
 
 } KB_DIR;
 
+/* API */
+extern KB_DIR * KB_opendir(const char *filename);
 extern void KB_seekdir(KB_DIR *dirp, int offset);
 extern long KB_telldir(KB_DIR *dirp);
 
+extern KB_Entry * KB_readdir(KB_DIR *dirp);
+extern int KB_readdir_r(KB_DIR *dirp, KB_Entry *entry, KB_Entry **result);
+
+extern KB_File * KB_fopen_in ( const char * filename, const char * mode, KB_DIR * in );
+extern KB_DIR * KB_follow_path( const char * filename, int *n, int *e, KB_DIR *top );
+
+
 /* Real directory */
+extern void KB_seekdirD(KB_DIR *dirp, long offset);
+
 extern struct KB_Entry * KB_readdirD(KB_DIR *dirp);
 extern int KB_readdir_rD(KB_DIR *dirp, struct KB_Entry *entry, struct KB_Entry **result);
 extern struct KB_File * KB_eopenD(KB_DIR *dirp, struct KB_Entry *entry);
@@ -86,5 +97,9 @@ extern KB_DIR * KB_opendirCC_in(const char *filename, KB_DIR *dirp);
 extern KB_DIR * KB_opendir_in(const char *filename, KB_DIR *dirp);
 
 /* "IMG" Group file */
+extern KB_DIR* KB_opendirIMG(const char *filename);
+extern KB_Entry* KB_readdirIMG(KB_DIR *dirp);
+extern KB_DIR* KB_opendirIMG_in(const char *filename, KB_DIR *dirp);
+extern KB_File* KB_fopenIMG_in ( const char * filename, const char * mode, KB_DIR * in );
 
 #endif	/* _OPENKB_LIBKB_DIR */

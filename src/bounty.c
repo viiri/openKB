@@ -272,7 +272,7 @@ char *number_names[6] = {
 	"Some",         	/* 4	(10-19) */
 	"A few",        	/* 5	(1-9) */
 };
-char number_mins[6] = { 500, 100, 50, 20, 10, 1 };
+word number_mins[6] = { 500, 100, 50, 20, 10, 1 };
 
 char *number_name(word num) {
 	int i;
