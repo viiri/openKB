@@ -374,11 +374,14 @@ KB_File *KB_fopen_with(const char *filename, char *mode, KBmodule *mod) {
 }
 
 char *troop_names[] = {
-	"peas",
+    "peas","spri","mili","wolf","skel","zomb","gnom","orcs","arcr","elfs",
+    "pike","noma","dwar","ghos","kght","ogre","brbn","trol","cavl","drui",
+    "arcm","vamp","gian","demo","drag",
 };
 
 char *villain_names[] = {
-	"peas",
+    "mury","hack","ammi","baro","drea","cane","mora","barr","barg","rina",
+    "ragf","mahk","auri","czar","magu","urth","arec",
 };
 
 
@@ -532,6 +535,7 @@ void* GNU_Resolve(int id, int sub_id) {
 
 	char *image_name = NULL;
 	char *image_suffix = NULL;
+	int is_transparent = 1;
 
 	KBmodule *mod;
 
@@ -542,12 +546,14 @@ void* GNU_Resolve(int id, int sub_id) {
 		{
 			image_name = "nwcp";
 			image_suffix = ".png";
+			is_transparent = 0;
 		}
 		break;
 		case GR_FONT:
 		{
 			image_name = "openkb8x8";
 			image_suffix = ".bmp";
+			is_transparent = 0;
 		}
 		break;
 		case GR_TROOP:
@@ -572,6 +578,9 @@ void* GNU_Resolve(int id, int sub_id) {
 		SDL_Surface *surf = IMG_Load(realname);
 
 		if (surf == NULL) printf("> FAILED TO OPEN\n");
+
+		if (surf && is_transparent)
+			SDL_SetColorKey(surf, SDL_SRCCOLORKEY, 0xFF);
 
 		return surf;
 	}

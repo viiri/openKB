@@ -217,6 +217,7 @@ void SDL_TextRect(SDL_Surface *dest, SDL_Rect *r, Uint32 fore, Uint32 back) {
 
 KBgame *select_game(KBconfig *conf) {
 
+	return NULL;
 }
 
 int select_module() {
@@ -382,18 +383,18 @@ void display_title() {
 
 			SDL_Surface *title = KB_LoadIMG8(GR_TITLE, 0);
 			SDL_Surface *font = KB_LoadIMG8(GR_FONT, 0);
-			SDL_Surface *peasant = KB_LoadIMG8(GR_TROOP, 0);
+			SDL_Surface *peasant = KB_LoadIMG8(GR_TROOP, 2);
 
-			SDL_CenterRect(&pos, title, screen);
+			SDL_CenterRect(&pos, peasant, screen);
 
 			SDL_FillRect( screen , NULL, 0xFF3366);
 
 			SDL_BlitSurface( title, NULL , screen, &pos );
 			
 			SDL_BlitSurface( font, NULL , screen, NULL );
-			
+
 			SDL_Rect right = { 0, 0, peasant->w, peasant->h };
-	//		SDL_BlitSurface( peasant, NULL , screen, NULL );
+			SDL_BlitSurface( peasant, NULL , screen, NULL );
 
 	    	SDL_Flip( screen );
 
@@ -449,7 +450,7 @@ int run_game(KBconfig *conf) {
 	if (!game) {
 		KB_stdlog("No game selected.\n");
 		KB_stopENV(sys);
-		return 1;
+		return 0;
 	}
 
 	/* Just for fun, output game name */
