@@ -371,6 +371,9 @@ void display_title() {
 	int done = 0;
 	int redraw = 1;
 
+	int troop_frame = 0;
+	SDL_Rect src = {0, 0, 48, 32};
+
 	while (!done) {
 
 		key = KB_event(&press_any_key);
@@ -391,10 +394,16 @@ void display_title() {
 
 			SDL_BlitSurface( title, NULL , screen, &pos );
 			
-			SDL_BlitSurface( font, NULL , screen, NULL );
+			SDL_BlitSurface( font, NULL , screen, &pos );
 
 			SDL_Rect right = { 0, 0, peasant->w, peasant->h };
-			SDL_BlitSurface( peasant, NULL , screen, NULL );
+
+			src.x = troop_frame * 48;
+			src.h = peasant->h;
+			troop_frame++;
+			if (troop_frame > 3) troop_frame = 0; 			
+			
+			SDL_BlitSurface( peasant, &src , screen, NULL );
 
 	    	SDL_Flip( screen );
 
@@ -402,9 +411,9 @@ void display_title() {
 			SDL_FreeSurface(font);
 			SDL_FreeSurface(peasant);
 
-			SDL_Delay(10);
+			SDL_Delay(300);
 
-			redraw = 0;
+			redraw = 1;
 		}
 
 	}
