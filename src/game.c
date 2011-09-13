@@ -390,10 +390,10 @@ void display_title() {
 
 			SDL_CenterRect(&pos, peasant, screen);
 
-			SDL_FillRect( screen , NULL, 0xFF3366);
+			SDL_FillRect( screen , NULL, 0x000000);
 
 			SDL_BlitSurface( title, NULL , screen, &pos );
-			
+
 			SDL_BlitSurface( font, NULL , screen, &pos );
 
 			SDL_Rect right = { 0, 0, peasant->w, peasant->h };
