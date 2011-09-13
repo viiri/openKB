@@ -21,6 +21,7 @@
 #include "kbdir.h"
 
 #include "malloc.h"
+#include "string.h"
 
 #define MAX_CC_FILES	133
 #define HEADER_SIZE_CC 1122
@@ -361,7 +362,7 @@ size_t KB_freadCC ( void * ptr, size_t size, size_t count, KB_File * stream )
 int KB_fseekCC(KB_File * stream, long int offset, int origin)
 {
 	struct lzwStream *str = stream->d;
-	printf("Seeking inside stream into %d\n", offset);
+	printf("Seeking inside stream into %ld\n", offset);
 	str->pos = offset;
 	stream->pos = offset;
 	return 0;
@@ -580,7 +581,7 @@ printf("%04d\t0x%04X:%01X\t", pos, byte_pos, bit_pos);
 /* Open CC-directory "filename" in abstract directory "dirs" */
 KB_DIR * KB_opendirCC_in(const char *filename, KB_DIR *dirs)
 {
-	printf("Must open %s dir! in directoy %d\n", filename, dirs);
+	printf("Must open %s dir! in directoy %p\n", filename, dirs);
 	KB_File * noob = KB_fopenCC_in( filename, "rb", dirs );	
 
 	KB_DIR * dirp;
