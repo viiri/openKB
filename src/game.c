@@ -102,6 +102,8 @@ KBenv *KB_startENV(KBconfig *conf) {
     SDL_Init( SDL_INIT_VIDEO );
 
     nsys->screen = SDL_SetVideoMode( 320, 200, 32, SDL_SWSURFACE );
+    
+    nsys->conf = conf;
 
 	return nsys;
 }
@@ -219,6 +221,7 @@ KBgame *select_game(KBconfig *conf) {
 
 int select_module() {
 	SDL_Surface *screen = sys->screen;
+	KBconfig *conf = sys->conf;
 
 	int done = 0;
 	int redraw = 1;
@@ -228,18 +231,24 @@ int select_module() {
 
 	SDL_Rect menu;
 
+	/* Just for fun, do some error-checking */
+	if (conf->num_modules < 1) {
+		fprintf(stderr, "No modules found! You must either enable auto-discovery, either provide explicit file paths via config file.\n"); 	
+		return -1;
+	}
+
 	prepare_inline_font();	// <-- inline font
 
 	/* Prepare menu */
 	int i, l = 0;
-	for (i = 0; i < num_modules; i++) {
-		int mini_l = strlen(modules[i].name);
+	for (i = 0; i < conf->num_modules; i++) {
+		int mini_l = strlen(conf->modules[i].name);
 		if (mini_l > l) l = mini_l;
 	}
 
 	/* Size */
 	menu.w = l * 8 + 16;
-	menu.h = num_modules * 8 + 8;
+	menu.h = conf->num_modules * 8 + 8;
 
 	/* To the center of the screen */
 	menu.x = (screen->w - menu.w) / 2;
@@ -249,7 +258,7 @@ int select_module() {
 	menu.y -= 8;
 
 	/* Update mouse hot-spots */
-	for (i = 0; i < num_modules; i++) {
+	for (i = 0; i < conf->num_modules; i++) {
 		module_selection.spots[i + 3].coords.x = menu.x + 8;
 		module_selection.spots[i + 3].coords.y = menu.y + 8 + i * 8;
 		module_selection.spots[i + 3].coords.w = menu.w - 8;
@@ -271,7 +280,7 @@ int select_module() {
 		if (key >= 4) { done = 1; }
 
 		if (sel < 0) sel = 0;
-		if (sel > num_modules - 1) sel = num_modules - 1;
+		if (sel > conf->num_modules - 1) sel = conf->num_modules - 1;
 		module_selection.hover = sel + 3;
 
 		if (redraw) {
@@ -282,11 +291,11 @@ int select_module() {
 
 			SDL_TextRect(screen, &menu, 0, 0xFFFFFF);
 
-			for (i = 0; i < num_modules; i++) {
+			for (i = 0; i < conf->num_modules; i++) {
 				if (i == sel)	incolor(0xFFFFFF, 0x000000);
 				else			incolor(0x000000, 0xFFFFFF);
 
-				inprint(screen, modules[i].slotA_name, menu.x + 8, 8 * i + menu.y + 8);
+				inprint(screen, conf->modules[i].name, menu.x + 8, 8 * i + menu.y + 8);
 			}
 
 	    	SDL_Flip( screen );
@@ -295,9 +304,10 @@ int select_module() {
 		}
 
 	}
-	printf("SELECTED: %d [%s]\n", sel, modules[i].name);
-	
-	main_module = &modules[sel];
+
+	printf("SELECTED MODULE: %d - { %s } \n", sel, conf->modules[sel].name);
+
+	main_module = &conf->modules[sel];
 	return sel;
 }
 
@@ -402,6 +412,8 @@ void display_title() {
 
 int run_game(KBconfig *conf) {
 
+	int mod;
+
 	/* Start new environment (game window) */
 	sys = KB_startENV(conf);
 
@@ -409,10 +421,23 @@ int run_game(KBconfig *conf) {
 	if (!sys) return -1;
 
 	/* Module auto-discovery */
-	discover_modules(conf->data_dir);
+	if (conf->autodiscover)
+		discover_modules(conf->data_dir, conf);
 
-	select_module();
+	/* User-configured modules */
+	register_modules(conf);
 
+	/* --- ! ! ! --- */
+	mod = select_module();
+	
+	/* No module! (Unlikely...) */
+	if (!main_module) {
+		KB_errlog("No module selected.\n");
+		KB_stopENV(sys);
+		return -1;
+	}
+
+	/* --- X X X --- */
 	display_logo();
 
 	display_title();
@@ -421,11 +446,14 @@ int run_game(KBconfig *conf) {
 	KBgame *game = select_game(conf);
 
 	/* No game! Quit */
-	if (!game) return 1;
+	if (!game) {
+		KB_stdlog("No game selected.\n");
+		KB_stopENV(sys);
+		return 1;
+	}
 
-	//KBgame *game = KB_loadDAT("/home/driedfruit/src/okb/NEW.DAT");
-	//printf("Reading a savegame! %p\n", game);
-//	printf("%s the %s\n", &game->name, classes[game->class][game->rank].title);
+	/* Just for fun, output game name */
+	KB_stdlog("%s the %s\n", game->name, classes[game->class][game->rank].title);
 
 	//debug(game);
 
@@ -434,7 +462,6 @@ int run_game(KBconfig *conf) {
 
 	return 0;
 }
-
 
 void debug(KBgame *game) {
 

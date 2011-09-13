@@ -23,6 +23,8 @@
 #include "kbdir.h"
 
 #include "stdio.h" //for stderr :/
+#include "malloc.h"
+#include "string.h"
 
 #define MAX_IMG_FILES	36
 #define HEADER_SIZE_IMG (MAX_IMG_FILES * 4 + 2)
@@ -231,7 +233,7 @@ KB_File * KB_fopenIMG_in( const char * filename, const char * mode, KB_DIR *dirp
 
 //dbg
 printf("[imgdir]Craving for image <%d> [%s]\n", i, filename);
-printf("[imgdir] offset: %08x mask: %08x w: %d, h: %d	| len: %d\n", 
+printf("[imgdir] offset: %08x mask: %08x w: %d, h: %d	| len: %ld\n", 
 	grp->head.files[i].offset,
 	grp->head.files[i].mask_offset,
 	grp->head.files[i].w,

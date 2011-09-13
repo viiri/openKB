@@ -214,7 +214,7 @@ extern char *town_names[MAX_TOWNS];
 extern char *castle_names[MAX_CASTLES];
 extern char *spell_names[MAX_SPELLS];
 extern char *number_names[6];
-extern char number_mins[6];
+extern word number_mins[6];
 extern char *number_name(word num);
 extern char *morale_names[3];
 extern char *continent_names[4];
