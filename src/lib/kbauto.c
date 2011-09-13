@@ -30,13 +30,10 @@
 #include "kbauto.h"
 #include "kbfile.h" //:/
 #include "kbdir.h"
-KBmodule *main_module = NULL;
-KBmodule modules[MAX_MODULES];
-int num_modules = 0;
 
-#define KBFAMILY_GNU	0x0F
-#define KBFAMILY_DOS	0x0D
-#define KBFAMILY_MD 	0x02
+#include "kbconf.h"
+
+KBmodule *main_module = NULL;
 
 #define KBTYPE_ROM		0x0F
 
@@ -76,13 +73,13 @@ struct KBfileid {
 struct KBfileid fingerprints[] = {
 	{ 
 		"416", "CC", 0,//340961, 
-		NULL, 0, 0,
+		"\0", 0, 0,
 		0,
 		KBFAMILY_DOS, KBTYPE_GROUP,
 	},
 	{ 
 		"256", "CC", 0,//281550, 
-		NULL, 0, 0, 
+		"\0", 0, 0, 
 		-1,
 		KBFAMILY_DOS, KBTYPE_GROUP,
 	},
@@ -166,7 +163,50 @@ int verify_file(const char *name, const char *path) {
 	return ok;
 }
 
-void discover_modules(const char *path) {
+void init_module(KBmodule *mod) {
+	int i;
+}
+
+void init_modules(KBconfig *conf) {
+	int i;
+}
+void stop_module(KBmodule *mod) {
+	int i;
+}
+void stop_modules(KBconfig *conf) {
+	int i;
+}
+
+void wipe_module(KBmodule *mod) {
+	mod->slotA_name[0] = '\0';
+	mod->slotB_name[0] = '\0';
+	mod->slotC_name[0] = '\0';
+	mod->slotA = NULL;
+	mod->slotB = NULL;
+	mod->slotC = NULL;
+}
+
+void register_module(KBconfig *conf, KBmodule *mod) {
+	
+	memcpy(&conf->modules[conf->num_modules++], mod, sizeof(KBmodule)); 
+
+}
+
+void register_modules(KBconfig *conf) {
+
+	
+
+}
+
+/*
+ * Ideally, this function should take look at the files
+ * presented in the directory and make intelligent guesses
+ * about available modules.
+ *
+ * It does nothing of the sort...
+ * TODO!!!
+ */ 
+void discover_modules(const char *path, KBconfig *conf) {
 
 	struct KBfileid result[255]; 
 	int	n_result = 0;
@@ -185,7 +225,7 @@ void discover_modules(const char *path) {
     if ((dip = opendir(path)) == NULL)
     {
             perror("opendir");
-            return 0;
+            return;
     }
  
     printf("Directory stream is now open\n");
@@ -217,82 +257,84 @@ void discover_modules(const char *path) {
     if (closedir(dip) == -1)
     {
             perror("closedir");
-            return 0;
+            return;
     }
     printf("\nDirectory stream is now closed\n");
 
-	/* ADD Modules */
-	
+
+	/* Ignore everything we found and just dump those: */
+
 	/* GNU */
-	strcpy(modules[0].name, "Free");
-	strcpy(modules[0].slotA_name, path);
-	strcat(modules[0].slotA_name, "free/");
-	modules[0].kb_family = KBFAMILY_GNU;
-	num_modules++;
+	wipe_module(&conf->modules[0]);
+	strcpy(conf->modules[0].name, "Free");
+	strcpy(conf->modules[0].slotA_name, path);
+	strcat(conf->modules[0].slotA_name, "free/");
+	conf->modules[0].kb_family = KBFAMILY_GNU;
+	conf->num_modules++;
 
 	/* Commodore64 */
-	strcpy(modules[1].name, "Commodore64");
-	strcpy(modules[1].slotA_name, ".D64#");
-	num_modules++;
+	strcpy(conf->modules[1].name, "Commodore64");
+	strcpy(conf->modules[1].slotA_name, ".D64#");
+	conf->num_modules++;
 
 	/* Apple][ */
-	strcpy(modules[2].name, "Apple][");
-	strcpy(modules[2].slotA_name, ".dsl#");
-	num_modules++;
+	strcpy(conf->modules[2].name, "Apple][");
+	strcpy(conf->modules[2].slotA_name, ".dsl#");
+	conf->num_modules++;
 
 	/* DOS */
-	strcpy(modules[3].name, "DOS (Hercules)");
-	strcpy(modules[3].slotA_name, "416.CC#");
-	modules[3].slotA = NULL;
-	modules[3].kb_family = KBFAMILY_DOS;
-	modules[3].bpp = 1;
-	num_modules++;
+	strcpy(conf->modules[3].name, "DOS (Hercules)");
+	strcpy(conf->modules[3].slotA_name, "416.CC#");
+	conf->modules[3].slotA = NULL;
+	conf->modules[3].kb_family = KBFAMILY_DOS;
+	conf->modules[3].bpp = 1;
+	conf->num_modules++;
 
-	strcpy(modules[4].name, "DOS (CGA)");
-	strcpy(modules[4].slotA_name, path);
-	strcat(modules[4].slotA_name, "416.CC#");
-	modules[4].slotA = NULL;
-	modules[4].kb_family = KBFAMILY_DOS;
-	modules[4].bpp = 2;
-	num_modules++;
+	strcpy(conf->modules[4].name, "DOS (CGA)");
+	strcpy(conf->modules[4].slotA_name, path);
+	strcat(conf->modules[4].slotA_name, "416.CC#");
+	conf->modules[4].slotA = NULL;
+	conf->modules[4].kb_family = KBFAMILY_DOS;
+	conf->modules[4].bpp = 2;
+	conf->num_modules++;
 
-	strcpy(modules[5].name, "DOS (EGA)");
-	strcpy(modules[5].slotA_name, path);
-	strcat(modules[5].slotA_name, "416.CC#");
-	modules[5].kb_family = KBFAMILY_DOS;
-	modules[5].bpp = 4;
-	num_modules++;
+	strcpy(conf->modules[5].name, "DOS (EGA)");
+	strcpy(conf->modules[5].slotA_name, path);
+	strcat(conf->modules[5].slotA_name, "416.CC#");
+	conf->modules[5].kb_family = KBFAMILY_DOS;
+	conf->modules[5].bpp = 4;
+	conf->num_modules++;
 
-	strcpy(modules[6].name, "DOS (VGA)");
-	strcpy(modules[6].slotA_name, "416.CC#");
-	strcpy(modules[6].slotB_name, "256.CC#");
-	modules[6].kb_family = KBFAMILY_DOS;
-	modules[6].bpp = 8;
-	num_modules++;
+	strcpy(conf->modules[6].name, "DOS (VGA)");
+	strcpy(conf->modules[6].slotA_name, "416.CC#");
+	strcpy(conf->modules[6].slotB_name, "256.CC#");
+	conf->modules[6].kb_family = KBFAMILY_DOS;
+	conf->modules[6].bpp = 8;
+	conf->num_modules++;
 
 	/* Amiga */
-	strcpy(modules[7].name, "Amiga");
-	strcpy(modules[7].slotA_name, ".ADF#");
-	num_modules++;
+	strcpy(conf->modules[7].name, "Amiga");
+	strcpy(conf->modules[7].slotA_name, ".ADF#");
+	conf->num_modules++;
 
 	/* MegaDrive/Genesis */
-	strcpy(modules[8].name, "MegaDrive");
-	strcpy(modules[8].slotA_name, ".BIN#");
-	num_modules++;
+	strcpy(conf->modules[8].name, "MegaDrive");
+	strcpy(conf->modules[8].slotA_name, ".BIN#");
+	conf->num_modules++;
 
 	/* MacOS */
-	strcpy(modules[9].name, "MacOS (B&W)");
-	strcpy(modules[9].slotA_name, ".BIN#");
-	num_modules++;
+	strcpy(conf->modules[9].name, "MacOS (B&W)");
+	strcpy(conf->modules[9].slotA_name, ".BIN#");
+	conf->num_modules++;
 
-	strcpy(modules[10].name, "MacOS (Color)");
-	strcpy(modules[10].slotA_name, ".BIN#");
-	num_modules++;
+	strcpy(conf->modules[10].name, "MacOS (Color)");
+	strcpy(conf->modules[10].slotA_name, ".BIN#");
+	conf->num_modules++;
 
 
 	/* List modules */
-	for (i = 0; i < num_modules;i++) {
-		printf("Module %d: %s\n", i, modules[i].name);
+	for (i = 0; i < conf->num_modules;i++) {
+		printf("Module %d: %s\n", i, conf->modules[i].name);
 	}
 
 
@@ -300,7 +342,7 @@ void discover_modules(const char *path) {
 		printf("File %d: %s\n", i, result[i].filename);
 	}
 
-    return 1;
+    return;
 }
 
 KB_File *KB_fopen_with(const char *filename, char *mode, KBmodule *mod) {
@@ -309,15 +351,15 @@ KB_File *KB_fopen_with(const char *filename, char *mode, KBmodule *mod) {
 	KB_File *f = NULL;
 
 	char *buf_ptr[3] = {
-		&mod->slotA_name,
-		&mod->slotB_name,
-		&mod->slotC_name,
+		mod->slotA_name,
+		mod->slotB_name,
+		mod->slotC_name,
 	};
 
 	KB_DIR *dir_ptr[3] = {
-		&mod->slotA,
-		&mod->slotB,
-		&mod->slotC,
+		mod->slotA,
+		mod->slotB,
+		mod->slotC,
 	};
 
 	for (i = 0; i < 3; i++) {
@@ -330,6 +372,15 @@ KB_File *KB_fopen_with(const char *filename, char *mode, KBmodule *mod) {
 	}
 	return f;
 }
+
+char *troop_names[] = {
+	"peas",
+};
+
+char *villain_names[] = {
+	"peas",
+};
+
 
 void* DOS_Resolve(int id, int sub_id) {
 
@@ -352,18 +403,9 @@ void* DOS_Resolve(int id, int sub_id) {
 		NULL, ".256",	//7, 8
 	};
 
-	char *troop_names[] = {
-		"peas",
-	};
-
-	char *villain_names[] = {
-		"peas",
-	};
-
 	KBmodule *mod;
 
 	mod = main_module;
-
 
 	middle_name = suffix = ident = NULL;
 
@@ -457,14 +499,21 @@ void* DOS_Resolve(int id, int sub_id) {
 			strcat(realname, suffix);
 			strcat(realname, ident);
 
+
+			printf("? DOS IMG FILE: %s\n", realname);
+
 			f = KB_fopen_with(realname, "rb", mod);
+	
+			if (f == NULL) printf("> FAILED TO OPEN\n");
+				
+			if (f == NULL) return NULL;
 
 			n = KB_fread(buf, sizeof(char), 0xFA00, f);
 
 			switch (method) {
 				case RAW_IMG:	surf = SDL_loadRAWIMG(&buf[0], n, mod->bpp);	break;
 				case RAW_CH:	surf = SDL_loadRAWCH (&buf[0], n);	break;
-				case ROW_IMG:	surf = SDL_loadROWIMG(f, row_start, row_frames, mod->bpp);	break;
+				//case ROW_IMG:	surf = SDL_loadROWIMG(f, row_start, row_frames, mod->bpp);	break;
 				default: break;
 			}
 
@@ -473,6 +522,7 @@ void* DOS_Resolve(int id, int sub_id) {
 			return (void*)surf;
 		}
 		break;
+		default: break;
 	}
 	return NULL;
 
@@ -480,9 +530,8 @@ void* DOS_Resolve(int id, int sub_id) {
 
 void* GNU_Resolve(int id, int sub_id) {
 
-printf("GNU RESOLVE: %d, %d\n", id, sub_id);
-
 	char *image_name = NULL;
+	char *image_suffix = NULL;
 
 	KBmodule *mod;
 
@@ -491,19 +540,32 @@ printf("GNU RESOLVE: %d, %d\n", id, sub_id);
 	switch (id) {
 		case GR_LOGO:
 		{
-			image_name = "nwcp.png";
+			image_name = "nwcp";
+			image_suffix = ".png";
 		}
 		break;
+		case GR_FONT:
+		{
+			image_name = "openkb8x8";
+			image_suffix = ".bmp";
+		}
+		break;
+		case GR_TROOP:
+		{
+			image_name = troop_names[sub_id];
+			image_suffix = ".png";
+		}
 		default: break;
 	}
 
 	if (image_name) {
-	
+
 		char realname[1024];
 
 		realname[0] = '\0';
 		strcpy(realname, mod->slotA_name);
 		strcat(realname, image_name);
+		strcat(realname, image_suffix);
 
 		printf("? FREE IMG FILE: %s\n", realname);
 
@@ -515,7 +577,6 @@ printf("GNU RESOLVE: %d, %d\n", id, sub_id);
 	}
 
 	return NULL;
-
 }
 
 void* KB_Resolve(int id, int sub_id) {

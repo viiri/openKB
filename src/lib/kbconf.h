@@ -26,6 +26,18 @@
 
 #define FULLPATH_LEN 5000 
 
+#define C_config_file  0
+#define C_config_dir   1
+#define C_save_dir     2
+#define C_data_dir     3
+
+#define C_fullscreen   4
+#define C_filter       5
+#define C_autodiscover 6
+#define C_mode 7
+
+#include "kbauto.h"
+
 typedef struct KBconfig {
 
 	char config_file[FULLPATH_LEN];
@@ -34,9 +46,17 @@ typedef struct KBconfig {
 	char data_dir[PATH_LEN];
 
 	int fullscreen;
+	int filter;
 	int mode;
+	int autodiscover;
 
 	int set[16];//what is SET
+	
+	KBmodule modules[MAX_MODULES];
+	int num_modules;
+
 } KBconfig;
+
+extern void discover_modules(const char *path, KBconfig *conf);
 
 #endif /* _OPENKB_LIBKB_CONFIG */

@@ -17,11 +17,18 @@
  *  You should have received a copy of the GNU General Public License
  *  along with openkb.  If not, see <http://www.gnu.org/licenses/>.
  */
-#define MAX_MODULES	16
+#ifndef _OPENKB_LIBKB_AUTO
+#define _OPENKB_LIBKB_AUTO
 
+#define MAX_MODULES	16
+#define MAX_SLOTS	4
+
+#include "kbsys.h"
 #include "kbdir.h"
 
-extern void discover_modules(const char *path);
+#define KBFAMILY_GNU	0x0F
+#define KBFAMILY_DOS	0x0D
+#define KBFAMILY_MD 	0x02
 
 typedef struct KBmodule {
 
@@ -42,5 +49,5 @@ typedef struct KBmodule {
 } KBmodule;
 
 extern KBmodule *main_module;
-extern KBmodule modules[MAX_MODULES];
-extern int num_modules;
+
+#endif /* _OPENKB_LIBKB_AUTO */
