@@ -1,0 +1,7 @@
+openkb.ini
+openkb
+*.o
+*.a
+*.exe
+*.dll
+*.tar.gz
