@@ -41,15 +41,13 @@ KB_DIR * KB_opendir_in(const char *filename, KB_DIR *top)
 {
 	int type = KBDTYPE_DIR;
 
-	printf("- User asked for DIR path %s\n", filename);
 	int n = 0, e = 0;
+
 	KB_DIR *middle = KB_follow_path(filename, &n, &e, top);
-	printf("- TOP directory: %p \n", top);
-	printf("- MIDDLE directory: %p [%d]\n", middle, n);
 
 	if (middle != NULL) 
 	{
-		return KB_opendir_in(filename, middle);
+		return KB_opendir_in(&filename[n + 1], middle);
 	}
 
 	const char *ext = &filename[e + 1];
@@ -81,6 +79,7 @@ struct KB_Entry * KB_readdir(KB_DIR *dirp)
 	return NULL;
 }
 
+#if 0
 int KB_readdir_r(KB_DIR *dirp, struct KB_Entry *entry, struct KB_Entry **result)
 {
 	switch (dirp->type) {
@@ -88,7 +87,6 @@ int KB_readdir_r(KB_DIR *dirp, struct KB_Entry *entry, struct KB_Entry **result)
 	}
 	return 0;
 }
-
 KB_File * KB_eopen(KB_DIR *dirp, KB_Entry *entry)
 {
 	switch (dirp->type) {
@@ -97,7 +95,7 @@ KB_File * KB_eopen(KB_DIR *dirp, KB_Entry *entry)
 	}
 	return NULL;
 }
-
+#endif
 
 long KB_telldir(KB_DIR *dirp)
 {

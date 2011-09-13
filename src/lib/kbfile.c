@@ -43,13 +43,11 @@ KB_DIR * KB_follow_path( const char * filename, int *n, int *e, KB_DIR *top )
 		}
 	}
 	if (i != l) {
-		printf(" -- Path is multi-part!\n");
 		*n = i;
 
 		char buf[1024];
 		strcpy(buf, filename);
 		buf[i] = '\0';
-		printf(" -- Prefix part: %s\n", buf);
 
 		KB_DIR *d = KB_opendir_in( buf , top );
 
@@ -60,22 +58,17 @@ KB_DIR * KB_follow_path( const char * filename, int *n, int *e, KB_DIR *top )
 	return NULL;
 }
 
-KB_File * KB_fopenCC_in( const char * filename, const char * mode, KB_DIR *dirp );
-
 KB_File* KB_fopen_in( const char * filename, const char * mode, KB_DIR *top )
 {
 	int type = KBFTYPE_FILE;
 
 	int n = 0, e = 0;
-	printf("--- Asking for file [%s] in directory %p\n",filename, top);
+
 	KB_DIR *middle = KB_follow_path(filename, &n, &e, top);
-	printf("--- Got middle directory: %p [%d] {%d}\n", middle, n, e);
+
 
 	if (middle != NULL) {
-		printf(" - {%s} Member of something esle...\n", filename);
 		return KB_fopen_in(&filename[n + 1], mode, middle);
-	} else {
-		printf(" - No middle-men, just a regular file\n");
 	}
 
 	if (top != NULL) type = top->type;
@@ -139,7 +132,10 @@ KB_File * KB_fopenF( const char * filename, const char * mode )
 	KB_File * stream;
 
 	FILE *f = fopen(filename, mode);
-	if (f == NULL) return NULL;
+	if (f == NULL) {
+		KB_errlog("Missing real file %s\n", filename);
+		return NULL;
+	}
 
 	stream = malloc(sizeof(KB_File));
 
@@ -153,7 +149,9 @@ KB_File * KB_fopenF( const char * filename, const char * mode )
 	stream->len = ftell(f);
 
 	fseek(f, 0, SEEK_SET);
-	stream->pos = 0;	
+	stream->pos = 0;
+
+	return stream;	
 }
 
 int KB_fseekF(KB_File * stream, long int offset, int origin)

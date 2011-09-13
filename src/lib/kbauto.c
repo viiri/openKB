@@ -345,9 +345,39 @@ void discover_modules(const char *path, KBconfig *conf) {
     return;
 }
 
+
+KB_DIR *KB_opendir_with(const char *filename, KBmodule *mod) {
+	int i;
+	char buffer[PATH_MAX];
+	KB_DIR *d = NULL;
+
+	char *buf_ptr[3] = {
+		mod->slotA_name,
+		mod->slotB_name,
+		mod->slotC_name,
+	};
+
+	KB_DIR *dir_ptr[3] = {
+		mod->slotA,
+		mod->slotB,
+		mod->slotC,
+	};
+
+	for (i = 0; i < 3; i++) {
+		buffer[0] = '\0';
+		strcpy(buffer, buf_ptr[i] );
+		strcat(buffer, filename);
+
+		d = KB_opendir_in(buffer, dir_ptr[i]);
+		
+		if (d) break;
+	}
+	return d;
+}
+
 KB_File *KB_fopen_with(const char *filename, char *mode, KBmodule *mod) {
 	int i;
-	char buffer[1024];
+	char buffer[PATH_MAX];
 	KB_File *f = NULL;
 
 	char *buf_ptr[3] = {
@@ -392,7 +422,7 @@ void* DOS_Resolve(int id, int sub_id) {
 	char *ident;
 
 	int row_start = 0;
-	int row_frames = 0;
+	int row_frames = 4;
 
 	int method = -1;
 	#define RAW_IMG	0
@@ -502,25 +532,33 @@ void* DOS_Resolve(int id, int sub_id) {
 			strcat(realname, suffix);
 			strcat(realname, ident);
 
-
-			printf("? DOS IMG FILE: %s\n", realname);
-
-			f = KB_fopen_with(realname, "rb", mod);
-	
-			if (f == NULL) printf("> FAILED TO OPEN\n");
-				
-			if (f == NULL) return NULL;
-
-			n = KB_fread(buf, sizeof(char), 0xFA00, f);
-
 			switch (method) {
-				case RAW_IMG:	surf = SDL_loadRAWIMG(&buf[0], n, mod->bpp);	break;
-				case RAW_CH:	surf = SDL_loadRAWCH (&buf[0], n);	break;
-				//case ROW_IMG:	surf = SDL_loadROWIMG(f, row_start, row_frames, mod->bpp);	break;
+				case RAW_IMG:
+				case RAW_CH:
+				{
+					printf("? DOS IMG FILE: %s\n", realname);
+					f = KB_fopen_with(realname, "rb", mod);
+					if (f == NULL) return NULL;
+					n = KB_fread(&buf[0], sizeof(char), 0xFA00, f);
+					KB_fclose(f);
+
+					if (method == RAW_IMG)
+						surf = SDL_loadRAWIMG(&buf[0], n, mod->bpp);
+					else
+						surf = SDL_loadRAWCH (&buf[0], n);
+				}
+				break;
+				case ROW_IMG:	
+				{
+					KB_DIR *d = KB_opendir_with(realname, mod);
+
+					if (d == NULL) { printf("Having trouble with dir %s\n", realname); return NULL; }				
+
+					surf = SDL_loadROWIMG(d, row_start, row_frames, mod->bpp);	
+				}
+				break;
 				default: break;
 			}
-
-			KB_fclose(f);
 
 			return (void*)surf;
 		}
@@ -528,7 +566,6 @@ void* DOS_Resolve(int id, int sub_id) {
 		default: break;
 	}
 	return NULL;
-
 }
 
 void* GNU_Resolve(int id, int sub_id) {

@@ -39,7 +39,7 @@ word KB_ccHash(const char *filename) {
 		if (next >= 0x60) 
 			next -= 0x20;
 
-		/* Swap high and low bits */
+		/* Swap bytes */
 		key = ((key >> 8) & 0x00FF) | ((key << 8) & 0xFF00);
 
 		/* Rotate left by 1 bit */
@@ -80,7 +80,7 @@ int KB_append_CC_list(struct ccGroup *grp, const char *filename) {
 
 	char listfile[1024];
 	int i;
-	
+
 	FILE *f;
 
 	/* Clean list */
@@ -134,7 +134,7 @@ KB_DIR * KB_opendirCC(const char *filename) {
 
 	f = KB_fopen(filename, "rb");
 
-	if (!f) { fprintf(stderr, "Can't open %s\n", filename); return NULL; }
+	if (!f) { fprintf(stderr, "Can't open file %s\n", filename); return NULL; }
 
 	n = KB_fread(buf, sizeof(char), 1122, f);
 
@@ -308,9 +308,16 @@ KB_File * KB_fopenCC_by( int i, KB_DIR *dirp )
 
 	if (str == NULL) { free(stream); return NULL; }
 
-	KB_File *real = grp->top;
-//	real = malloc(sizeof(KB_File));
-//	if (real == NULL) { free(stream); return NULL; }
+	/* Read out "uncompressed size" if we haven't already */
+	if (!grp->size_list[i]) {
+		char buf[4];
+
+		KB_fseek(grp->top, grp->head.files[i].offset, SEEK_SET);
+		KB_fread(buf, 1, 4, grp->top);
+
+		grp->size_list[i] = KB_UNPACK_DWORD(buf[0],buf[1],buf[2],buf[3]);
+	}
+
 
 	/* Public view: */
 	stream->type = KBFTYPE_INCC;
@@ -323,7 +330,7 @@ KB_File * KB_fopenCC_by( int i, KB_DIR *dirp )
 	str->size = grp->size_list[i];
 	str->data = malloc(sizeof(char) * str->size);
 
-	KB_funLZW(real, str->data);
+	KB_funLZW(grp->top, str->data);
 //	KB_fclose(real);
 
 	/* Save pointer */
@@ -335,14 +342,14 @@ printf("[%02x][%02x][%02x][%02x]\n", str->data[0], str->data[1], str->data[2], s
 	return stream;
 }
 
-size_t KB_freadCC ( void * ptr, size_t size, size_t count, KB_File * stream )
+int KB_freadCC ( void * ptr, int size, int count, KB_File * stream )
 {
 	struct lzwStream *str = (struct lzwStream *)stream->d;
 
 	/* Bytes left */
-	size_t rcount = str->size - str->pos;
+	int rcount = str->size - str->pos;
 
-	printf("Guy asked for %d bytes, I'm gonna give em to him, (have %d)\n", count, rcount);
+	printf("Guy asked for %d bytes, not giving more then %d to him....\n", count, rcount);
 
 	/* If he asked more than that */
 	if (count > rcount) count = rcount;
@@ -582,7 +589,6 @@ printf("%04d\t0x%04X:%01X\t", pos, byte_pos, bit_pos);
 KB_DIR * KB_opendirCC_in(const char *filename, KB_DIR *dirs)
 {
 	printf("Must open %s dir! in directoy %p\n", filename, dirs);
-	KB_File * noob = KB_fopenCC_in( filename, "rb", dirs );	
 
 	KB_DIR * dirp;
 
@@ -593,12 +599,12 @@ KB_DIR * KB_opendirCC_in(const char *filename, KB_DIR *dirs)
 	struct ccGroup *grp;
 	struct ccHeader *head;
 
-	KB_File *f = noob;
+	KB_File *f = KB_fopenCC_in( filename, "rb", dirs );
 	int n;
 
 	if (!f) { printf("Can't open %s\n", filename); return NULL; }
 
-	n = KB_fread(buf, sizeof(char), HEADER_SIZE_CC, noob);
+	n = KB_fread(buf, sizeof(char), HEADER_SIZE_CC, f);
 
 	if (n < HEADER_SIZE_CC) { printf("Can't read header!\n"); return NULL; }
 

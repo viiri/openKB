@@ -242,16 +242,16 @@ printf("[imgdir] offset: %08x mask: %08x w: %d, h: %d	| len: %ld\n",
 	return f;
 }
 
-size_t KB_freadIMG ( void * ptr, size_t size, size_t count, KB_File * stream )
+int KB_freadIMG ( void * ptr, int size, int count, KB_File * stream )
 {
 	struct imgGroup *grp = (struct imgGroup *)stream->d;
 	KB_File *real = (KB_File*)grp->top;
 
-	size_t rcount = KB_fread(ptr, size, count, real);
+	int rcount = KB_fread(ptr, size, count, real);
 
 	stream->pos += rcount;
 
-	return count;
+	return rcount;
 }
 
 int KB_fseekIMG(KB_File * stream, long int offset, int origin)
@@ -391,6 +391,15 @@ SDL_Surface *SDL_loadROWIMG(KB_DIR *dirp, word first, word frames, byte bpp)
 
 	/* Read all frames */
 	for (i = first; i < last; i++) {
+		char buf[4];
+		/* Seek to offset, read 4 bytes, seek to offset again */
+		KB_fseek(grp->top, grp->head.files[i].offset, 0);
+		KB_fread(buf, 1, 4, grp->top);
+		//KB_fseek(grp->top, grp->head.files[i].offset, 0);
+	
+		grp->head.files[i].w =  KB_UNPACK_WORD(buf[0],buf[1]);
+		grp->head.files[i].h =  KB_UNPACK_WORD(buf[2],buf[3]);
+
 		/* Max width / Max height */
 		width += grp->head.files[i].w;
 		if (height < grp->head.files[i].w) 
