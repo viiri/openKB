@@ -1,11 +1,8 @@
-/* INLINE SDL PRINTER */
-/* TODO: switch to vendor version */
-#include "SDL.h"
 
 static const struct {
   Uint32  	 width;
   Uint32  	 height;
-  Uint32  	 pack; 
+  Uint32  	 pixels_per_byte; 
   Uint8 	 pixel_data[128 * 64 / 8 + 1];
 } font_source = {
   128, 64, 8,
@@ -39,103 +36,3 @@ static const struct {
   "\x10\x32\x5a\x1e\x3c\x02\x0e\x1c\x1c\x08\x3e\x36\x3c\x3e\x08\x08\x08\0\x42\x02 \0\0\0\0\0\0\0 \0\x08\x08"
   "\x08\0\x3c\x02 \0\0\0\0\0\0\0\x1c\0\x08\x08\x08\0\0"
 };
-
-SDL_Surface *inline_font = NULL;
-SDL_Surface *selected_font = NULL;
-void prepare_inline_font(void)
-{
-	if (inline_font != NULL) { selected_font = inline_font; return; }
-
-	inline_font = SDL_CreateRGBSurface(SDL_HWSURFACE, font_source.width, font_source.height, 8, 0xFF, 0xFF, 0xFF, 0x00);
-	SDL_Surface *dst = inline_font;
-
-	Uint8 *pix_ptr, tmp;
-
-	int i, len, j;
-
-	/* Cache pointer to pixels and array length */
-	pix_ptr = (Uint8 *)dst->pixels;		
-	len = dst->h * dst->w / font_source.pack;
-
-	/* Lock, Copy, Unlock */
-	SDL_LockSurface(dst);
-	for (i = 0; i < len; i++) 
-	{
-		tmp = (Uint8)font_source.pixel_data[i];
-		for (j = 0; j < font_source.pack; j++) 
-		{
-			Uint8 mask = (0x01 << j);
-			pix_ptr[i * font_source.pack + j] = ((tmp & mask) ? 1 : 0);
-		}
-	}
-	SDL_UnlockSurface(dst);
-
-	selected_font = inline_font;
-}
-void kill_inline_font(void) { SDL_FreeSurface(inline_font); inline_font = NULL; }
-void infont(SDL_Surface *font) 
-{
-	selected_font = font;
-	if (font == NULL) prepare_inline_font();
-}
-void incolor(Uint32 fore, Uint32 back) /* Colors must be in 0x00RRGGBB format ! */
-{
-	SDL_Color pal[2];
-	pal[0].r = (Uint8)((back & 0x00FF0000) >> 16); 
-	pal[0].g = (Uint8)((back & 0x0000FF00) >> 8);
-	pal[0].b = (Uint8)((back & 0x000000FF));
-	pal[1].r = (Uint8)((fore & 0x00FF0000) >> 16); 
-	pal[1].g = (Uint8)((fore & 0x0000FF00) >> 8);
-	pal[1].b = (Uint8)((fore & 0x000000FF));
-	SDL_SetColors(selected_font, pal, 0, 2);
-}
-void inprint(SDL_Surface *dst, const char *str, Uint32 x, Uint32 y)
-{
-	int i, len;
-	len = strlen(str);
-	for (i = 0; i < len; i++) {
-		int id = (char)str[i];
-		int row = id / 16;
-		int col = id - (row * 16);
-
-		SDL_Rect s_rect = { col * 8, row * 8, 8, 8}; 
-		SDL_Rect d_rect = { x, y, 8, 8 };
-		SDL_BlitSurface(selected_font, &s_rect, dst, &d_rect);
-		x = x + 8;	
-	}
-}
-#if 0
-int main( int argc, char* args[] ) 
-{
-	SDL_Surface *screen; 
-
-	Uint32 width = 640;
-	Uint32 height = 480;
-	Uint32 bpp = 32;
-	Uint32 flags = 0;
-
-	int i; for (i = 1; i < argc; i++) if (!strcasecmp("--fullscreen", args[i])) flags |= SDL_FULLSCREEN;
-
-	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-		fprintf(stderr, "Video initialization failed: %s\n", SDL_GetError());
-		exit(-1);
-	}
-
-	if ((screen = SDL_SetVideoMode(width, height, bpp, flags)) == 0) {
-		fprintf(stderr, "Video mode set failed: %s\n", SDL_GetError());
-       	exit(-1);
-	}
-
-	prepare_inline_font();
-
-	incolor(0xFF0000, 0x333333);
-
-	inprint(screen, "Hello World!", 10, 10);
-
-	SDL_Flip(screen);
-	SDL_Delay(10000);
-
-	SDL_Quit(); 
-	return 0; 
-}
-#endif
