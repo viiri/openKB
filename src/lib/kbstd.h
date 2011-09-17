@@ -31,7 +31,7 @@
 extern void KB_stdlog(char *fmt, ...);
 extern void KB_errlog(char *fmt, ...);
 
-extern void  KB_debuglog(int mod, char *fmt, va_list argptr); 
+extern void  KB_debuglog(int mod, char *fmt, ...); 
 
 /*
  * Match a name in an asciz-array, return word_index+1 on success, 0 on failure

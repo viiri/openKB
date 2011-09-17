@@ -22,17 +22,25 @@
 
 #include "kbstd.h"
 
+#include "string.h"
+
 #ifdef USE_WINAPI
 #include <windows.h>
 #endif
 
-void  KB_debuglog(int mod, char *fmt, va_list argptr) 
+void KB_debuglog(int mod, char *fmt, ...) 
 {
 	static int level = 0;
 	int i;
+
+	va_list argptr;
+	va_start(argptr, fmt);
+
 	level += mod;
 	for (i = 0; i < level; i++) fprintf(stdout, " "); 
-	fprintf(stdout, fmt, argptr);
+	vfprintf(stdout, fmt, argptr);
+
+	va_end(argptr);
 }
 
 
