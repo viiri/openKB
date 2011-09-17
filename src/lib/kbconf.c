@@ -275,8 +275,11 @@ void wipe_config(struct KBconfig *conf) {
 void read_env_config(struct KBconfig *conf) {
 
 	char *pPath;
-
-	pPath = (char*)getenv ("HOME");
+#ifdef USE_WINAPI
+	pPath = (char*)getenv("USERPROFILE");
+#else
+	pPath = (char*)getenv("HOME");
+#endif
 	KB_strcpy(conf->config_dir, pPath);
 	KB_strcat(conf->config_dir, CONFIG_BASE_DIR);
 
