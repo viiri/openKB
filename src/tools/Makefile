@@ -6,7 +6,7 @@ LFLAGS=
 SDL_CFLAGS=-g `sdl-config --cflags`
 SDL_LFLAGS=`sdl-config --libs`
 
-LIB_SOURCES=../lib/kbdir.c ../lib/kbfile.c ../lib/dos-img.c ../lib/dos-cc.c
+LIB_SOURCES=../lib/kbdir.c ../lib/kbfile.c ../lib/dos-img.c ../lib/dos-cc.c ../lib/kbstd.c
 
 all: kbcc kbview kbplay kbrowse
 
@@ -20,7 +20,7 @@ kbplay:
 	gcc $(SDL_CFLAGS) kb_play.c -o kbplay $(SDL_LFLAGS)
 
 kbrowse:
-	gcc $(SDL_CFLAGS) kbrowse.c ../inprint.c $(LIB_SOURCES) -o kbrowse $(SDL_LFLAGS)
+	gcc $(SDL_CFLAGS) kbrowse.c ../../vendor/inprint.c $(LIB_SOURCES) -o kbrowse $(SDL_LFLAGS)
 
 clean:
 	rm -rf *.o *.a kbcc kbview kbplay kbrowse
