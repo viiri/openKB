@@ -585,16 +585,13 @@ printf("%04d\t0x%04X:%01X\t", pos, byte_pos, bit_pos);
 
 
 /* Open CC-directory "filename" in abstract directory "dirs" */
-KB_DIR * KB_opendirCC_in(const char *filename, KB_DIR *dirs)
+void* KB_loaddirCC(const char *filename, KB_DIR *dirs)
 {
 	KB_DIR * dirp;
 
 	int i, j;
 
 	struct ccGroup *grp;
-	struct ccHeader *head;
-
-	int n;
 
 	KB_File *f = KB_fopen_in( filename, "rb", dirs );
 
@@ -607,33 +604,10 @@ KB_DIR * KB_opendirCC_in(const char *filename, KB_DIR *dirs)
 		return NULL;
 	}
 
-	head = &grp->head;
-
-	dirp = malloc(sizeof(KB_DIR));
-
-	if (dirp == NULL) {
-		free(grp);
-		KB_fclose(f);
-		return NULL;
-	}
-
-	dirp->ref_count = 0;
-
-	/* Parent */
-	dirp->prev = dirs;
-	if (dirs) dirs->ref_count++;
-
-	/* Public view */
-	dirp->type = KBDTYPE_GRPCC;
-	dirp->d = (void*)grp;
-
-	/* Keep table length in "len" */
-	dirp->len = head->num_files;
-
 	/* Attempt to load .CCL filename list */
 	ccGroup_append_list(grp, filename);
 
-	return dirp;
+	return grp;
 }
 
 int KB_closedirCC(KB_DIR *dirp) 

@@ -29,7 +29,7 @@
 #include "kbfile.h"
 
 #define KB_DIR_IF_REP_ADD(SUFFIX) \
-		&KB_opendir ## SUFFIX ## _in, \
+		&KB_loaddir ## SUFFIX , \
 		&KB_seekdir ## SUFFIX , \
 		&KB_telldir ## SUFFIX , \
 		&KB_readdir ## SUFFIX , \
@@ -53,6 +53,7 @@ KB_DirDriver KB_DIRS[MAX_KBDTYPE] = {
 /* Open a directory [from within another directory] */
 KB_DIR * KB_opendir_in(const char *filename, KB_DIR *top)
 {
+	KB_DIR * dirp;
 	unsigned int type = KBDTYPE_DIR;
 
 	int n = 0, e = 0;
@@ -73,7 +74,28 @@ KB_DIR * KB_opendir_in(const char *filename, KB_DIR *top)
 		type = KBDTYPE_GRPIMG;
 	}
 
-	return (KB_DIRS[type].opendir_in)(filename, top);
+	dirp = malloc(sizeof(KB_DIR));
+	if (dirp == NULL) return NULL;
+
+	void *udata = (KB_DIRS[type].loaddir)(filename, top);
+
+	if (udata == NULL) {
+		free(dirp);
+		return NULL;
+	}
+
+	/* Fresh directory */
+	dirp->ref_count = 0;
+
+	/* Save type and data */
+	dirp->type = type;
+	dirp->d = udata;
+
+	/* Refrence */
+	dirp->prev = top;
+	if (top) top->ref_count++;
+
+	return dirp;
 }
 
 struct KB_Entry * KB_readdir(KB_DIR *dirp)
@@ -122,25 +144,11 @@ int KB_closedir(KB_DIR *dirp)
 
 
 /* "Real Directory" wrapper */
-KB_DIR * KB_opendirD_in(const char *filename, KB_DIR *wth)
+void * KB_loaddirD(const char *filename, KB_DIR *wth)
 {
-	KB_DIR * dirp;
-	
-	if (wth != NULL) return NULL;
-
 	DIR *d = opendir(filename);
 	if (d == NULL) return NULL;
-
-	dirp = malloc(sizeof(KB_DIR));
-	if (dirp == NULL) return NULL;
-	
-	dirp->prev = NULL;
-
-	dirp->type = KBDTYPE_DIR;
-	dirp->d = (void*)d;
-	dirp->ref_count = 0;
-
-	return dirp;
+	return d;
 }
 
 struct KB_Entry * KB_readdirD(KB_DIR *dirp)

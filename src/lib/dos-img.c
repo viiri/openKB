@@ -179,14 +179,11 @@ struct KB_Entry * KB_readdirIMG(KB_DIR *dirp)
 }
 
 /* Open an IMG directory "filename" inside a directory "dirs" */
-KB_DIR * KB_opendirIMG_in(const char *filename, KB_DIR *dirs)
+void* KB_loaddirIMG(const char *filename, KB_DIR *dirs)
 {
-	KB_DIR * dirp;
-
 	int i, j;
 
 	struct imgGroup *grp;
-	struct imgHeader *head;
 
 	int n;
 
@@ -201,32 +198,11 @@ KB_DIR * KB_opendirIMG_in(const char *filename, KB_DIR *dirs)
 		return NULL;
 	}
 
-	dirp = malloc(sizeof(KB_DIR));
-
-	if (dirp == NULL) {
-		free(grp);
-		KB_fclose(f);
-		return NULL;
-	}
-	
-	dirp->prev = dirs;
-	if (dirs) dirs->ref_count++;
-
-	dirp->ref_count = 0;
-
-	/* Some public view */
-	dirp->type = KBDTYPE_GRPIMG;
-	dirp->d = (void*)grp;
-
-	/* Keep table length in "len" */
-	dirp->len = grp->head.num_files;
-
 	/* BPP!!! */
 	grp->cache.bpp = imgGroup_filename_to_bpp(filename);
-	printf("$$$ Setting Bpp: %d<%s>\n",grp->cache.bpp, filename);
 
 	/* ~~~~~~~~~~~~~~~ */
-	return dirp;
+	return grp;
 }
 
 int KB_closedirIMG(KB_DIR *dirp)
