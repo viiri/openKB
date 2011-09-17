@@ -25,6 +25,28 @@
 #include "kbfile.h"
 #include "kbdir.h"
 
+#define KB_FILE_IF_REP_ADD(SUFFIX) \
+		&KB_fopen ## SUFFIX ## _in, \
+		&KB_fseek ## SUFFIX , \
+		&KB_ftell ## SUFFIX , \
+		&KB_fread ## SUFFIX , \
+		&KB_fclose ## SUFFIX
+
+KB_FileDriver KB_FS[MAX_KBDTYPE] = {
+	{
+		KBDTYPE_DIR,
+		KB_FILE_IF_REP_ADD(F),
+	},
+	{
+		KBDTYPE_GRPCC,
+		KB_FILE_IF_REP_ADD(CC),
+	},
+	{
+		KBDTYPE_GRPIMG,
+		KB_FILE_IF_REP_ADD(IMG),
+	},
+};
+
 KB_DIR * KB_follow_path( const char * filename, int *n, int *e, KB_DIR *top )
 {
 	int i = 0;
@@ -77,17 +99,12 @@ KB_File* KB_fopen_in( const char * filename, const char * mode, KB_DIR *top )
 	if (top != NULL) type = top->type;
 
 	switch (type) {
-		case KBFTYPE_FILE:	return KB_fopenF( filename, mode );
+		case KBFTYPE_FILE:	return KB_fopenF_in( filename, mode, top );
 		case KBFTYPE_INCC:	return KB_fopenCC_in( filename, mode, top );
 		case KBFTYPE_INIMG:	return KB_fopenIMG_in( filename, mode, top );		
 	}
 
 	return NULL;
-}
-
-KB_File* KB_fopen( const char * filename, const char * mode )
-{
-	return KB_fopen_in(filename, mode, NULL);
 }
 
 int KB_fseek( KB_File * stream, long int offset, int origin )
@@ -149,7 +166,7 @@ int KB_fclose( KB_File * stream )
  * "Real file" wrapper
  * All functions have "F" suffix.
  */
-KB_File * KB_fopenF( const char * filename, const char * mode )
+KB_File * KB_fopenF_in( const char * filename, const char * mode, KB_DIR *wth )
 {
 	KB_File * stream;
 

@@ -18,8 +18,8 @@
  *  along with openkb.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "kbsys.h"
-#include "kbdir.h"
 #include "kbstd.h"
+#include "kbfile.h"
 
 #include "malloc.h"
 #include "string.h"
@@ -210,19 +210,15 @@ int ccGroup_append_list(struct ccGroup *grp, const char *filename) {
 	return 0;
 }
 
-KB_DIR * KB_opendirCC(const char *filename) {
-	return KB_opendirCC_in(filename, NULL);
-}
-
 void KB_seekdirCC(KB_DIR *dirp, long loc) {
 	struct ccGroup *grp = (struct ccGroup *)dirp->d;
 	grp->i = loc;
 }
 
 long KB_telldirCC(KB_DIR *dirp) {
-
+	struct ccGroup *grp = (struct ccGroup *)dirp->d;
+	return grp->i;
 }
-
 
 struct KB_Entry * KB_readdirCC(KB_DIR *dirp) 
 {
@@ -250,24 +246,6 @@ struct KB_Entry * KB_readdirCC(KB_DIR *dirp)
 
 	return entry;
 }
-
-#if 0
-KB_File * KB_eopenCC(KB_DIR *dirp, KB_Entry *entry)
-{
-	int j;
-	struct ccGroup *grp = (struct ccGroup *)dirp->d;
-	
-	for (j = 0; j < grp->head.num_files; j++) {
-		if (grp->head.files[j].key == entry->d_ino) {
-
-			return KB_fopenCC_by( j, dirp );
-
-		}
-	}
-
-	return NULL;
-}
-#endif
 
 KB_File * KB_fopenCC( const char * filename, const char * mode )
 {
@@ -388,6 +366,12 @@ int KB_fseekCC(KB_File * stream, long int offset, int origin)
 	str->pos = offset;
 	stream->pos = offset;
 	return 0;
+}
+
+long int KB_ftellCC(KB_File * stream)
+{
+	struct lzwStream *str = stream->d;
+	return stream->pos;
 }
 
 #define MBUFFER_SIZE 1024

@@ -229,10 +229,6 @@ KB_DIR * KB_opendirIMG_in(const char *filename, KB_DIR *dirs)
 	return dirp;
 }
 
-KB_DIR * KB_opendirIMG(const char *filename) {
-	return KB_opendirIMG_in(filename, NULL);
-}
-
 int KB_closedirIMG(KB_DIR *dirp)
 {
 	struct imgGroup *grp = (struct imgGroup *)dirp->d;
@@ -292,6 +288,12 @@ int KB_freadIMG ( void * ptr, int size, int count, KB_File * stream )
 }
 
 int KB_fseekIMG(KB_File * stream, long int offset, int origin)
+{
+	printf("If you see this you are screwed!\n");
+	return 0;
+}
+
+long int KB_ftellIMG(KB_File * stream)
 {
 	printf("If you see this you are screwed!\n");
 	return 0;

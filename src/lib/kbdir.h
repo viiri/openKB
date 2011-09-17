@@ -28,12 +28,14 @@
 #ifndef _OPENKB_LIBKB_DIR
 #define _OPENKB_LIBKB_DIR
 
+#define MAX_KBDTYPE	3
+
 #define KBDTYPE_DIR 	0x00
 
-#define KBDTYPE_GRPCC 	0x10
-#define KBDTYPE_GRPIMG 	0x11
+#define KBDTYPE_GRPCC 	0x01
+#define KBDTYPE_GRPIMG 	0x02
 
-#include "kbfile.h"
+//#include "kbfile.h"
 
 typedef struct KB_Entry {
 
@@ -70,40 +72,45 @@ struct KB_DIR {
 	KB_DIR *prev;
 };
 
+typedef struct KB_DirDriver {
+	
+	int type;	
+
+	KB_DIR*	(*opendir_in)(const char *filename, KB_DIR *top);
+	void	(*seekdir)(KB_DIR *dirp, long offset);
+	long	(*telldir)(KB_DIR *dirp);
+	KB_Entry*	(*readdir)(KB_DIR *dirp);
+	int 	(*closedir)(KB_DIR *dirp);
+
+} KB_DirDriver;
+
+extern KB_DirDriver KB_DIRS[MAX_KBDTYPE];
 
 extern KB_DIR * KB_follow_path( const char * filename, int *n, int *e, KB_DIR *top );
 
 /* API */
-extern KB_DIR * KB_opendir(const char *filename);
-extern void KB_seekdir(KB_DIR *dirp, int offset);
+#define KB_opendir(FILENAME) KB_opendir_in(FILENAME, NULL)
+extern KB_DIR * KB_opendir_in(const char *filename, KB_DIR *dirp);
+extern void KB_seekdir(KB_DIR *dirp, long offset);
 extern long KB_telldir(KB_DIR *dirp);
 extern KB_Entry * KB_readdir(KB_DIR *dirp);
 extern int KB_closedir(KB_DIR *dirp);
 
-extern KB_DIR * KB_opendir_in(const char *filename, KB_DIR *dirp);
-extern KB_File * KB_fopen_in ( const char * filename, const char * mode, KB_DIR * in );
+/* Interfaces */
+#define KB_DIR_IF_NAME_ADD(SUFFIX) \
+extern KB_DIR * KB_opendir ## SUFFIX ## _in(const char *filename, KB_DIR *dirp); \
+extern void KB_seekdir ## SUFFIX  (KB_DIR *dirp, long offset); \
+extern long KB_telldir ## SUFFIX  (KB_DIR *dirp); \
+extern KB_Entry * KB_readdir ## SUFFIX  (KB_DIR *dirp); \
+extern int KB_closedir ## SUFFIX  (KB_DIR *dirp);
+/* Real Directory ("D") */
+KB_DIR_IF_NAME_ADD(D);
+/* CC Group File ("CC") */
+KB_DIR_IF_NAME_ADD(CC);
+/* IMG Group File ("IMG") */
+KB_DIR_IF_NAME_ADD(IMG);
+#undef KB_DIR_IF_NAME_ADD
 
-/* Real directory */
-extern KB_DIR * KB_opendirD(const char *filename);
-extern void KB_seekdirD(KB_DIR *dirp, long offset);
-extern long KB_telldirD(KB_DIR *dirp);
-extern KB_Entry * KB_readdirD(KB_DIR *dirp);
-extern int KB_closedirD(KB_DIR *dirp);
 
-/* "CC" Group file */
-extern KB_DIR * KB_opendirCC(const char *filename);
-extern long KB_telldirCC(KB_DIR *dirp);
-extern KB_Entry * KB_readdirCC(KB_DIR *dirp);
-extern KB_DIR * KB_opendirCC_in(const char *filename, KB_DIR *dirp);
-extern KB_File * KB_fopenCC_in( const char * filename, const char * mode, KB_DIR *dirp );
-extern int KB_closedirCC(KB_DIR *dirp);
-
-/* "IMG" Group file */
-extern KB_DIR* KB_opendirIMG(const char *filename);
-extern long KB_telldirIMG(KB_DIR *dirp);
-extern KB_Entry* KB_readdirIMG(KB_DIR *dirp);
-extern KB_DIR* KB_opendirIMG_in(const char *filename, KB_DIR *dirp);
-extern KB_File* KB_fopenIMG_in ( const char * filename, const char * mode, KB_DIR * in );
-extern int KB_closedirIMG(KB_DIR *dirp);
 
 #endif	/* _OPENKB_LIBKB_DIR */

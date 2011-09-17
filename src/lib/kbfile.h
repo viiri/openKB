@@ -28,9 +28,11 @@
 #ifndef _OPENKB_LIBKB_FILE
 #define _OPENKB_LIBKB_FILE
 
+#define MAX_KBFTYPE	3
+
 #define KBFTYPE_FILE	0x00
-#define KBFTYPE_INCC	0x10
-#define KBFTYPE_INIMG	0x11
+#define KBFTYPE_INCC	0x01
+#define KBFTYPE_INIMG	0x02
 
 #ifndef PATH_MAX
 #define PATH_MAX 260
@@ -39,7 +41,7 @@
 #define NAME_MAX 255
 #endif
 
-//#include "kbdir.h"
+#include "kbdir.h"
 
 typedef struct KB_File {
 
@@ -55,26 +57,58 @@ typedef struct KB_File {
 
 } KB_File;
 
+typedef struct KB_FileDriver {
+	
+	int type;	
+
+	KB_File*(*fopen_in)(const char * filename, const char * mode, KB_DIR * in);
+	int 	(*fseek)(KB_File * stream, long int offset, int origin);
+	long int(*ftell)(KB_File * stream);
+	int 	(*fread)(void * ptr, int size, int count, KB_File * stream);
+	int 	(*fclose)(KB_File * stream);
+
+} KB_FileDriver;
+
+extern KB_FileDriver KB_FS[MAX_KBFTYPE];
+
 /*
  * The API.
- * Top level functions. Actually call ones with suffixes, based on file->type.
+ * Top level functions. Do some housekeeping, and call KB_FileDriver
+ * callbacks.
  */
-extern KB_File * KB_fopen ( const char * filename, const char * mode );
+#define KB_fopen(FILENAME, MODE) KB_fopen_in(FILENAME, MODE, NULL)
+
+extern KB_File * KB_fopen_in ( const char * filename, const char * mode, KB_DIR * in );
 extern int KB_fseek ( KB_File * stream, long int offset, int origin );
 extern long int KB_ftell ( KB_File * stream );
 extern int KB_fread ( void * ptr, int size, int count, KB_File * stream );
 extern int KB_fclose ( KB_File * stream );
 
+/* Interfaces */
+#define KB_FILE_IF_NAME_ADD(SUFFIX) \
+extern KB_File * KB_fopen ## SUFFIX ## _in(const char * filename, const char * mode, KB_DIR * in); \
+extern int KB_fseek ## SUFFIX  (KB_File * stream, long int offset, int origin); \
+extern long int KB_ftell ## SUFFIX  (KB_File *stream); \
+extern int KB_fread ## SUFFIX  (void * ptr, int size, int count, KB_File * stream); \
+extern int KB_fclose ## SUFFIX  (KB_File * stream);
 /*
- * "KB_file" wrapper for real files.
+ * Real file (suffix "F")
  * a) Provides STDIO-like interface
  * b) Emulates STDIO interface on non-POSIX systems
  * c) Used internally by other file wrappers to read the actual, non-virtual files
  */
-extern KB_File * KB_fopenF ( const char * filename, const char * mode );
-extern int KB_fseekF ( KB_File * stream, long int offset, int origin );
-extern long int KB_ftellF ( KB_File * stream);
-extern int KB_freadF ( void * ptr, int size, int count, KB_File * stream );
-extern int KB_fcloseF ( KB_File * stream );
+KB_FILE_IF_NAME_ADD(F);
+/*
+ * CC Inline File ("CC") 
+ */
+KB_FILE_IF_NAME_ADD(CC);
+/*
+ * IMG Inline File ("IMG") 
+ */
+KB_FILE_IF_NAME_ADD(IMG);
+#undef KB_FILE_IF_NAME_ADD
+
+
+
 
 #endif	/* _OPENKB_LIBKB_FILE */
