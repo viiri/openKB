@@ -76,7 +76,7 @@ typedef struct KB_DirDriver {
 	
 	int type;	
 
-	void*	(*loaddir)(const char *filename, KB_DIR *top);
+	void*	(*loaddir)(const char *filename, KB_DIR *top, int *dirp);
 	void	(*seekdir)(KB_DIR *dirp, long offset);
 	long	(*telldir)(KB_DIR *dirp);
 	KB_Entry*	(*readdir)(KB_DIR *dirp);
@@ -96,7 +96,7 @@ extern int KB_closedir(KB_DIR *dirp);
 
 /* Interfaces */
 #define KB_DIR_IF_NAME_ADD(SUFFIX) \
-extern void* KB_loaddir ## SUFFIX (const char *filename, KB_DIR *dirp); \
+extern void* KB_loaddir ## SUFFIX (const char *filename, KB_DIR *top, int *dirp); \
 extern void KB_seekdir ## SUFFIX  (KB_DIR *dirp, long offset); \
 extern long KB_telldir ## SUFFIX  (KB_DIR *dirp); \
 extern KB_Entry * KB_readdir ## SUFFIX  (KB_DIR *dirp); \

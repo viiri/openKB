@@ -77,12 +77,15 @@ KB_DIR * KB_opendir_in(const char *filename, KB_DIR *top)
 	dirp = malloc(sizeof(KB_DIR));
 	if (dirp == NULL) return NULL;
 
-	void *udata = (KB_DIRS[type].loaddir)(filename, top);
+	int max;
+	void *udata = (KB_DIRS[type].loaddir)(filename, top, &max);
 
 	if (udata == NULL) {
 		free(dirp);
 		return NULL;
 	}
+
+	dirp->len = max;
 
 	/* Fresh directory */
 	dirp->ref_count = 0;
@@ -144,10 +147,11 @@ int KB_closedir(KB_DIR *dirp)
 
 
 /* "Real Directory" wrapper */
-void * KB_loaddirD(const char *filename, KB_DIR *wth)
+void* KB_loaddirD(const char *filename, KB_DIR *wth, int *max)
 {
 	DIR *d = opendir(filename);
 	if (d == NULL) return NULL;
+	*max = 0;
 	return d;
 }
 

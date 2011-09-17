@@ -577,10 +577,8 @@ printf("%04d\t0x%04X:%01X\t", pos, byte_pos, bit_pos);
 
 
 /* Open CC-directory "filename" in abstract directory "dirs" */
-void* KB_loaddirCC(const char *filename, KB_DIR *dirs)
+void* KB_loaddirCC(const char *filename, KB_DIR *dirs, int *max)
 {
-	KB_DIR * dirp;
-
 	int i, j;
 
 	struct ccGroup *grp;
@@ -595,6 +593,9 @@ void* KB_loaddirCC(const char *filename, KB_DIR *dirs)
 		KB_fclose(f);
 		return NULL;
 	}
+
+	/* Dir size */
+	*max = grp->head.num_files;
 
 	/* Attempt to load .CCL filename list */
 	ccGroup_append_list(grp, filename);

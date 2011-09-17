@@ -179,7 +179,7 @@ struct KB_Entry * KB_readdirIMG(KB_DIR *dirp)
 }
 
 /* Open an IMG directory "filename" inside a directory "dirs" */
-void* KB_loaddirIMG(const char *filename, KB_DIR *dirs)
+void* KB_loaddirIMG(const char *filename, KB_DIR *dirs, int *max)
 {
 	int i, j;
 
@@ -198,10 +198,12 @@ void* KB_loaddirIMG(const char *filename, KB_DIR *dirs)
 		return NULL;
 	}
 
-	/* BPP!!! */
+	/* Dir size */
+	*max = grp->head.num_files;
+
+	/* Attempt to parse filename to detect BPP */
 	grp->cache.bpp = imgGroup_filename_to_bpp(filename);
 
-	/* ~~~~~~~~~~~~~~~ */
 	return grp;
 }
 
