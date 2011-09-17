@@ -20,6 +20,8 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+#include "kbstd.h"
+
 void  KB_debuglog(int mod, char *fmt, va_list argptr) 
 {
 	static int level = 0;
@@ -98,3 +100,10 @@ void KB_strncpy_dbg(char *dst, const char *src, unsigned int n, const char *dst_
 	if (strlcpy(dst, src, n) >= n)
 		KB_errlog("[strlcpy] Can't copy '%s' \"%s\" into %d-sized buffer '%s'; %s:%d\n", src_name, src, n, dst_name, filename, line);
 }
+
+void KB_dirsepn(char *dst, unsigned int n) {
+	int l = strlen(dst);
+	if (dst[l-1] == PATH_SEP) return;
+	KB_strncat(dst, PATH_SEP, n);
+}
+

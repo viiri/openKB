@@ -20,6 +20,14 @@
 #ifndef _OPENKB_LIBKB_STD
 #define _OPENKB_LIBKB_STD
 
+#ifdef USE_WINAPI
+#define PATH_SEP "\\"
+#define PATH_SEP_SYM '\\'
+#else
+#define PATH_SEP "/"
+#define PATH_SEP_SYM '/'
+#endif
+
 extern void KB_stdlog(char *fmt, ...);
 extern void KB_errlog(char *fmt, ...);
 
@@ -60,5 +68,8 @@ extern void KB_strncpy_dbg(char *dst, const char *src, unsigned int n, const cha
 #define KB_strcat(DST, SRC) KB_strncat_dbg(DST, SRC, sizeof(DST), # DST, # SRC, __FILE__, __LINE__)
 
 #endif
+
+extern void KB_dirsepn(char *dst, unsigned int n);
+#define KB_dirsep(DST) KB_dirsepn(DST, sizeof(DST))  
 
 #endif /* _OPENKB_LIBKB_STD */

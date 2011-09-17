@@ -90,28 +90,28 @@ int read_file_config(struct KBconfig *conf, const char *path) {
 		if (buf[0] == '[') continue;
 	
 		if (sscanf(buf, "%s = %s", buf1, buf2) == 2) {
-			if (!strcasecmp(buf1, "fullscreen")) {
+			if (!KB_strcasecmp(buf1, "fullscreen")) {
 				conf->fullscreen = atoi(buf2);
 				conf->set[C_fullscreen] = 1;
 			} else 
-			if (!strcasecmp(buf1, "datadir")) {
+			if (!KB_strcasecmp(buf1, "datadir")) {
 				KB_strcpy(conf->data_dir, buf2);
 				conf->set[C_data_dir] = 1;
 			} else 
-			if (!strcasecmp(buf1, "savedir")) {
+			if (!KB_strcasecmp(buf1, "savedir")) {
 				KB_strcpy(conf->save_dir, buf2);
 				conf->set[C_save_dir] = 1;
 			} else
-			if (!strcasecmp(buf1, "autodiscover")) {
+			if (!KB_strcasecmp(buf1, "autodiscover")) {
 				conf->autodiscover = atoi(buf2);
 				conf->set[C_autodiscover] = 1;
 			} else
-			if (!strcasecmp(buf1, "name")) {
+			if (!KB_strcasecmp(buf1, "name")) {
 				mN++;
 				slot = 0;
 				KB_strcpy(conf->modules[mN].name, buf2);
 			} else
-			if (!strcasecmp(buf1, "type")) {
+			if (!KB_strcasecmp(buf1, "type")) {
 				switch(KB_strlistcmp(
 					"free\0" "open\0"//1, 2
 					"dos\0" "dos-vga\0"//3, 4
@@ -153,7 +153,7 @@ int read_file_config(struct KBconfig *conf, const char *path) {
 					break;
 				}
 			} else
-			if (!strcasecmp(buf1, "path")) {
+			if (!KB_strcasecmp(buf1, "path")) {
 				char *buf_ptr[3] = {
 					conf->modules[mN].slotA_name,
 					conf->modules[mN].slotB_name,
@@ -225,7 +225,7 @@ int read_cmd_config(struct KBconfig *conf, int argc, char *args[]) {
 		int i;
 		for (i = 1; i < argc; i++) {
 
-			if (!strcasecmp(args[i], "--fullscreen")) {
+			if (!KB_strcasecmp(args[i], "--fullscreen")) {
 				conf->fullscreen = 1;
 				conf->set[C_fullscreen] = 1;
 				continue;
@@ -277,21 +277,21 @@ void read_env_config(struct KBconfig *conf) {
 	char *pPath;
 
 	pPath = (char*)getenv ("HOME");
-	KB_strcat(conf->config_dir, pPath);
+	KB_strcpy(conf->config_dir, pPath);
 	KB_strcat(conf->config_dir, CONFIG_BASE_DIR);
 
-	KB_strcat(conf->config_file, conf->config_dir);
+	KB_strcpy(conf->config_file, conf->config_dir);
 	KB_strcat(conf->config_file, CONFIG_INI_NAME);
 
 	//printf("Config ROOT: %s[%s]\n", KBconf.config_dir, CONFIG_INI_NAME);
 
-	KB_strcat(conf->save_dir, pPath);
+	KB_strcpy(conf->save_dir, pPath);
 	KB_strcat(conf->save_dir, CONFIG_BASE_DIR);
 	KB_strcat(conf->save_dir, SAVE_BASE_DIR);
 
 	//printf("Save DIR: %s\n", KBconf.save_dir);
 
-	KB_strcat(conf->data_dir, pPath);
+	KB_strcpy(conf->data_dir, pPath);
 	KB_strcat(conf->data_dir, CONFIG_BASE_DIR);
 	KB_strcat(conf->data_dir, DATA_BASE_DIR);
 
@@ -323,7 +323,10 @@ int find_config(struct KBconfig *conf) {
 	char *pPath;
 
 	/* Try the local directory */
-	KB_strcpy(config_file, "./");//TODO: proper local name of *binary*
+								//TODO: proper local name of *binary*
+	pPath = (char*)getcwd(config_file, sizeof(config_file));//NULL?
+	KB_strcpy(config_file, pPath);
+	KB_dirsep(config_file);
 	KB_strcat(config_file, CONFIG_INI_NAME);
 	KB_stdlog("Looking for config at '%s'\n", config_file);
 	if (!test_config(config_file, 0))
