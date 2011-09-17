@@ -50,6 +50,8 @@ typedef struct KB_File {
 	
 	void *d;
 	int ref_count;
+	
+	void *prev;
 
 } KB_File;
 

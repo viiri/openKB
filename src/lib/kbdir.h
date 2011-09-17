@@ -54,7 +54,9 @@ typedef struct KB_Entry {
 
 } KB_Entry;
 
-typedef struct KB_DIR {
+typedef struct KB_DIR KB_DIR;
+
+struct KB_DIR {
 
 	int type;
 	void *d;
@@ -64,8 +66,9 @@ typedef struct KB_DIR {
 	KB_Entry dit;
 	
 	int ref_count;
-
-} KB_DIR;
+	
+	KB_DIR *prev;
+};
 
 
 extern KB_DIR * KB_follow_path( const char * filename, int *n, int *e, KB_DIR *top );
@@ -75,6 +78,7 @@ extern KB_DIR * KB_opendir(const char *filename);
 extern void KB_seekdir(KB_DIR *dirp, int offset);
 extern long KB_telldir(KB_DIR *dirp);
 extern KB_Entry * KB_readdir(KB_DIR *dirp);
+extern int KB_closedir(KB_DIR *dirp);
 
 extern KB_DIR * KB_opendir_in(const char *filename, KB_DIR *dirp);
 extern KB_File * KB_fopen_in ( const char * filename, const char * mode, KB_DIR * in );
@@ -84,7 +88,7 @@ extern KB_DIR * KB_opendirD(const char *filename);
 extern void KB_seekdirD(KB_DIR *dirp, long offset);
 extern long KB_telldirD(KB_DIR *dirp);
 extern KB_Entry * KB_readdirD(KB_DIR *dirp);
-
+extern int KB_closedirD(KB_DIR *dirp);
 
 /* "CC" Group file */
 extern KB_DIR * KB_opendirCC(const char *filename);
@@ -92,6 +96,7 @@ extern long KB_telldirCC(KB_DIR *dirp);
 extern KB_Entry * KB_readdirCC(KB_DIR *dirp);
 extern KB_DIR * KB_opendirCC_in(const char *filename, KB_DIR *dirp);
 extern KB_File * KB_fopenCC_in( const char * filename, const char * mode, KB_DIR *dirp );
+extern int KB_closedirCC(KB_DIR *dirp);
 
 /* "IMG" Group file */
 extern KB_DIR* KB_opendirIMG(const char *filename);
@@ -99,5 +104,6 @@ extern long KB_telldirIMG(KB_DIR *dirp);
 extern KB_Entry* KB_readdirIMG(KB_DIR *dirp);
 extern KB_DIR* KB_opendirIMG_in(const char *filename, KB_DIR *dirp);
 extern KB_File* KB_fopenIMG_in ( const char * filename, const char * mode, KB_DIR * in );
+extern int KB_closedirIMG(KB_DIR *dirp);
 
 #endif	/* _OPENKB_LIBKB_DIR */

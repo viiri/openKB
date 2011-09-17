@@ -132,6 +132,7 @@ struct ccGroup* ccGroup_load(KB_File *f) {
 		head->files[i].offset = READ_SWORD(p);
 		head->files[i].size = READ_SWORD(p);
 		grp->cache.files[i].size = 0; // unknown full size
+		grp->list.files[i].name[0] = '\0'; // no name yet
 	}
 
 	/* Save FILE handler, reset iterator */
@@ -140,6 +141,13 @@ struct ccGroup* ccGroup_load(KB_File *f) {
 	f->ref_count++;
 
 	return grp;
+}
+
+void ccGroup_unload(struct ccGroup* grp) {
+	/* Close FILE handler */
+	grp->top->ref_count--;
+	KB_fclose(grp->top);
+	free(grp);
 }
 
 void ccGroup_read(struct ccGroup* grp, int first, int frames) {
@@ -207,7 +215,8 @@ KB_DIR * KB_opendirCC(const char *filename) {
 }
 
 void KB_seekdirCC(KB_DIR *dirp, long loc) {
-
+	struct ccGroup *grp = (struct ccGroup *)dirp->d;
+	grp->i = loc;
 }
 
 long KB_telldirCC(KB_DIR *dirp) {
@@ -215,7 +224,7 @@ long KB_telldirCC(KB_DIR *dirp) {
 }
 
 
-struct KB_Entry * KB_readdirCC(KB_DIR *dirp)
+struct KB_Entry * KB_readdirCC(KB_DIR *dirp) 
 {
 	KB_Entry *entry = &dirp->dit;
 	struct ccGroup *grp = (struct ccGroup *)dirp->d;
@@ -293,10 +302,14 @@ KB_File * KB_fopenCC_by(int i, KB_DIR *dirp)
 	/* Read out "uncompressed size" if we haven't already */
 	ccGroup_read(grp, i, 1);
 
+	stream->prev = (void*)dirp;
+	dirp->ref_count++;
+
 	/* Public view: */
 	stream->type = KBFTYPE_INCC;
 	stream->pos = 0;
 	stream->len = 0;
+	stream->ref_count = 0;
 
 	/* Private view: */
 	str->pos = 0;
@@ -357,6 +370,15 @@ int KB_freadCC ( void * ptr, int size, int count, KB_File * stream )
 	stream->pos += count;
 
 	return count;
+}
+
+int KB_fcloseCC( KB_File * stream )
+{
+	struct lzwStream *str = stream->d;
+	free(str->data);
+	free(str);
+	free(stream);
+	return 0;
 }
 
 int KB_fseekCC(KB_File * stream, long int offset, int origin)
@@ -611,6 +633,12 @@ KB_DIR * KB_opendirCC_in(const char *filename, KB_DIR *dirs)
 		return NULL;
 	}
 
+	dirp->ref_count = 0;
+
+	/* Parent */
+	dirp->prev = dirs;
+	if (dirs) dirs->ref_count++;
+
 	/* Public view */
 	dirp->type = KBDTYPE_GRPCC;
 	dirp->d = (void*)grp;
@@ -618,5 +646,16 @@ KB_DIR * KB_opendirCC_in(const char *filename, KB_DIR *dirs)
 	/* Keep table length in "len" */
 	dirp->len = head->num_files;
 
+	/* Attempt to load .CCL filename list */
+	ccGroup_append_list(grp, filename);
+
 	return dirp;
+}
+
+int KB_closedirCC(KB_DIR *dirp) 
+{
+	struct ccGroup *grp = (struct ccGroup *)dirp->d;
+	ccGroup_unload(grp);
+	free(dirp);
+	return 0;
 }

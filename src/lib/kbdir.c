@@ -121,7 +121,29 @@ void KB_rewinddir(KB_DIR *dirp)
 
 int KB_closedir(KB_DIR *dirp)
 {
-	return 0;
+	int ret = -1;
+	KB_DIR *prev;
+
+	if (dirp->ref_count) {
+		KB_errlog("Unable to close directory which has %d refrences.\n", dirp->ref_count);
+		return -1;
+	}
+
+	prev = dirp->prev; 
+
+	switch (dirp->type) {
+		case KBDTYPE_DIR:	 ret = KB_closedirD( dirp ); break;
+		case KBDTYPE_GRPCC:	 ret = KB_closedirCC( dirp ); break;
+		case KBDTYPE_GRPIMG: ret = KB_closedirIMG( dirp ); break;				
+	}
+
+	if (!ret && prev) {
+		prev->ref_count--;
+		if (prev->ref_count == 0)
+			ret = KB_closedir(prev);
+	}
+
+	return ret;
 }
 
 
@@ -136,6 +158,8 @@ KB_DIR * KB_opendirD(const char *filename)
 
 	dirp = malloc(sizeof(KB_DIR));
 	if (dirp == NULL) return NULL;
+	
+	dirp->prev = NULL;
 
 	dirp->type = KBDTYPE_DIR;
 	dirp->d = (void*)d;
@@ -150,13 +174,11 @@ struct KB_Entry * KB_readdirD(KB_DIR *dirp)
 	KB_Entry *entry = &dirp->dit;
 	DIR *d = (DIR*)dirp->d;
 
-	entry = malloc(sizeof(KB_Entry));
-	if (entry == NULL) return NULL;
-
     dit = readdir(dirp->d);
     if (dit == NULL) return NULL;
 
 	strcpy(entry->d_name, dit->d_name);
+	entry->d_ino = dit->d_ino;
 
 	return entry;
 }
@@ -183,7 +205,8 @@ void KB_rewinddirD(KB_DIR *dirp)
 
 int KB_closedirD(KB_DIR *dirp)
 {
-
+	closedir((DIR*)dirp->d);
+	free(dirp);
 }
 
 int KB_dirfdD(KB_DIR *dirp)

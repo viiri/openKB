@@ -51,6 +51,9 @@ KB_DIR * KB_follow_path( const char * filename, int *n, int *e, KB_DIR *top )
 
 		KB_DIR *d = KB_opendir_in( buf , top );
 
+		d->prev = top;
+		if (top) top->ref_count++;
+
 		return d;
 	}
 
@@ -117,10 +120,29 @@ int KB_fread ( void * ptr, int size, int count, KB_File * stream )
 
 int KB_fclose( KB_File * stream )
 {
-	switch (stream->type) {
-		case KBFTYPE_FILE:	return KB_fcloseF( stream );
+	int ret = -1;
+	KB_DIR *prev;
+
+	if (stream->ref_count) {
+		KB_errlog("Unable to close file with %d refrences.\n", stream->ref_count);
+		return -1;
 	}
-	return 1;
+
+	prev = (KB_DIR*)stream->prev;	
+
+	switch (stream->type) {
+		case KBFTYPE_FILE:	ret = KB_fcloseF( stream );   break;
+		case KBFTYPE_INCC:	ret = KB_fcloseCC( stream );  break;
+		case KBFTYPE_INIMG:	ret = KB_fcloseIMG( stream ); break;
+	}
+
+	if (!ret && prev) {
+		prev->ref_count--;
+		if (prev->ref_count == 0)
+			ret = KB_closedir(prev);
+	}
+
+	return ret;
 }
 
 /*
@@ -141,8 +163,12 @@ KB_File * KB_fopenF( const char * filename, const char * mode )
 
 	if (stream == NULL) return NULL;
 
+	stream->prev = NULL;
+
+	/* Public view */
 	stream->type = KBFTYPE_FILE;
 	stream->f = f;
+	stream->ref_count = 0;
 
 	/* Yuck, better use stat */
 	fseek(f, 0, SEEK_END);

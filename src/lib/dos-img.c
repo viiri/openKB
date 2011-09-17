@@ -111,6 +111,13 @@ struct imgGroup* imgGroup_load(KB_File *f) {
 	return grp;
 }
 
+void imgGroup_unload(struct imgGroup* grp) {
+	/* Close FILE handler */
+	grp->top->ref_count--;
+	KB_fclose(grp->top);
+	free(grp);
+}
+
 void imgGroup_read(struct imgGroup* grp, int first, int frames) {
 	int i;
 	/* Read some frames */
@@ -135,11 +142,13 @@ byte imgGroup_filename_to_bpp(const char *filename) {
 }
 
 void KB_seekdirIMG(KB_DIR *dirp, long loc) {
-
+	struct imgGroup *grp = (struct imgGroup *)dirp->d;
+	grp->i = loc;
 }
 
 long KB_telldirIMG(KB_DIR *dirp) {
-
+	struct imgGroup *grp = (struct imgGroup *)dirp->d;
+	return (long)grp->i;
 }
 
 
@@ -199,6 +208,11 @@ KB_DIR * KB_opendirIMG_in(const char *filename, KB_DIR *dirs)
 		KB_fclose(f);
 		return NULL;
 	}
+	
+	dirp->prev = dirs;
+	if (dirs) dirs->ref_count++;
+
+	dirp->ref_count = 0;
 
 	/* Some public view */
 	dirp->type = KBDTYPE_GRPIMG;
@@ -219,6 +233,14 @@ KB_DIR * KB_opendirIMG(const char *filename) {
 	return KB_opendirIMG_in(filename, NULL);
 }
 
+int KB_closedirIMG(KB_DIR *dirp)
+{
+	struct imgGroup *grp = (struct imgGroup *)dirp->d;
+	imgGroup_unload(grp);
+	free(dirp);
+	return 0;
+}
+
 KB_File* KB_fopenIMG_in(const char * filename, const char * mode, KB_DIR *dirp)
 {
 	struct imgGroup *grp = (struct imgGroup *)dirp->d;
@@ -234,6 +256,10 @@ KB_File* KB_fopenIMG_in(const char * filename, const char * mode, KB_DIR *dirp)
 	f->type = KBFTYPE_INIMG;
 	f->pos = 0;
 	f->d = (void*)grp;
+	
+	f->ref_count = 0;
+	f->prev = (void*)dirp;
+	if (dirp) dirp->ref_count++;
 
 	/* [Read w & h] */
 	imgGroup_read(grp, i, 1);
@@ -270,6 +296,13 @@ int KB_fseekIMG(KB_File * stream, long int offset, int origin)
 	printf("If you see this you are screwed!\n");
 	return 0;
 }
+
+int KB_fcloseIMG( KB_File * stream )
+{
+	free(stream);
+	return 0;
+}
+
 
 #if HAVE_LIBSDL
 void SDL_add_DOS_palette(SDL_Surface *surf, int bpp) {
