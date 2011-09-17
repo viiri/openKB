@@ -62,6 +62,8 @@ typedef struct KB_DIR {
 	long int len;
 
 	KB_Entry dit;
+	
+	int ref_count;
 
 } KB_DIR;
 
@@ -78,6 +80,7 @@ extern KB_DIR * KB_opendir_in(const char *filename, KB_DIR *dirp);
 extern KB_File * KB_fopen_in ( const char * filename, const char * mode, KB_DIR * in );
 
 /* Real directory */
+extern KB_DIR * KB_opendirD(const char *filename);
 extern void KB_seekdirD(KB_DIR *dirp, long offset);
 extern long KB_telldirD(KB_DIR *dirp);
 extern KB_Entry * KB_readdirD(KB_DIR *dirp);

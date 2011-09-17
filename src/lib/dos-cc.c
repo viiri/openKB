@@ -19,15 +19,13 @@
  */
 #include "kbsys.h"
 #include "kbdir.h"
+#include "kbstd.h"
 
 #include "malloc.h"
 #include "string.h"
 
 #define MAX_CC_FILES	133
 #define HEADER_SIZE_CC 1122
-
-KB_File * KB_fopenCC_in( const char * filename, const char * mode, KB_DIR *dirp );
-KB_File * KB_fopenCC_by( int i, KB_DIR *dirp );
 
 word KB_ccHash(const char *filename) {
 	word key = 0;
@@ -57,7 +55,7 @@ struct ccGroup {
 
 		word num_files;
 
-		struct ccFile {	/* 8 bytes per file entry */
+		struct {	/* 8 bytes per file entry */
 
 			word key;
 			sword offset;
@@ -66,17 +64,102 @@ struct ccGroup {
 		} files[MAX_CC_FILES];
 
 		char unknown[64];/* Could be more files, could be something else */
+
 	} head;
 
-	KB_File *top;	//driver
-	FILE *f;	//actual file
-	int i;		//iterator
+	struct {	/* Meta-data contained else-where in file */
 
-	char name_list[MAX_CC_FILES][16];	//name list
-	dword size_list[MAX_CC_FILES];	//size list
+		struct {
+
+			dword size;
+
+		} files[MAX_CC_FILES];
+
+	} cache;
+
+	struct { 	/* Our own filename list, not part of .CC format */
+
+		struct {
+
+			char name[16];
+
+		} files[MAX_CC_FILES];
+
+	} list;
+
+	KB_File *top;	//driver
+	int i;  	//iterator
 };
 
-int KB_append_CC_list(struct ccGroup *grp, const char *filename) {
+struct ccGroup* ccGroup_load(KB_File *f) {
+
+	char buf[HEADER_SIZE_CC];
+
+	int i, j;
+
+	struct ccGroup *grp;
+	struct ccHeader *head;
+
+	int n;
+	char *p;
+
+	n = KB_fread(buf, sizeof(char), HEADER_SIZE_CC, f);
+
+	if (n != HEADER_SIZE_CC) { perror("fread"); return NULL; }
+
+	grp = malloc(sizeof(struct ccGroup));
+
+	if (grp == NULL) {
+		return NULL;
+	}
+
+	head = &grp->head;
+
+	/* Parse data */
+	p = &buf[0];
+
+	/* Number of files */
+	head->num_files = READ_WORD(p);
+
+	if (head->num_files > MAX_CC_FILES) {
+		free(grp);
+		return NULL;
+	}
+
+	/* Files entries */
+	for (i = 0; i < head->num_files; i++ ) {
+		head->files[i].key = READ_WORD(p);
+		head->files[i].offset = READ_SWORD(p);
+		head->files[i].size = READ_SWORD(p);
+		grp->cache.files[i].size = 0; // unknown full size
+	}
+
+	/* Save FILE handler, reset iterator */
+	grp->top = f;
+	grp->i = 0;
+	f->ref_count++;
+
+	return grp;
+}
+
+void ccGroup_read(struct ccGroup* grp, int first, int frames) {
+	int i;
+	for (i = first; i < first + frames; i++) {
+		/* Read out "uncompressed size" if we haven't already */
+		if (!grp->cache.files[i].size) {
+			char buf[4];
+
+			/* Seek to offset, read 4 bytes */
+			KB_fseek(grp->top, grp->head.files[i].offset, SEEK_SET);
+			KB_fread(buf, 1, 4, grp->top);
+
+			grp->cache.files[i].size = KB_UNPACK_DWORD(buf[0],buf[1],buf[2],buf[3]);
+		}
+	}
+}
+
+
+int ccGroup_append_list(struct ccGroup *grp, const char *filename) {
 
 	char listfile[1024];
 	int i;
@@ -85,12 +168,12 @@ int KB_append_CC_list(struct ccGroup *grp, const char *filename) {
 
 	/* Clean list */
 	for (i = 0; i < MAX_CC_FILES; i++) {
-		grp->name_list[i][0] = '\0';
+		grp->list.files[i].name[0] = '\0';
 	}
 
 	/* Prepare filename */
-	strcpy(listfile, filename);
-	strcat(listfile, (filename[strlen(filename)-1] == 'C' ? "L" : "l"));
+	KB_strcpy(listfile, filename);
+	KB_strcat(listfile, (filename[strlen(filename)-1] == 'C' ? "L" : "l"));
 
 	/* Try reading */
 	f = fopen(listfile, "r");
@@ -106,93 +189,21 @@ int KB_append_CC_list(struct ccGroup *grp, const char *filename) {
 			key = KB_ccHash(buf);
 			for (j = 0; j < grp->head.num_files; j++) {
 				if (grp->head.files[j].key == key) {
-					strcpy(grp->name_list[j], buf);
+					KB_strcpy(grp->list.files[j].name, buf);
 					break;
 				}
 			}
 		}
 		fclose(f);
 	} else {
-		fprintf(stdout, "%s not found\n", listfile);
+		KB_stdlog("%s not found\n", listfile);
 		return 1;
 	}
 	return 0;
 }
 
 KB_DIR * KB_opendirCC(const char *filename) {
-	KB_DIR * dirp;
-
-	char buf[1122];
-
-	int i, j;
-
-	struct ccGroup *grp;
-	struct ccHeader *head;
-
-	KB_File *f;
-	int n;
-
-	f = KB_fopen(filename, "rb");
-
-	if (!f) { fprintf(stderr, "Can't open file %s\n", filename); return NULL; }
-
-	n = KB_fread(buf, sizeof(char), 1122, f);
-
-	if (n != 1122) { perror("fread"); return NULL; }
-
-	grp = malloc(sizeof(struct ccGroup));
-
-	if (grp == NULL) {
-		KB_fclose(f);
-		return NULL;
-	}
-
-	head = &grp->head;
-
-	dirp = malloc(sizeof(KB_Entry));
-
-	if (dirp == NULL) {
-		free(grp);
-		KB_fclose(f);
-		return NULL;
-	}
-
-	dirp->type = KBDTYPE_GRPCC;
-	dirp->d = (void*)grp;
-
-	/* Parse data */
-	char *p = &buf[0];	
-
-	/* Number of files */
-	head->num_files = 0;
-	head->num_files = READ_WORD(p);
-
-	if (head->num_files > MAX_CC_FILES) {
-		free(grp);
-		free(dirp);
-		KB_fclose(f);
-		return NULL;
-	}
-
-	/* Files entries */
-	for (i = 0; i < head->num_files; i++ ) {
-		head->files[i].key = READ_WORD(p);
-		head->files[i].offset = READ_SWORD(p);
-		head->files[i].size = READ_SWORD(p);
-		grp->size_list[i] = 0; // unknown full size
-	}
-
-	/* Keep table length in "len" */
-	dirp->len = head->num_files;
-
-	/* Save FILE handler, reset iterator */
-	grp->top = f;
-	grp->i = 0;
-
-	/* Attempt to read the list file */
-	KB_append_CC_list(grp, filename);
-
-	return dirp;
+	return KB_opendirCC_in(filename, NULL);
 }
 
 void KB_seekdirCC(KB_DIR *dirp, long loc) {
@@ -214,31 +225,24 @@ struct KB_Entry * KB_readdirCC(KB_DIR *dirp)
 	entry->d_ino = grp->head.files[grp->i].key;
 
 	/* Name */
-	if (grp->name_list[grp->i][0] != '\0')
-	strcpy(entry->d_name, grp->name_list[grp->i]);
+	if (grp->list.files[grp->i].name[0] != '\0')
+		strcpy(entry->d_name, grp->list.files[grp->i].name);
 	else
-	sprintf(entry->d_name, "file.%d-%04x", grp->i, grp->head.files[grp->i].key);
+		sprintf(entry->d_name, "file.%d-%04x", grp->i, grp->head.files[grp->i].key);
 
 	/* Read out "uncompressed size" if we haven't already */
-	if (!grp->size_list[grp->i]) {
-		char buf[4];
-
-		KB_fseek(grp->top, grp->head.files[grp->i].offset, SEEK_SET);
-		KB_fread(buf, 1, 4, grp->top);
-
-		grp->size_list[grp->i] = KB_UNPACK_DWORD(buf[0],buf[1],buf[2],buf[3]);
-	}
+	ccGroup_read(grp, grp->i, 1);
 
 	/* Extra data */
 	entry->d_info.cmp.cmpSize = grp->head.files[grp->i].size;
-	entry->d_info.cmp.fullSize = grp->size_list[grp->i];
-
+	entry->d_info.cmp.fullSize = grp->cache.files[grp->i].size;
 
 	grp->i++;
 
 	return entry;
 }
 
+#if 0
 KB_File * KB_eopenCC(KB_DIR *dirp, KB_Entry *entry)
 {
 	int j;
@@ -254,22 +258,62 @@ KB_File * KB_eopenCC(KB_DIR *dirp, KB_Entry *entry)
 
 	return NULL;
 }
+#endif
 
 KB_File * KB_fopenCC( const char * filename, const char * mode )
 {
-	return NULL;
+	return KB_fopenCC_in(filename, mode, NULL);
 }
-
 
 struct lzwStream {
 
-	//KB_File *f;
 	int size;
 	int pos;
 	char *data;
 
 };
+int KB_funLZW(KB_File *f, char *result);
+KB_File * KB_fopenCC_by(int i, KB_DIR *dirp)
+{
+	struct ccGroup *grp = (struct ccGroup *)dirp->d;
 
+	KB_File *stream;
+	struct lzwStream *str;
+
+	if (grp->top == NULL) return NULL;
+
+	stream = malloc(sizeof(KB_File));
+
+	if (stream == NULL) return NULL;
+
+	str = malloc(sizeof(struct lzwStream));
+
+	if (str == NULL) { free(stream); return NULL; }
+
+	/* Read out "uncompressed size" if we haven't already */
+	ccGroup_read(grp, i, 1);
+
+	/* Public view: */
+	stream->type = KBFTYPE_INCC;
+	stream->pos = 0;
+	stream->len = 0;
+
+	/* Private view: */
+	str->pos = 0;
+	str->size = grp->cache.files[i].size;
+	str->data = malloc(sizeof(char) * str->size);
+
+	KB_fseek(grp->top, grp->head.files[i].offset, 0);
+	KB_funLZW(grp->top, str->data);
+
+	/* Save pointer */
+	stream->d = (void*)str;
+	stream->len = str->size;
+#if 1
+printf("[%02x][%02x][%02x][%02x]\n", str->data[0], str->data[1], str->data[2], str->data[3]);
+#endif
+	return stream;
+}
 
 /* Open file "filename" in CC directory "dirp" */
 KB_File * KB_fopenCC_in( const char * filename, const char * mode, KB_DIR *dirp )
@@ -289,57 +333,6 @@ KB_File * KB_fopenCC_in( const char * filename, const char * mode, KB_DIR *dirp 
 	}
 
 	return NULL;
-}
-
-KB_File * KB_fopenCC_by( int i, KB_DIR *dirp )
-{
-	struct ccGroup *grp = (struct ccGroup *)dirp->d;
-
-	KB_File *stream;
-	struct lzwStream *str;
-
-	if (grp->top == NULL) return NULL;
-
-	stream = malloc(sizeof(KB_File));
-
-	if (stream == NULL) return NULL;
-
-	str = malloc(sizeof(struct lzwStream));
-
-	if (str == NULL) { free(stream); return NULL; }
-
-	/* Read out "uncompressed size" if we haven't already */
-	if (!grp->size_list[i]) {
-		char buf[4];
-
-		KB_fseek(grp->top, grp->head.files[i].offset, SEEK_SET);
-		KB_fread(buf, 1, 4, grp->top);
-
-		grp->size_list[i] = KB_UNPACK_DWORD(buf[0],buf[1],buf[2],buf[3]);
-	}
-
-
-	/* Public view: */
-	stream->type = KBFTYPE_INCC;
-	stream->f = NULL;
-	stream->pos = 0;
-	stream->len = 0;
-
-	/* Private view: */
-	str->pos = 0;
-	str->size = grp->size_list[i];
-	str->data = malloc(sizeof(char) * str->size);
-
-	KB_funLZW(grp->top, str->data);
-//	KB_fclose(real);
-
-	/* Save pointer */
-	stream->d = (void*)str;
-
-	stream->len = str->size;
-
-printf("[%02x][%02x][%02x][%02x]\n", str->data[0], str->data[1], str->data[2], str->data[3]);
-	return stream;
 }
 
 int KB_freadCC ( void * ptr, int size, int count, KB_File * stream )
@@ -588,27 +581,20 @@ printf("%04d\t0x%04X:%01X\t", pos, byte_pos, bit_pos);
 /* Open CC-directory "filename" in abstract directory "dirs" */
 KB_DIR * KB_opendirCC_in(const char *filename, KB_DIR *dirs)
 {
-	printf("Must open %s dir! in directoy %p\n", filename, dirs);
-
 	KB_DIR * dirp;
-
-	char buf[HEADER_SIZE_CC];
 
 	int i, j;
 
 	struct ccGroup *grp;
 	struct ccHeader *head;
 
-	KB_File *f = KB_fopenCC_in( filename, "rb", dirs );
 	int n;
+
+	KB_File *f = KB_fopen_in( filename, "rb", dirs );
 
 	if (!f) { printf("Can't open %s\n", filename); return NULL; }
 
-	n = KB_fread(buf, sizeof(char), HEADER_SIZE_CC, f);
-
-	if (n < HEADER_SIZE_CC) { printf("Can't read header!\n"); return NULL; }
-
-	grp = malloc(sizeof(struct ccGroup));
+	grp = ccGroup_load(f);
 
 	if (grp == NULL) {
 		KB_fclose(f);
@@ -617,7 +603,7 @@ KB_DIR * KB_opendirCC_in(const char *filename, KB_DIR *dirs)
 
 	head = &grp->head;
 
-	dirp = malloc(sizeof(KB_Entry));
+	dirp = malloc(sizeof(KB_DIR));
 
 	if (dirp == NULL) {
 		free(grp);
@@ -625,39 +611,12 @@ KB_DIR * KB_opendirCC_in(const char *filename, KB_DIR *dirs)
 		return NULL;
 	}
 
-	dirp->type = KBDTYPE_GRPIMG;
+	/* Public view */
+	dirp->type = KBDTYPE_GRPCC;
 	dirp->d = (void*)grp;
-
-	/* Parse data */
-	char *p = &buf[0];	
-
-	/* Number of files */
-	head->num_files = 0;
-	head->num_files = READ_WORD(p);
-
-printf("Files: %d\n", head->num_files);
-	if (head->num_files > MAX_CC_FILES) {
-
-		free(grp);
-		free(dirp);
-		KB_fclose(f);
-
-		return NULL;
-	}
-
-	/* Files entries */
-	for (i = 0; i < head->num_files; i++ ) {
-		head->files[i].key = READ_WORD(p);
-		head->files[i].offset = READ_SWORD(p);
-		head->files[i].size = READ_SWORD(p);
-	}
 
 	/* Keep table length in "len" */
 	dirp->len = head->num_files;
-
-	/* Save FILE handler, reset iterator */
-	grp->top = f;
-	grp->i = 0;
 
 	return dirp;
 }

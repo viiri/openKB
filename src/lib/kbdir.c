@@ -28,9 +28,6 @@
 #include "kbdir.h"
 #include "kbfile.h"
 
-KB_DIR * KB_opendirD(const char *filename);
-KB_DIR * KB_opendir_in(const char *filename, KB_DIR *dirp);
-
 KB_DIR * KB_opendir(const char *filename)
 {
 	return KB_opendir_in(filename, NULL);
@@ -61,7 +58,7 @@ KB_DIR * KB_opendir_in(const char *filename, KB_DIR *top)
 
 	switch (type) {
 		case KBDTYPE_DIR:	return KB_opendirD( filename );
-		case KBDTYPE_GRPCC:	return KB_opendirCC( filename );
+		case KBDTYPE_GRPCC:	return KB_opendirCC_in( filename, top );
 		case KBDTYPE_GRPIMG:return KB_opendirIMG_in( filename, top );				
 	}
 
@@ -127,10 +124,6 @@ int KB_closedir(KB_DIR *dirp)
 	return 0;
 }
 
-int KB_dirfd(KB_DIR *dirp)
-{
-
-}
 
 
 /* "Real Directory" wrapper */
@@ -146,6 +139,7 @@ KB_DIR * KB_opendirD(const char *filename)
 
 	dirp->type = KBDTYPE_DIR;
 	dirp->d = (void*)d;
+	dirp->ref_count = 0;
 
 	return dirp;
 }
@@ -196,8 +190,9 @@ int KB_dirfdD(KB_DIR *dirp)
 {
 
 }
-
+#if 0
 KB_File * KB_eopenD(KB_DIR *dirp, KB_Entry *entry)
 {
 	return NULL;
 }
+#endif

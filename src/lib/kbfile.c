@@ -157,7 +157,7 @@ KB_File * KB_fopenF( const char * filename, const char * mode )
 int KB_fseekF(KB_File * stream, long int offset, int origin)
 {
 	if (stream->pos == offset) return 0; 
-	if (!fseek( stream->f, offset, origin )) return 1;
+	if (fseek( stream->f, offset, origin )) return 1;
 	stream->pos = ftell(stream->f);
 	return 0;
 }
