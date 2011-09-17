@@ -46,11 +46,10 @@
 typedef struct KB_File {
 
 	int type;
-	void *f;
+	void *d;
 	long int pos;
 	long int len;
 	
-	void *d;
 	int ref_count;
 	
 	void *prev;

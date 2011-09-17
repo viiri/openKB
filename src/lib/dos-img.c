@@ -219,19 +219,11 @@ KB_File* KB_fopenIMG_in(const char * filename, const char * mode, KB_DIR *dirp)
 	int i = atoi(filename);
 
 	KB_File *f;
-
 	f = malloc(sizeof(KB_File));
-
 	if (f == NULL) return NULL;
 
-	/* Public view: */
-	f->type = KBFTYPE_INIMG;
-	f->pos = 0;
+	/* Save pointer to imgGroup struct */
 	f->d = (void*)grp;
-	
-	f->ref_count = 0;
-	f->prev = (void*)dirp;
-	if (dirp) dirp->ref_count++;
 
 	/* [Read w & h] */
 	imgGroup_read(grp, i, 1);

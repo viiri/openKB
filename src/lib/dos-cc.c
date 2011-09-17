@@ -280,14 +280,9 @@ KB_File * KB_fopenCC_by(int i, KB_DIR *dirp)
 	/* Read out "uncompressed size" if we haven't already */
 	ccGroup_read(grp, i, 1);
 
-	stream->prev = (void*)dirp;
-	dirp->ref_count++;
-
-	/* Public view: */
-	stream->type = KBFTYPE_INCC;
-	stream->pos = 0;
-	stream->len = 0;
-	stream->ref_count = 0;
+	/* Save pointer */
+	stream->d = (void*)str;
+	stream->len = str->size;
 
 	/* Private view: */
 	str->pos = 0;
@@ -297,9 +292,6 @@ KB_File * KB_fopenCC_by(int i, KB_DIR *dirp)
 	KB_fseek(grp->top, grp->head.files[i].offset, 0);
 	KB_funLZW(grp->top, str->data);
 
-	/* Save pointer */
-	stream->d = (void*)str;
-	stream->len = str->size;
 #if 1
 printf("[%02x][%02x][%02x][%02x]\n", str->data[0], str->data[1], str->data[2], str->data[3]);
 #endif

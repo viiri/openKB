@@ -98,7 +98,17 @@ KB_File* KB_fopen_in( const char * filename, const char * mode, KB_DIR *top )
 
 	if (top != NULL) type = top->type;
 
-	return (KB_FS[type].fopen_in)(filename, mode, top);
+	KB_File *f = (KB_FS[type].fopen_in)(filename, mode, top);
+
+	/* Public view: */
+	f->type = type;
+	f->pos = 0;
+
+	f->ref_count = 0;
+	f->prev = (void*)top;
+	if (top) top->ref_count++;
+
+	return f;
 }
 
 int KB_fseek( KB_File * stream, long int offset, int origin )
@@ -146,23 +156,27 @@ int KB_fclose( KB_File * stream )
 KB_File * KB_fopenF_in( const char * filename, const char * mode, KB_DIR *wth )
 {
 	KB_File * stream;
+	FILE *f;
 
-	FILE *f = fopen(filename, mode);
+	if (wth != NULL) {
+		KB_errlog("Attempting to open real file '%s' in a virtual directory, which is impossible.\n", filename);
+		return NULL;
+	}
+
+	f = fopen(filename, mode);
 	if (f == NULL) {
 		KB_errlog("Missing real file %s\n", filename);
 		return NULL;
 	}
 
 	stream = malloc(sizeof(KB_File));
+	if (stream == NULL) {
+		fclose(f);
+		return NULL;
+	}
 
-	if (stream == NULL) return NULL;
-
-	stream->prev = NULL;
-
-	/* Public view */
-	stream->type = KBFTYPE_FILE;
-	stream->f = f;
-	stream->ref_count = 0;
+	/* Save FILE handler */
+	stream->d = (void*)f;
 
 	/* Yuck, better use stat */
 	fseek(f, 0, SEEK_END);
@@ -177,8 +191,8 @@ KB_File * KB_fopenF_in( const char * filename, const char * mode, KB_DIR *wth )
 int KB_fseekF(KB_File * stream, long int offset, int origin)
 {
 	if (stream->pos == offset) return 0; 
-	if (fseek( stream->f, offset, origin )) return 1;
-	stream->pos = ftell(stream->f);
+	if (fseek(stream->d, offset, origin)) return 1;
+	stream->pos = ftell(stream->d);
 	return 0;
 }
 
@@ -189,12 +203,12 @@ long int KB_ftellF(KB_File * stream)
 
 int KB_freadF ( void * ptr, int size, int count, KB_File * stream )
 {
-	return fread(ptr, size, count, stream->f);
+	return fread(ptr, size, count, stream->d);
 }
 
 int KB_fcloseF( KB_File * stream )
 {
-	fclose(stream->f);
+	fclose(stream->d);
 	free(stream);
 	return 0;
 }
