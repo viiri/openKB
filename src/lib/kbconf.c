@@ -165,7 +165,10 @@ int read_file_config(struct KBconfig *conf, const char *path) {
 					break;
 				}
 				if (buf2[0] != '/')
-					KB_strncpy(buf_ptr[slot], conf->data_dir, sizeof(conf->modules[mN].slotA_name));
+				{
+					KB_dirncpy(buf_ptr[slot], conf->data_dir, sizeof(conf->modules[mN].slotA_name));
+					KB_dirnsep(buf_ptr[slot], sizeof(conf->modules[mN].slotA_name));
+				}
 				else 
 					buf_ptr[slot][0] = 0;
 				KB_strncat(buf_ptr[slot], buf2, sizeof(conf->modules[mN].slotA_name));
