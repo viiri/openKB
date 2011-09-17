@@ -258,7 +258,7 @@ int KB_fseekIMG(KB_File * stream, long int offset, int origin)
 	return 0;
 }
 
-#if HAVE_SDL
+#if HAVE_LIBSDL
 void SDL_add_DOS_palette(SDL_Surface *surf, int bpp) {
 
 	switch (bpp) {

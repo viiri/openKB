@@ -20,7 +20,9 @@
 #ifndef _OPENKB_LIBKB_SYS
 #define _OPENKB_LIBKB_SYS
 
-#ifdef HAVE_SDL
+#include "../config.h"
+
+#ifdef HAVE_LIBSDL
 
 #include "SDL/SDL.h"
 

@@ -1,9 +1,11 @@
 CC=gcc
 
-CFLAGS=-g `sdl-config --cflags` -DHAVE_SDL
+INSTALL=install
+
+CFLAGS=-g `sdl-config --cflags` -DHAVE_LIBSDL
 LDFLAGS=`sdl-config --libs` -lSDL_image
 
-VERSION=$(shell sed -nr '/define\s+VERSION/ s/.*"(.*?)"/\1/p' src/main.c)
+VERSION=$(shell sed -nr '/define\s+PACKAGE_VERSION/ s/.*"(.*?)"/\1/p' src/config.h)
 
 MSYS_TEST=$(shell uname -so | grep -i msys | grep -i mingw32)
 ifneq ("$(MSYS_TEST)","")
@@ -52,13 +54,26 @@ vendor-clean:
 vendor: .phony
 	vendor/drop.sh vendor/
 
-dist: vendor clean
+config: .phony
+	echo "Making config"
+	autoheader
+	autoconf
+	./configure
+
+dist: vendor clean config
 	echo "Making dist"
 	mkdir -p $(GAME_DIST)
 	cp Makefile $(GAME_DIST)
-	cp -r data $(GAME_DIST)
+	cp -r -L data $(GAME_DIST)
 	cp -r src $(GAME_DIST)
 	mkdir $(GAME_DIST)/vendor
 	cp vendor/*.c vendor/*.h $(GAME_DIST)/vendor/
+	cp configure $(GAME_DIST)/.
+	cp configure.ac $(GAME_DIST)/.
 	tar -cvzf $(GAME_DIST).tar.gz $(GAME_DIST)
 	rm -rf $(GAME_DIST)/
+
+install: all
+	echo "Making install into $(DESTDIR)"
+	$(INSTALL) openkb $(DESTDIR)/usr/bin/openkb
+	$(INSTALL) -d data $(DESTDIR)/var/games/openkb

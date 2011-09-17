@@ -17,7 +17,10 @@
  *  You should have received a copy of the GNU General Public License
  *  along with openkb.  If not, see <http://www.gnu.org/licenses/>.
  */
-#define VERSION "0.0.1"
+#include "config.h"
+#ifndef HAVE_LIBSDL
+	#error "Sorry, there's no reason to compile without HAVE_LIBSDL define..."
+#endif
 #include "lib/kbconf.h"
 
 #include "lib/kbstd.h"
@@ -31,7 +34,7 @@ int main(int argc, char* argv[]) {
 	int playing = 1;	/* Play 1 game of KB */
 
 	/* Lots of very boring things must happen for a proper initialisation... */
-	KB_stdlog("openKB version " VERSION "\n");
+	KB_stdlog("openKB version " PACKAGE_VERSION "\n");
 	KB_stdlog("=====================================================\n");
 
 	/* Let's start by searching for a config file,
