@@ -22,6 +22,10 @@
 
 #include "kbstd.h"
 
+#ifdef USE_WINAPI
+#include <windows.h>
+#endif
+
 void  KB_debuglog(int mod, char *fmt, va_list argptr) 
 {
 	static int level = 0;
@@ -41,9 +45,16 @@ void  KB_stdlog(char *fmt, ...)
 }
 
 void  KB_errlog(char *fmt, ...) 
-{ 
+{
+#ifdef USE_WINAPI
+	char buffer[1024];
+#endif
 	va_list argptr;
 	va_start(argptr, fmt);
+#ifdef USE_WINAPI
+	vsprintf(buffer, fmt, argptr);
+	MessageBox(NULL, buffer, "Critical Error", MB_ICONEXCLAMATION);
+#endif
 	vfprintf(stderr, fmt, argptr);
 	va_end(argptr);
 }
@@ -101,9 +112,14 @@ void KB_strncpy_dbg(char *dst, const char *src, unsigned int n, const char *dst_
 		KB_errlog("[strlcpy] Can't copy '%s' \"%s\" into %d-sized buffer '%s'; %s:%d\n", src_name, src, n, dst_name, filename, line);
 }
 
-void KB_dirsepn(char *dst, unsigned int n) {
+void KB_dirnsep(char *dst, unsigned int n) {
 	int l = strlen(dst);
-	if (dst[l-1] == PATH_SEP) return;
+	if (dst[l - 1] == PATH_SEP_SYM || dst[l - 1] == '#') return;
 	KB_strncat(dst, PATH_SEP, n);
 }
 
+void KB_dirncpy(char *dst, const char *src, unsigned int n) {
+	int l = strlen(src);
+	int k = strlcpy(dst, src, n);
+	if (l && src[l - 1] == PATH_SEP_SYM) dst[k - 1] = '\0';
+}

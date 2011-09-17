@@ -95,11 +95,11 @@ int read_file_config(struct KBconfig *conf, const char *path) {
 				conf->set[C_fullscreen] = 1;
 			} else 
 			if (!KB_strcasecmp(buf1, "datadir")) {
-				KB_strcpy(conf->data_dir, buf2);
+				KB_dircpy(conf->data_dir, buf2);
 				conf->set[C_data_dir] = 1;
 			} else 
 			if (!KB_strcasecmp(buf1, "savedir")) {
-				KB_strcpy(conf->save_dir, buf2);
+				KB_dircpy(conf->save_dir, buf2);
 				conf->set[C_save_dir] = 1;
 			} else
 			if (!KB_strcasecmp(buf1, "autodiscover")) {

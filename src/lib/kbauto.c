@@ -26,6 +26,7 @@
 
 #include "SDL_image.h"
 
+#include "kbstd.h"
 #include "kbres.h"
 #include "kbauto.h"
 #include "kbfile.h" //:/
@@ -266,9 +267,11 @@ void discover_modules(const char *path, KBconfig *conf) {
 
 	/* GNU */
 	wipe_module(&conf->modules[0]);
-	strcpy(conf->modules[0].name, "Free");
-	strcpy(conf->modules[0].slotA_name, path);
-	strcat(conf->modules[0].slotA_name, "free/");
+	KB_strcpy(conf->modules[0].name, "Free");
+	KB_dircpy(conf->modules[0].slotA_name, path);
+	KB_dirsep(conf->modules[0].slotA_name);
+	KB_strcat(conf->modules[0].slotA_name, "free");
+	KB_dirsep(conf->modules[0].slotA_name);
 	conf->modules[0].kb_family = KBFAMILY_GNU;
 	conf->num_modules++;
 
@@ -290,9 +293,11 @@ void discover_modules(const char *path, KBconfig *conf) {
 	conf->modules[3].bpp = 1;
 	conf->num_modules++;
 
-	strcpy(conf->modules[4].name, "DOS (CGA)");
-	strcpy(conf->modules[4].slotA_name, path);
-	strcat(conf->modules[4].slotA_name, "416.CC#");
+	wipe_module(&conf->modules[4]);
+	KB_strcpy(conf->modules[4].name, "DOS (CGA)");
+	KB_dircpy(conf->modules[4].slotA_name, path);
+	KB_dirsep(conf->modules[4].slotA_name);
+	KB_strcat(conf->modules[4].slotA_name, "416.CC#");
 	conf->modules[4].slotA = NULL;
 	conf->modules[4].kb_family = KBFAMILY_DOS;
 	conf->modules[4].bpp = 2;
@@ -369,7 +374,7 @@ KB_DIR *KB_opendir_with(const char *filename, KBmodule *mod) {
 		strcat(buffer, filename);
 
 		d = KB_opendir_in(buffer, dir_ptr[i]);
-		
+
 		if (d) break;
 	}
 	return d;
@@ -393,9 +398,10 @@ KB_File *KB_fopen_with(const char *filename, char *mode, KBmodule *mod) {
 	};
 
 	for (i = 0; i < 3; i++) {
-		buffer[0] = '\0';
-		strcpy(buffer, buf_ptr[i] );
-		strcat(buffer, filename);
+		if (buf_ptr[i][0] == '\0') break;
+		KB_dircpy(buffer, buf_ptr[i]);
+		KB_dirsep(buffer);
+		KB_strcat(buffer, filename);
 
 		f = KB_fopen_in(buffer, "rb", dir_ptr[i]);
 		if (f) break;
@@ -528,9 +534,9 @@ void* DOS_Resolve(int id, int sub_id) {
 			int n;
 
 			realname[0] = '\0';
-			strcat(realname, middle_name);
-			strcat(realname, suffix);
-			strcat(realname, ident);
+			KB_strcat(realname, middle_name);
+			KB_strcat(realname, suffix);
+			KB_strcat(realname, ident);
 
 			switch (method) {
 				case RAW_IMG:
@@ -606,15 +612,16 @@ void* GNU_Resolve(int id, int sub_id) {
 		char realname[1024];
 
 		realname[0] = '\0';
-		strcpy(realname, mod->slotA_name);
-		strcat(realname, image_name);
-		strcat(realname, image_suffix);
+		KB_dircpy(realname, mod->slotA_name);
+		KB_dirsep(realname);
+		KB_strcat(realname, image_name);
+		KB_strcat(realname, image_suffix);
 
 		printf("? FREE IMG FILE: %s\n", realname);
 
 		SDL_Surface *surf = IMG_Load(realname);
 
-		if (surf == NULL) printf("> FAILED TO OPEN\n");
+		if (surf == NULL) printf("> FAILED TO OPEN, %s\n", IMG_GetError());
 
 		if (surf && is_transparent)
 			SDL_SetColorKey(surf, SDL_SRCCOLORKEY, 0xFF);

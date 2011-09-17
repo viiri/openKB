@@ -69,7 +69,10 @@ extern void KB_strncpy_dbg(char *dst, const char *src, unsigned int n, const cha
 
 #endif
 
-extern void KB_dirsepn(char *dst, unsigned int n);
-#define KB_dirsep(DST) KB_dirsepn(DST, sizeof(DST))  
+extern void KB_dirnsep(char *dst, unsigned int n);
+extern void KB_dirncpy(char *dst, const char *src, unsigned int n);
+
+#define KB_dirsep(DST) KB_dirnsep(DST, sizeof(DST))
+#define KB_dircpy(DST, SRC) KB_dirncpy(DST, SRC, sizeof(DST))
 
 #endif /* _OPENKB_LIBKB_STD */
