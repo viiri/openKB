@@ -69,8 +69,6 @@ typedef struct KB_FileDriver {
 
 } KB_FileDriver;
 
-extern KB_FileDriver KB_FS[MAX_KBFTYPE];
-
 /*
  * The API.
  * Top level functions. Do some housekeeping, and call KB_FileDriver

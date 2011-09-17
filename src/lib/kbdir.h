@@ -84,8 +84,6 @@ typedef struct KB_DirDriver {
 
 } KB_DirDriver;
 
-extern KB_DirDriver KB_DIRS[MAX_KBDTYPE];
-
 extern KB_DIR * KB_follow_path( const char * filename, int *n, int *e, KB_DIR *top );
 
 /* API */

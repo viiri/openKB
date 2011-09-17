@@ -98,41 +98,22 @@ KB_File* KB_fopen_in( const char * filename, const char * mode, KB_DIR *top )
 
 	if (top != NULL) type = top->type;
 
-	switch (type) {
-		case KBFTYPE_FILE:	return KB_fopenF_in( filename, mode, top );
-		case KBFTYPE_INCC:	return KB_fopenCC_in( filename, mode, top );
-		case KBFTYPE_INIMG:	return KB_fopenIMG_in( filename, mode, top );		
-	}
-
-	return NULL;
+	return (KB_FS[type].fopen_in)(filename, mode, top);
 }
 
 int KB_fseek( KB_File * stream, long int offset, int origin )
 {
-	switch (stream->type) {
-		case KBFTYPE_FILE:	return KB_fseekF( stream, offset, origin );
-		case KBFTYPE_INCC:	return KB_fseekCC( stream, offset, origin );
-		case KBFTYPE_INIMG:	return KB_fseekIMG( stream, offset, origin );
-	}
-	return 1;
+	return (KB_FS[stream->type].fseek)(stream, offset, origin);
 }
 
 long int KB_ftell(KB_File * stream)
 {
-	switch (stream->type) {
-		case KBFTYPE_FILE:	return KB_ftellF( stream );
-	}
-	return 1;
+	return (KB_FS[stream->type].ftell)(stream);
 }
 
 int KB_fread ( void * ptr, int size, int count, KB_File * stream )
 {
-	switch (stream->type) {
-		case KBFTYPE_FILE:	return KB_freadF( ptr, size, count, stream );
-		case KBFTYPE_INCC:	return KB_freadCC( ptr, size, count, stream );
-		case KBFTYPE_INIMG:	return KB_freadIMG( ptr, size, count, stream );
-	}
-	return 0;
+	return (KB_FS[stream->type].fread)(ptr, size, count, stream);
 }
 
 int KB_fclose( KB_File * stream )
@@ -147,11 +128,7 @@ int KB_fclose( KB_File * stream )
 
 	prev = (KB_DIR*)stream->prev;	
 
-	switch (stream->type) {
-		case KBFTYPE_FILE:	ret = KB_fcloseF( stream );   break;
-		case KBFTYPE_INCC:	ret = KB_fcloseCC( stream );  break;
-		case KBFTYPE_INIMG:	ret = KB_fcloseIMG( stream ); break;
-	}
+	ret = (KB_FS[stream->type].fclose)(stream);
 
 	if (!ret && prev) {
 		prev->ref_count--;
