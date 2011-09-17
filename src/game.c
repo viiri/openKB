@@ -24,6 +24,8 @@
 // For the meantime, use SDL directly, it if gets unwieldy, abstract it away 
 #include "SDL.h"
 
+#include "../vendor/vendor.h" /* scale2x, inprint, etc */
+
 #include "env.h"
 
 #include "lib/kbauto.h"
