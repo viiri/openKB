@@ -40,15 +40,24 @@ extern int KB_strcasecmp(const char *left, const char *right);
 
 #endif 
 
-#ifdef HAVE_STRLCAT
+#define KB_strlcat strlcat
+#define KB_strlcpy strlcpy
 
-#define KB_strcat strlcat
-#define KB_strncat strlncat
+extern void KB_strncat(char *dst, const char *src, unsigned int n);
+extern void KB_strncpy(char *dst, const char *src, unsigned int n);
+
+extern void KB_strncat_dbg(char *dst, const char *src, unsigned int n, const char *dst_name, const char *src_name, const char *filename, unsigned int line);
+extern void KB_strncpy_dbg(char *dst, const char *src, unsigned int n, const char *dst_name, const char *src_name, const char *filename, unsigned int line);
+
+#if 0
+
+#define KB_strcpy(DST, SRC) KB_strncpy(DST, SRC, sizeof(DST))
+#define KB_strcat(DST, SRC) KB_strncat(DST, SRC, sizeof(DST))
 
 #else
 
-extern void KB_strcat(char *dst, const char *src);
-extern void KB_strncat(char *dst, const char *src, unsigned int n);
+#define KB_strcpy(DST, SRC) KB_strncpy_dbg(DST, SRC, sizeof(DST), # DST, # SRC, __FILE__, __LINE__)
+#define KB_strcat(DST, SRC) KB_strncat_dbg(DST, SRC, sizeof(DST), # DST, # SRC, __FILE__, __LINE__)
 
 #endif
 

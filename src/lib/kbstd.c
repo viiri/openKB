@@ -29,14 +29,21 @@ void  KB_debuglog(int mod, char *fmt, va_list argptr)
 	fprintf(stdout, fmt, argptr);
 }
 
-void  KB_stdlog(char *fmt, va_list argptr) 
-{
-	fprintf(stdout, fmt, argptr);
+
+void  KB_stdlog(char *fmt, ...) 
+{ 
+	va_list argptr;
+	va_start(argptr,1);
+	vfprintf(stdout, fmt, argptr);
+	va_end(argptr);
 }
 
-void  KB_errlog(char *fmt, va_list argptr) 
+void  KB_errlog(char *fmt, ...) 
 { 
-	fprintf(stderr, fmt, argptr);
+	va_list argptr;
+	va_start(argptr,1);
+	vfprintf(stderr, fmt, argptr);
+	va_end(argptr);
 }
 
 int KB_strlistcmp(const char *list, const char *needle)
@@ -48,7 +55,7 @@ int KB_strlistcmp(const char *list, const char *needle)
 
 	int need = 0;
 	int match = 0;	
-	
+
 	while (needle[j] != '\0') {
 		/* Mismatch */
 		if (list[i] != needle[j]) {
@@ -66,4 +73,28 @@ int KB_strlistcmp(const char *list, const char *needle)
 	}
 
 	return w + 1;
+}
+
+void KB_strlistcpy(char *dst, ...) {
+
+}
+
+void KB_strncat(char *dst, const char *src, unsigned int n) {
+	if (strlcat(dst, src, n) >= n)
+		KB_errlog("[strlcat] Can't append '%s' to '%s', %d limit reached\n", src, dst, n);
+}
+
+void KB_strncpy(char *dst, const char *src, unsigned int n) {
+	if (strlcpy(dst, src, n) >= n)
+		KB_errlog("[strlcpy] Can't copy '%s' into %d-sized buffer\n", src, n);
+}
+
+void KB_strncat_dbg(char *dst, const char *src, unsigned int n, const char *dst_name, const char *src_name, const char *filename, unsigned int line) {
+	if (strlcat(dst, src, n) >= n)
+		KB_errlog("[strlcat] Can't append '%s' \"%s\" to '%s' \"%s\", %d-byte limit reached; %s:%d\n", src_name, src, dst_name, dst, n, filename, line);
+}
+
+void KB_strncpy_dbg(char *dst, const char *src, unsigned int n, const char *dst_name, const char *src_name, const char *filename, unsigned int line) {
+	if (strlcpy(dst, src, n) >= n)
+		KB_errlog("[strlcpy] Can't copy '%s' \"%s\" into %d-sized buffer '%s'; %s:%d\n", src_name, src, n, dst_name, filename, line);
 }

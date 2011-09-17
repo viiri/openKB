@@ -22,9 +22,7 @@
 #include "kbfile.h"
 #include "kbdir.h"
 
-#include "stdio.h" //for stderr :/
 #include "malloc.h"
-#include "string.h"
 
 #define MAX_IMG_FILES	36
 #define HEADER_SIZE_IMG (MAX_IMG_FILES * 4 + 2)

@@ -95,11 +95,11 @@ int read_file_config(struct KBconfig *conf, const char *path) {
 				conf->set[C_fullscreen] = 1;
 			} else 
 			if (!strcasecmp(buf1, "datadir")) {
-				strcpy(conf->data_dir, buf2);
+				KB_strcpy(conf->data_dir, buf2);
 				conf->set[C_data_dir] = 1;
 			} else 
 			if (!strcasecmp(buf1, "savedir")) {
-				strcpy(conf->save_dir, buf2);
+				KB_strcpy(conf->save_dir, buf2);
 				conf->set[C_save_dir] = 1;
 			} else
 			if (!strcasecmp(buf1, "autodiscover")) {
@@ -109,7 +109,7 @@ int read_file_config(struct KBconfig *conf, const char *path) {
 			if (!strcasecmp(buf1, "name")) {
 				mN++;
 				slot = 0;
-				strcpy(conf->modules[mN].name, buf2);
+				KB_strcpy(conf->modules[mN].name, buf2);
 			} else
 			if (!strcasecmp(buf1, "type")) {
 				switch(KB_strlistcmp(
@@ -165,10 +165,10 @@ int read_file_config(struct KBconfig *conf, const char *path) {
 					break;
 				}
 				if (buf2[0] != '/')
-					strcpy(buf_ptr[slot], conf->data_dir);
+					KB_strncpy(buf_ptr[slot], conf->data_dir, sizeof(conf->modules[mN].slotA_name));
 				else 
 					buf_ptr[slot][0] = 0;
-				strcat(buf_ptr[slot], buf2);
+				KB_strncat(buf_ptr[slot], buf2, sizeof(conf->modules[mN].slotA_name));
 				slot++;
 			} else
 			{
@@ -232,7 +232,7 @@ int read_cmd_config(struct KBconfig *conf, int argc, char *args[]) {
 			}		
 
 			if (i == argc - 1) {
-				strcpy(conf->config_file, args[i]);
+				KB_strcpy(conf->config_file, args[i]);
 				continue;
 			}
 
@@ -277,23 +277,23 @@ void read_env_config(struct KBconfig *conf) {
 	char *pPath;
 
 	pPath = (char*)getenv ("HOME");
-	strcat(conf->config_dir, pPath);
-	strcat(conf->config_dir, CONFIG_BASE_DIR);
+	KB_strcat(conf->config_dir, pPath);
+	KB_strcat(conf->config_dir, CONFIG_BASE_DIR);
 
-	strcat(conf->config_file, conf->config_dir);
-	strcat(conf->config_file, CONFIG_INI_NAME);
+	KB_strcat(conf->config_file, conf->config_dir);
+	KB_strcat(conf->config_file, CONFIG_INI_NAME);
 
 	//printf("Config ROOT: %s[%s]\n", KBconf.config_dir, CONFIG_INI_NAME);
 
-	strcat(conf->save_dir, pPath);
-	strcat(conf->save_dir, CONFIG_BASE_DIR);
-	strcat(conf->save_dir, SAVE_BASE_DIR);
+	KB_strcat(conf->save_dir, pPath);
+	KB_strcat(conf->save_dir, CONFIG_BASE_DIR);
+	KB_strcat(conf->save_dir, SAVE_BASE_DIR);
 
 	//printf("Save DIR: %s\n", KBconf.save_dir);
 
-	strcat(conf->data_dir, pPath);
-	strcat(conf->data_dir, CONFIG_BASE_DIR);
-	strcat(conf->data_dir, DATA_BASE_DIR);
+	KB_strcat(conf->data_dir, pPath);
+	KB_strcat(conf->data_dir, CONFIG_BASE_DIR);
+	KB_strcat(conf->data_dir, DATA_BASE_DIR);
 
 	//printf("Data DIR: %s\n", KBconf.data_dir);
 }
@@ -323,34 +323,34 @@ int find_config(struct KBconfig *conf) {
 	char *pPath;
 
 	/* Try the local directory */
-	strcpy(config_file, "./");//TODO: proper local name of *binary*
-	strcat(config_file, CONFIG_INI_NAME);
+	KB_strcpy(config_file, "./");//TODO: proper local name of *binary*
+	KB_strcat(config_file, CONFIG_INI_NAME);
 	KB_stdlog("Looking for config at '%s'\n", config_file);
 	if (!test_config(config_file, 0))
 	{
-		strcpy(conf->config_file, config_file);
+		KB_strcpy(conf->config_file, config_file);
 		return 0;
 	}
 
 	/* Try HOME directory */
 	pPath = (char*)getenv("HOME");//NULL?
-	strcpy(config_dir, pPath);
-	strcat(config_dir, CONFIG_BASE_DIR);
-	strcpy(config_file, config_dir);
-	strcat(config_file, CONFIG_INI_NAME);
+	KB_strcpy(config_dir, pPath);
+	KB_strcat(config_dir, CONFIG_BASE_DIR);
+	KB_strcpy(config_file, config_dir);
+	KB_strcat(config_file, CONFIG_INI_NAME);
 	KB_stdlog("Looking for config at '%s'\n", config_file);
 
 	if (!test_directory(config_dir, 1)) {	
 		if (!test_config(config_file, 1))
 		{
-			strcpy(conf->config_file, config_file);
+			KB_strcpy(conf->config_file, config_file);
 			return 0;
 		}
 	}
 
 	/* Try SYSTEM directory */
-	strcpy(config_file, DEFAULT_CONF_DIR);
-	strcat(config_file, CONFIG_INI_NAME);		
+	KB_strcpy(config_file, DEFAULT_CONF_DIR);
+	KB_strcat(config_file, CONFIG_INI_NAME);		
 	KB_stdlog("Looking for config at '%s'\n", config_file);
 	if (!test_config(config_file, 0))
 	{
@@ -364,8 +364,8 @@ int find_config(struct KBconfig *conf) {
 extern void register_module(KBconfig *conf, KBmodule *mod);
 void apply_config(struct KBconfig* dst, struct KBconfig* src) {
 
-	if (src->set[C_save_dir]) strcpy(dst->save_dir, src->save_dir);
-	if (src->set[C_data_dir]) strcpy(dst->data_dir, src->data_dir);
+	if (src->set[C_save_dir]) KB_strcpy(dst->save_dir, src->save_dir);
+	if (src->set[C_data_dir]) KB_strcpy(dst->data_dir, src->data_dir);
 
 	if (src->set[C_fullscreen]) dst->fullscreen = src->fullscreen;
 	if (src->set[C_autodiscover]) dst->autodiscover = src->autodiscover;
