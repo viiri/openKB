@@ -9,3 +9,4 @@ src/tools/kbcc
 src/tools/kbview
 src/tools/kbrowse
 vendor/*/
+*.vo

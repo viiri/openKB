@@ -43,7 +43,7 @@ $(GAME_BINARY): $(GAME_OBJECTS) $(LIB_BINARY) $(VEND_OBJECTS)
 	$(CC) -c $(CFLAGS) $< -o $@
 
 clean:
-	rm -rf vendor/*.o src/*.o src/lib/*.o *.o *.a $(GAME_BINARY) $(LIB_BINARY)
+	rm -rf vendor/*.o vendor/*.vo src/*.o src/lib/*.o *.o *.a $(GAME_BINARY) $(LIB_BINARY)
 
 .phony:
 	@true
