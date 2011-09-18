@@ -325,10 +325,9 @@ char *enter_name(int x, int y) {
 
 		key = KB_event(&enter_string);
 
-		if (key == 0xFF) done = 1;
+		if (key == 0xFF) { curs = 0; done = 1; }
 
 		if (key == SDLK_RETURN) {
-			printf("ENTER!\n");
 			done = 1;
 		}
 		else
@@ -342,7 +341,7 @@ char *enter_name(int x, int y) {
 		}
 		else
 		if (key) {
-			if (key <= 128 && isascii((char)key)) {
+			if (key < 128 && isascii((char)key)) {
 				if (curs < 10) {
 					entered_name[curs] = (char)key;
 					curs++;
@@ -362,14 +361,34 @@ char *enter_name(int x, int y) {
 			redraw = 0;
 		}
 	}
-	
+
 	inprint(screen, " ", x + curs * 8, y);
 	entered_name[curs] = '\0';
 
 	return &entered_name;	
 }
-/* create game */
+
+/* Actual KBgame* allocator */
+KBgame *spawn_game(char *name, int pclass, int difficulty) {
+
+	KBgame* game;
+
+	game = malloc(sizeof(KBgame));
+	if (game == NULL) return NULL;
+
+	strcpy(game->name, name);
+
+	game->class = pclass;
+	game->rank = 0;
+	game->difficulty = difficulty;
+
+	return game;
+}
+
+/* create game screen (pick name and difficulty) */
 KBgame *create_game(int pclass) {
+
+	KBgame *game = NULL;
 
 	SDL_Surface *screen = sys->screen;
 
@@ -408,15 +427,16 @@ KBgame *create_game(int pclass) {
 		}
 
 		if (key == SDLK_RETURN) {
-			printf("Difficulty selected: %d\n", sel);
+			game = spawn_game(name, pclass, sel);
 			done = 1;
 		}
 
 		if (redraw) {
 
 			SDL_TextRect(screen, &menu, 0xFFFFFF, 0x000000);
-
+	
 	inprint(screen, " Knight    Name:", menu.x+8, menu.y+8);
+	inprint(screen, classes[pclass][0].title, menu.x+8 + 8*1, menu.y+8);
 	if (has_name) inprint(screen, name, menu.x+16 + 16*8, menu.y+8);
 	
 	inprint(screen, "   Difficulty   Days  Score", menu.x+8, menu.y+8 + 8*2);
@@ -449,9 +469,9 @@ KBgame *create_game(int pclass) {
 		
 	}
 
-	return NULL;
+	return game;
 }
-/* load game */
+/* load game screen (pick savefile) */
 KBgame *load_game() {
 	SDL_Surface *screen = sys->screen;
 	KBconfig *conf = sys->conf;
@@ -621,7 +641,7 @@ KBgame *select_game(KBconfig *conf) {
 
 	}
 
-	return NULL;
+	return game;
 }
 
 int select_module() {
@@ -899,6 +919,7 @@ int run_game(KBconfig *conf) {
 
 	/* Just for fun, output game name */
 	KB_stdlog("%s the %s\n", game->name, classes[game->class][game->rank].title);
+	sleep(2);
 
 	/* Stop environment */
 	KB_stopENV(sys);
