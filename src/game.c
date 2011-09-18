@@ -49,14 +49,39 @@ typedef struct KBgamestate {
 
 } KBgamestate;
 
+#define KMOD_ANYKEY	0x01
+#define KMOD_RETKEY	0x02
+#define KMOD_XXX_1	0x04
+#define KMOD_XXX_2	0x08
+
 
 KBgamestate press_any_key = {
 	{
-		{	{ 0, 0, 1024, 768  }, 0xFF, 0xFF},
+		{	{ 0, 0, 1024, 768  }, 0xFF, KMOD_ANYKEY },
 		0,
 	},
 	0
 };
+
+KBgamestate difficulty_selection = {
+	{
+		{	{ 0, 0, 0, 0  }, SDLK_UP, KMOD_RETKEY },
+		{	{ 0, 0, 0, 0  }, SDLK_DOWN, KMOD_RETKEY },
+		{	{ 0, 0, 0, 0  }, SDLK_RETURN, KMOD_RETKEY },
+		0,
+	},
+	0
+};
+
+KBgamestate enter_string = {
+	{
+		{	{ 0, 0, 0, 0  }, SDLK_BACKSPACE, KMOD_RETKEY },	
+		{	{ 0, 0, 0, 0  }, 0xFF, KMOD_ANYKEY | KMOD_RETKEY },
+		0,
+	},
+	0
+};
+
 
 KBgamestate character_selection = {
 	{
@@ -64,7 +89,7 @@ KBgamestate character_selection = {
 		{	{ 0, 0, 0, 0 }, SDLK_b, 0      	},
 		{	{ 0, 0, 0, 0 }, SDLK_c, 0      	},
 		{	{ 0, 0, 0, 0 }, SDLK_d, 0      	},
-		{	{ 0, 0, 0, 0 }, SDLK_l, 0      	},		
+		{	{ 180, 8, 140, 8 }, SDLK_l, 0      	},		
 		0,
 	},
 	0
@@ -91,6 +116,25 @@ KBgamestate module_selection = {
 	0
 };
 
+KBgamestate savegame_selection = {
+	{
+		{	{ 0, 0, 0, 0 }, SDLK_UP, 0		},
+		{	{ 0, 0, 0, 0 }, SDLK_DOWN, 0	},
+		{	{ 0, 0, 0, 0 }, SDLK_RETURN, 0	},
+		{	{ 0, 0, 0, 0 }, SDLK_1, 0		},
+		{	{ 0, 0, 0, 0 }, SDLK_2, 0		},
+		{	{ 0, 0, 0, 0 }, SDLK_3, 0		},
+		{	{ 0, 0, 0, 0 }, SDLK_4, 0		},
+		{	{ 0, 0, 0, 0 }, SDLK_5, 0		},
+		{	{ 0, 0, 0, 0 }, SDLK_6, 0		},
+		{	{ 0, 0, 0, 0 }, SDLK_7, 0		},
+		{	{ 0, 0, 0, 0 }, SDLK_8, 0		},		
+		{	{ 0, 0, 0, 0 }, SDLK_9, 0		},
+		0,
+	},
+	0
+};
+
 void render_game(KBenv *env, KBgame *game, KBgamestate *state, KBconfig *conf) {
 
 }
@@ -105,6 +149,19 @@ inline void SDL_CenterRect(SDL_Rect *rect, SDL_Surface *img, SDL_Surface *host)
 	rect->x = (host->w - rect->w) / 2;
 	rect->y = (host->h - rect->h) / 2; 
 }
+
+inline void SDL_CenterRectTxt(SDL_Rect *rect, int rows, int cols, SDL_Surface *host)
+{
+	/* Size */
+	rect->w = cols * 8;
+	rect->h = rows * 8;
+
+	/* To the center of the screen */
+	rect->x = (host->w - rect->w) / 2;
+	rect->y = (host->h - rect->h) / 2; 
+}
+
+
 
 KBenv *KB_startENV(KBconfig *conf) {
 
@@ -164,12 +221,21 @@ int KB_event(KBgamestate *state) {
 			int i, j = 0;
 			for (i = 0; i < MAX_HOTSPOTS; i++) {
 				if (state->spots[i].hot_key == 0) break;
-				if (state->spots[i].hot_mod & 0xFF	/* "Any key" */ 
+				if (state->spots[i].hot_mod & KMOD_ANYKEY 
 				 || (state->spots[i].hot_key == event.key.keysym.sym
 				 	&& (1 == 1))	/* Modifier */
 				 ) 
 				{
 					eve = i + 1;
+					if (state->spots[i].hot_mod & KMOD_RETKEY)
+					{
+						eve = event.key.keysym.sym;
+						if (event.key.keysym.mod & KMOD_SHIFT && eve < 128) { //shift -- uppercase!
+							if ((char)eve >= SDLK_a && (char)eve <= SDLK_z) {
+								eve = (char)eve - 32;
+							}
+						}
+					}
 					j = 1;									
 					break;
 				}
@@ -177,10 +243,12 @@ int KB_event(KBgamestate *state) {
 			if (j) break;
 		}
 		if (event.type == SDL_MOUSEBUTTONUP) {
+			if (event.button.button == 1) {
 			mouse_x = event.button.x;
 			mouse_y = event.button.y;
 			click = 1;
 			break;
+			}
 		}
 	}
 
@@ -205,11 +273,11 @@ int KB_event(KBgamestate *state) {
 	if (new_hover != -1) {
 		state->hover = new_hover;
 		if (click != -1) {
-			eve = new_hover;
+			eve = new_hover + 1;
 		}
 	}
 
-	if (click != -1) eve = 1;
+	//if (click != -1) eve = 1;
 
 	return eve;
 }
@@ -238,20 +306,259 @@ void SDL_TextRect(SDL_Surface *dest, SDL_Rect *r, Uint32 fore, Uint32 back) {
 	inprint(dest, "\x12", r->x, j);/* Bottom-left */
 	inprint(dest, "\x13", i, j);/* Bottom-right */
 }
+/* Enter name */
+char *enter_name(int x, int y) {
+	static char entered_name[11];
+
+	SDL_Surface *screen = sys->screen;
+
+	int key = 0;
+	int done = 0;
+	int redraw = 1;
+
+	SDL_Rect menu;
+
+	entered_name[0] = '\0';
+	int curs = 0;
+
+	while (!done) {
+
+		key = KB_event(&enter_string);
+
+		if (key == 0xFF) done = 1;
+
+		if (key == SDLK_RETURN) {
+			printf("ENTER!\n");
+			done = 1;
+		}
+		else
+		if (key == SDLK_BACKSPACE) {
+			if (curs) {
+				entered_name[curs] = ' ';
+				curs--;
+				entered_name[curs] = ' ';
+				redraw = 1;
+			}
+		}
+		else
+		if (key) {
+			if (key <= 128 && isascii((char)key)) {
+				if (curs < 10) {
+					entered_name[curs] = (char)key;
+					curs++;
+					entered_name[curs] = '\0';
+					redraw = 1;
+				}
+			}
+		}
+
+		if (redraw) {
+
+			inprint(screen, entered_name, x, y);
+			inprint(screen, "/", x + curs * 8, y);
+
+	    	SDL_Flip( screen );
+
+			redraw = 0;
+		}
+	}
+	
+	inprint(screen, " ", x + curs * 8, y);
+	entered_name[curs] = '\0';
+
+	return &entered_name;	
+}
 /* create game */
 KBgame *create_game(int pclass) {
+
+	SDL_Surface *screen = sys->screen;
+
+	int key = 0;
+	int done = 0;
+	int redraw = 1;
+
+	SDL_Rect menu;
+	
+	int cols = 30;//w
+	int rows = 11;//h
+
+	SDL_CenterRectTxt(&menu, rows, cols, screen);
+	
+	int has_name = 0;
+	char *name;
+
+	int sel = 1;
+
+	while (!done) {
+
+		key = KB_event(&difficulty_selection);
+
+		if (key == 0xFF) done = 1;
+
+		if (key == SDLK_UP) {
+			sel--;
+			if (sel < 0) sel = 0;
+			redraw = 1;
+		}
+
+		if (key == SDLK_DOWN) {
+			sel++;
+			if (sel > 3) sel = 3;
+			redraw = 1;
+		}
+
+		if (key == SDLK_RETURN) {
+			printf("Difficulty selected: %d\n", sel);
+			done = 1;
+		}
+
+		if (redraw) {
+
+			SDL_TextRect(screen, &menu, 0xFFFFFF, 0x000000);
+
+	inprint(screen, " Knight    Name:", menu.x+8, menu.y+8);
+	if (has_name) inprint(screen, name, menu.x+16 + 16*8, menu.y+8);
+	
+	inprint(screen, "   Difficulty   Days  Score", menu.x+8, menu.y+8 + 8*2);
+
+	inprint(screen, "   Easy         900    x.5 ", menu.x+8, menu.y+8 + 8*4);	
+	inprint(screen, "   Normal       600     x1 ", menu.x+8, menu.y+8 + 8*5);
+	inprint(screen, "   Hard         400     x2 ", menu.x+8, menu.y+8 + 8*6);
+	inprint(screen, "   Impossible?  200     x4 ", menu.x+8, menu.y+8 + 8*7);
+	
+		if (has_name) {
+	inprint(screen, "\x18\x19 to select   Ent to Accept", menu.x+8, menu.y+8 + 8*9);		
+
+			int i;
+			for (i = 0; i < 4; i++) 
+				inprint(screen, (sel == i ? ">" : " "), menu.x+16, menu.y+8 + 8*4 + i*8);
+
+		}
+
+	    	SDL_Flip( screen );
+
+			redraw = 0;
+		}
+		
+		if (!has_name) {
+			name = enter_name(menu.x + 16 + 16*8, menu.y + 8);
+			if (name[0] == '\0') done = 1;
+			else has_name = 1;
+			redraw = 1;
+		}
+		
+	}
 
 	return NULL;
 }
 /* load game */
 KBgame *load_game() {
-//'ESC' to exit arrowup/dn Return to Select
-// Select game:
-//  [rank]
-//
-// 1.
-// 2.
-// 3.
+	SDL_Surface *screen = sys->screen;
+	KBconfig *conf = sys->conf;
+
+	int done = 0;
+	int redraw = 1;
+	int key = 0;
+
+	int sel = 0;
+
+	SDL_Rect menu;
+
+	char filename[10][16];
+	byte cache[10] = { 0 };
+	byte rank[10];
+	byte pclass[10];
+	int num_files = 0;
+
+	KB_DIR *d = KB_opendir(conf->save_dir);
+	KB_Entry *e;
+    while ((e = KB_readdir(d)) != NULL) {
+		if (e->d_name[0] == '.') continue;
+printf("Found file: %s\n", e->d_name);
+		strcpy(filename[num_files], e->d_name);
+		num_files++;
+    }
+	KB_closedir(d);
+
+	/* Prepare menu */
+	int i, l = 0;
+	for (i = 0; i < num_files; i++) {
+		int mini_l = strlen(filename[i]);
+		if (mini_l > l) l = mini_l;
+	}
+
+	l = 14;
+
+	/* Size */
+	menu.w = l * 8 + 16;
+	menu.h = num_files * 8 + 8 * 5;
+
+	/* To the center of the screen */
+	menu.x = (screen->w - menu.w) / 2;
+	//menu.y = (screen->h - menu.h) / 2;
+
+	/* A little bit up */
+	menu.y = 8 + 4 * 8;
+
+	/* Update mouse hot-spots */
+	for (i = 0; i < num_files; i++) {
+		savegame_selection.spots[i + 3].coords.x = menu.x + 16;
+		savegame_selection.spots[i + 3].coords.y = menu.y + 32 + i * 8;
+		savegame_selection.spots[i + 3].coords.w = menu.w - 8;
+		savegame_selection.spots[i + 3].coords.h = 8;
+	}
+
+	while (!done) {
+
+		key = KB_event( &savegame_selection );
+		if (savegame_selection.hover - 3 != sel) {
+			sel = savegame_selection.hover - 3;
+			redraw = 1;
+		}
+
+		if (key == 0xFF) { /* Sudden Escape */
+			return -1;
+		}
+		if (key == 1) { sel--; redraw = 1; }
+		if (key == 2) { sel++; redraw = 1; }
+		if (key == 3) { done = 1; }
+		if (key >= 4) { done = 1; }
+
+		if (sel < 0) sel = 0;
+		if (sel > num_files - 1) sel = num_files - 1;
+		savegame_selection.hover = sel + 3;
+
+		if (redraw) {
+
+			int i;
+
+			SDL_TextRect(screen, &menu, 0xFFFFFF, 0x000000);
+
+			incolor(0xFFFFFF, 0x000000);
+			inprint(screen, " Select game:", menu.x + 8, menu.y + 8 - 4);
+			inprint(screen, "   Overlord   ", menu.x + 8, menu.y + 16);
+			inprint(screen, "             ", menu.x + 8, menu.y + 32 - 4);
+
+			for (i = 0; i < num_files; i++) {
+
+				incolor(0xFFFFFF, 0x000000);
+				char buf[4];sprintf(buf, "%d.", i + 1);
+				inprint(screen, buf, menu.x + 16, 8 * i + menu.y + 32);
+
+				if (i == sel) incolor(0x000000, 0xFFFFFF);
+				inprint(screen, filename[i], menu.x + 40, 8 * i + menu.y + 32);
+			}
+
+	incolor(0xFFFFFF, 0x000000);
+	inprint(screen, " 'ESC' to exit \x18\x19 Return to Select  ", 8 + 8, 8);
+
+	    	SDL_Flip( screen );
+
+			redraw = 0;
+		}
+
+	}
+
 	return NULL;
 }
 
