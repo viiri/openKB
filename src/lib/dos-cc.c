@@ -324,9 +324,9 @@ int KB_freadCC ( void * ptr, int size, int count, KB_File * stream )
 
 	/* Bytes left */
 	int rcount = str->size - str->pos;
-
+#if 0
 	printf("Guy asked for %d bytes, not giving more then %d to him....\n", count, rcount);
-
+#endif
 	/* If he asked more than that */
 	if (count > rcount) count = rcount;
 
@@ -354,7 +354,9 @@ int KB_fcloseCC( KB_File * stream )
 int KB_fseekCC(KB_File * stream, long int offset, int origin)
 {
 	struct lzwStream *str = stream->d;
+#if 0
 	printf("Seeking inside stream into %ld\n", offset);
+#endif
 	str->pos = offset;
 	stream->pos = offset;
 	return 0;
