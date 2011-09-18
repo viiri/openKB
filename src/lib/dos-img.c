@@ -129,6 +129,11 @@ void imgGroup_read(struct imgGroup* grp, int first, int frames) {
 
 		grp->cache.files[i].w = KB_UNPACK_WORD(buf[0],buf[1]);
 		grp->cache.files[i].h = KB_UNPACK_WORD(buf[2],buf[3]);
+
+		/* if (i) grp->cache.files[i].len = grp->head.files[i].offset - grp->head.files[i-1].offset;
+		else if (i + 1 < grp->head.num_files) grp->cache.files[i].len = grp->head.files[i + 1].offset - grp->head.files[i].offset;
+		else KB_errlog("Can't reliably find image filesize at this point :/\n");
+		grp->cache.files[i].len -= 4; */
 	}
 
 }
@@ -250,7 +255,11 @@ int KB_freadIMG ( void * ptr, int size, int count, KB_File * stream )
 	struct imgGroup *grp = (struct imgGroup *)stream->d;
 	KB_File *real = (KB_File*)grp->top;
 
-	int rcount = KB_fread(ptr, size, count, real);
+	int rcount = stream->len - stream->pos;
+
+	if (count > rcount) count = rcount;
+
+	rcount = KB_fread(ptr, size, count, real);
 
 	stream->pos += rcount;
 

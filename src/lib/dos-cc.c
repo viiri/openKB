@@ -282,12 +282,14 @@ KB_File * KB_fopenCC_by(int i, KB_DIR *dirp)
 
 	/* Save pointer */
 	stream->d = (void*)str;
-	stream->len = str->size;
 
 	/* Private view: */
 	str->pos = 0;
 	str->size = grp->cache.files[i].size;
 	str->data = malloc(sizeof(char) * str->size);
+
+	/* Public view: */
+	stream->len = str->size;
 
 	KB_fseek(grp->top, grp->head.files[i].offset, 0);
 	KB_funLZW(grp->top, str->data);
