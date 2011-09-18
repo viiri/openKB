@@ -21,6 +21,7 @@
 #include "lib/kbconf.h"
 #include "lib/kbres.h"
 #include "lib/kbauto.h"
+#include "lib/kbstd.h"
 
 // For the meantime, use SDL directly, it if gets unwieldy, abstract it away 
 #include "SDL.h"
@@ -475,6 +476,8 @@ KBgame *create_game(int pclass) {
 KBgame *load_game() {
 	SDL_Surface *screen = sys->screen;
 	KBconfig *conf = sys->conf;
+	
+	KBgame *game = NULL;
 
 	int done = 0;
 	int redraw = 1;
@@ -485,6 +488,7 @@ KBgame *load_game() {
 	SDL_Rect menu;
 
 	char filename[10][16];
+	char fullname[10][16];
 	byte cache[10] = { 0 };
 	byte rank[10];
 	byte pclass[10];
@@ -494,8 +498,15 @@ KBgame *load_game() {
 	KB_Entry *e;
     while ((e = KB_readdir(d)) != NULL) {
 		if (e->d_name[0] == '.') continue;
-printf("Found file: %s\n", e->d_name);
-		strcpy(filename[num_files], e->d_name);
+		
+		char base[255];
+		char ext[255];
+		
+		name_split(e->d_name, &base, &ext);
+		
+		if (strcasecmp("DAT", ext)) continue;
+		strcpy(filename[num_files], base);
+		strcpy(fullname[num_files], e->d_name);
 		num_files++;
     }
 	KB_closedir(d);
@@ -536,13 +547,22 @@ printf("Found file: %s\n", e->d_name);
 			redraw = 1;
 		}
 
-		if (key == 0xFF) { /* Sudden Escape */
-			return -1;
-		}
+		if (key == 0xFF) done = 1;
+
 		if (key == 1) { sel--; redraw = 1; }
 		if (key == 2) { sel++; redraw = 1; }
-		if (key == 3) { done = 1; }
-		if (key >= 4) { done = 1; }
+		if (key >= 3) {
+			char buffer[PATH_LEN];
+			KB_dircpy(buffer, conf->save_dir);
+			KB_dirsep(buffer);
+			KB_strcat(buffer, fullname[sel]);
+
+			game = KB_loadDAT(buffer);
+			if (game == NULL) KB_errlog("Unable to load game %s\n", buffer);
+			done = 1;
+		}
+		//if (key == 3) { done = 1; }
+		//if (key >= 4) { done = 1; }
 
 		if (sel < 0) sel = 0;
 		if (sel > num_files - 1) sel = num_files - 1;
@@ -579,7 +599,7 @@ printf("Found file: %s\n", e->d_name);
 
 	}
 
-	return NULL;
+	return game;
 }
 
 KBgame *select_game(KBconfig *conf) {
