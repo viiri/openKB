@@ -21,11 +21,6 @@
 #ifndef _OPENKB_LIBKB_CONFIG
 #define _OPENKB_LIBKB_CONFIG
 
-#define PATH_LEN 4096
-#define FILE_LEN 1024
-
-#define FULLPATH_LEN 5000 
-
 #define C_config_file  0
 #define C_config_dir   1
 #define C_save_dir     2
@@ -33,25 +28,28 @@
 
 #define C_fullscreen   4
 #define C_filter       5
-#define C_autodiscover 6
-#define C_mode 7
+#define C_module       6
+#define C_autodiscover 7
+#define C_fallback     8
 
+#include "kbstd.h"
 #include "kbauto.h"
 
 typedef struct KBconfig {
 
-	char config_file[FULLPATH_LEN];
+	char config_file[PATH_LEN];
 	char config_dir[PATH_LEN];
 	char save_dir[PATH_LEN];
 	char data_dir[PATH_LEN];
 
 	int fullscreen;
 	int filter;
-	int mode;
+	int module;
 	int autodiscover;
+	int fallback;
 
 	int set[16];//what is SET
-	
+
 	KBmodule modules[MAX_MODULES];
 	int num_modules;
 

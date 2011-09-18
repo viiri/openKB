@@ -167,7 +167,7 @@ inline void SDL_CenterRectTxt(SDL_Rect *rect, int rows, int cols, SDL_Surface *h
 KBenv *KB_startENV(KBconfig *conf) {
 
 	KBenv *nsys = malloc(sizeof(KBenv));
-	
+
 	if (!nsys) return NULL; 
 
     SDL_Init( SDL_INIT_VIDEO );
@@ -177,6 +177,8 @@ KBenv *KB_startENV(KBconfig *conf) {
     nsys->conf = conf;
 
 	nsys->font = NULL;
+
+	KB_RegisterConfig(conf);
 
 	prepare_inline_font();	// <-- inline font
 
@@ -752,7 +754,7 @@ int select_module() {
 
 	printf("SELECTED MODULE: %d - { %s } \n", sel, conf->modules[sel].name);
 
-	main_module = &conf->modules[sel];
+	conf->module = sel;
 	return sel;
 }
 
@@ -829,7 +831,7 @@ void display_title() {
 		}
 
 	}
- 
+
 }
 
 void display_debug() {
@@ -842,6 +844,8 @@ void display_debug() {
 
 	int troop_frame = 0;
 	SDL_Rect src = {0, 0, 48, 32};
+	
+//	RESOURCE_DefaultConfig(sys->conf);
 
 	while (!done) {
 
@@ -853,7 +857,7 @@ void display_debug() {
 
 			SDL_Rect pos;
 
-			SDL_Surface *title = KB_LoadIMG8(GR_TITLE, 0);
+			SDL_Surface *title = KB_LoadIMG8(GR_TROOP, 0);
 			SDL_Surface *font = KB_LoadIMG8(GR_FONT, 0);
 			SDL_Surface *peasant = KB_LoadIMG8(GR_TROOP, 2);
 
@@ -863,7 +867,7 @@ void display_debug() {
 
 			SDL_BlitSurface( title, NULL , screen, &pos );
 
-			SDL_BlitSurface( font, NULL , screen, &pos );
+			//SDL_BlitSurface( font, NULL , screen, &pos );
 
 			SDL_Rect right = { 0, 0, peasant->w, peasant->h };
 
@@ -910,7 +914,7 @@ int run_game(KBconfig *conf) {
 	mod = select_module();
 
 	/* No module! (Unlikely...) */
-	if (!main_module) {
+	if (mod == -1) {
 		KB_errlog("No module selected.\n");
 		KB_stopENV(sys);
 		return -1;

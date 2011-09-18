@@ -349,7 +349,7 @@ SDL_Surface *SDL_loadRAWCH(char *buf, int len)
 	word width = 8;
 	word height = len / width / 2;
 
-	surf = SDL_CreateRGBSurface(SDL_SWSURFACE, width * 16, height, 8, 0xFF, 0xFF, 0xFF, 0xFF);
+	surf = SDL_CreateRGBSurface(SDL_SWSURFACE, width * 16, height, 8, 0xFF, 0xFF, 0xFF, 0x00);
 	if (surf == NULL) return NULL;
 
 	dest.x = 0;
@@ -386,7 +386,7 @@ SDL_Surface *SDL_loadRAWIMG(char *buf, int len, int bpp)
 
 	word mask_pos = 4 + (width * height) / (8 / bpp);
 
-	surf = SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, 8, 0xFF, 0xFF, 0xFF, 0xFF);
+	surf = SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, 8, 0xFF, 0xFF, 0xFF, 0x00);
 	if (surf == NULL) return NULL;
 
 	dest.x = 0;
@@ -435,7 +435,7 @@ SDL_Surface *SDL_loadROWIMG(KB_DIR *dirp, word first, word frames, byte bpp)
 	}
 
 	/* Create new SDL surface */
-	surf = SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, 8, 0xFF, 0xFF, 0xFF, 0xFF);
+	surf = SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, 8, 0xFF, 0xFF, 0xFF, 0x00);
 	if (surf == NULL) return NULL;
 
 	/* Blit the frames */

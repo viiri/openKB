@@ -20,7 +20,20 @@
 #ifndef _OPENKB_LIBKB_STD
 #define _OPENKB_LIBKB_STD
 
+#include "../config.h"
 #include <malloc.h>
+
+#ifdef PATH_MAX
+#define PATH_LEN PATH_MAX
+#else
+#define PATH_LEN 4096
+#endif
+
+#ifdef FILE_MAX
+#define FILE_LEN FILE_MAX
+#else
+#define FILE_LEN 1024
+#endif
 
 #ifdef USE_WINAPI
 #define PATH_SEP "\\"

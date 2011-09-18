@@ -106,6 +106,10 @@ int read_file_config(struct KBconfig *conf, const char *path) {
 				conf->autodiscover = atoi(buf2);
 				conf->set[C_autodiscover] = 1;
 			} else
+			if (!KB_strcasecmp(buf1, "fallback")) {
+				conf->fallback = atoi(buf2);
+				conf->set[C_fallback] = 1;
+			} else
 			if (!KB_strcasecmp(buf1, "name")) {
 				mN++;
 				slot = 0;
@@ -264,12 +268,15 @@ void wipe_config(struct KBconfig *conf) {
 	conf->fullscreen = 0;
 	conf->set[C_fullscreen] = 0;
 
-	conf->mode = 0;
-	conf->set[C_mode] = 0;
+	conf->module = 0;
+	conf->set[C_module] = 0;
 
 	conf->autodiscover = 0;
 	conf->set[C_autodiscover] = 0;
-	
+
+	conf->fallback = 0;
+	conf->set[C_fallback] = 0;
+
 	int i;
 	for (i = 0; i < MAX_MODULES; i++)
 		wipe_module(&conf->modules[i]);
@@ -324,8 +331,8 @@ void report_config(struct KBconfig *conf) {
 
 int find_config(struct KBconfig *conf) {
 
-	char config_dir[FULLPATH_LEN];
-	char config_file[FULLPATH_LEN];
+	char config_dir[PATH_LEN];
+	char config_file[PATH_LEN];
 	char *pPath;
 
 	/* Try the local directory */
@@ -378,6 +385,7 @@ void apply_config(struct KBconfig* dst, struct KBconfig* src) {
 
 	if (src->set[C_fullscreen]) dst->fullscreen = src->fullscreen;
 	if (src->set[C_autodiscover]) dst->autodiscover = src->autodiscover;
+	if (src->set[C_fallback]) dst->fallback = src->fallback;
 
 	int i;
 	for (i = 0; i < src->num_modules; i++) {

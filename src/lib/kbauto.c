@@ -34,7 +34,7 @@
 
 #include "kbconf.h"
 
-KBmodule *main_module = NULL;
+KBconfig *main_config = NULL;
 
 #define KBTYPE_ROM		0x0F
 
@@ -421,7 +421,7 @@ char *villain_names[] = {
 };
 
 
-void* DOS_Resolve(int id, int sub_id) {
+void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 
 	char *middle_name;
 	char *suffix;
@@ -441,10 +441,6 @@ void* DOS_Resolve(int id, int sub_id) {
 		NULL, NULL, 	//5,6
 		NULL, ".256",	//7, 8
 	};
-
-	KBmodule *mod;
-
-	mod = main_module;
 
 	middle_name = suffix = ident = NULL;
 
@@ -505,7 +501,9 @@ void* DOS_Resolve(int id, int sub_id) {
 				middle_name = "tileseta";
 			}
 			suffix = bpp_names[mod->bpp];
-			sprintf(ident, "%d", sub_id); 
+			static char buffl[8];
+			sprintf(buffl, "#%d", sub_id);
+			ident = &buffl; 
 		}
 		break;
 		case GR_TILESET:	/* subId - continent */
@@ -583,16 +581,12 @@ void* DOS_Resolve(int id, int sub_id) {
 	return NULL;
 }
 
-void* GNU_Resolve(int id, int sub_id) {
+void* GNU_Resolve(KBmodule *mod, int id, int sub_id) {
 
 	char *image_name = NULL;
 	char *image_suffix = NULL;
 	char *image_subid = "";
 	int is_transparent = 1;
-
-	KBmodule *mod;
-
-	mod = main_module;
 
 	switch (id) {
 		case GR_LOGO:
@@ -658,13 +652,25 @@ void* GNU_Resolve(int id, int sub_id) {
 	return NULL;
 }
 
+void KB_RegisterConfig(void* p) {
+	main_config = (KBconfig*)p;
+}
+
 void* KB_Resolve(int id, int sub_id) {
-	/* This could be a callback... */
-	switch (main_module->kb_family) {
-		case KBFAMILY_GNU: return GNU_Resolve(id, sub_id);
-		case KBFAMILY_DOS: return DOS_Resolve(id, sub_id);
-		default: break;
+	int i, l;
+	void *ret = NULL;
+	l = (main_config->num_modules-1) * main_config->fallback + 1;
+	i = main_config->module;
+	for (; i < l; i++) {
+		KBmodule *mod = &main_config->modules[i];	
+		/* This could be a callback... */
+		switch (mod->kb_family) {
+			case KBFAMILY_GNU: ret = GNU_Resolve(mod, id, sub_id); break;
+			case KBFAMILY_DOS: ret = DOS_Resolve(mod, id, sub_id); break;
+			default: break;
+		}
+		if (ret != NULL) break;
 	}
-	return NULL;
+	return ret;
 }
 

@@ -63,4 +63,6 @@ typedef struct KBwin {
 
 } KBwin;
 
+extern SDL_Surface *SDL_LoadRESOURCE(int id, int sub_id, int flip);
+
 #endif /* _OPENKB_ENV */

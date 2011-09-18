@@ -237,7 +237,7 @@ void put_vga_pal(SDL_Surface *dest)
 
 SDL_Surface* KB_LoadIMG8(int id, int sub_id) {
 
-	KBmodule *mod = main_module;
+	//KBmodule *mod = main_module;
 
 	SDL_Surface *surf = (SDL_Surface *)KB_Resolve(id, sub_id);
 
