@@ -107,10 +107,15 @@ KBenv *KB_startENV(KBconfig *conf) {
     
     nsys->conf = conf;
 
+	prepare_inline_font();	// <-- inline font
+
 	return nsys;
 }
 
 void KB_stopENV(KBenv *env) {
+
+	kill_inline_font();
+
 	SDL_Quit();
 }
 
@@ -236,11 +241,9 @@ int select_module() {
 
 	/* Just for fun, do some error-checking */
 	if (conf->num_modules < 1) {
-		fprintf(stderr, "No modules found! You must either enable auto-discovery, either provide explicit file paths via config file.\n"); 	
+		KB_errlog("No modules found! You must either enable auto-discovery, either provide explicit file paths via config file.\n"); 	
 		return -1;
 	}
-
-	prepare_inline_font();	// <-- inline font
 
 	/* Prepare menu */
 	int i, l = 0;
@@ -276,7 +279,9 @@ int select_module() {
 			redraw = 1;
 		}
 
-		if (key == 0xFF) done = 1;
+		if (key == 0xFF) { /* Sudden Escape */
+			return -1;
+		}
 		if (key == 1) { sel--; redraw = 1; }
 		if (key == 2) { sel++; redraw = 1; }
 		if (key == 3) { done = 1; }
@@ -441,7 +446,7 @@ int run_game(KBconfig *conf) {
 
 	/* --- ! ! ! --- */
 	mod = select_module();
-	
+
 	/* No module! (Unlikely...) */
 	if (!main_module) {
 		KB_errlog("No module selected.\n");
