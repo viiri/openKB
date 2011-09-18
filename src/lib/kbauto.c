@@ -467,6 +467,15 @@ void* DOS_Resolve(int id, int sub_id) {
 			ident = "#0";
 		}
 		break;
+		case GR_SELECT:
+		{
+			/* Character select screen */
+			method = RAW_IMG;
+			middle_name = "select";
+			suffix = bpp_names[mod->bpp];
+			ident = "#0";
+		}
+		break;
 		case GR_FONT:
 		{
 			/* KB font */

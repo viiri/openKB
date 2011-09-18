@@ -35,6 +35,7 @@
 #define GR_FONT		0x08	/* subId - undefined */
 
 #define GR_UI		0x20	/* subId - element index */
+#define GR_SELECT	0x21	/* subId - undefined */
 
 #define SN_TUNE		0x60	/* subId - tune index (0-10) */
 

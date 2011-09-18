@@ -247,25 +247,13 @@ struct KB_Entry * KB_readdirCC(KB_DIR *dirp)
 	return entry;
 }
 
-KB_File * KB_fopenCC( const char * filename, const char * mode )
-{
-	return KB_fopenCC_in(filename, mode, NULL);
-}
-
-struct lzwStream {
-
-	int size;
-	int pos;
-	char *data;
-
-};
-int KB_funLZW(KB_File *f, char *result);
+int KB_funLZW(char *result, KB_File *f);
 KB_File * KB_fopenCC_by(int i, KB_DIR *dirp)
 {
 	struct ccGroup *grp = (struct ccGroup *)dirp->d;
 
 	KB_File *stream;
-	struct lzwStream *str;
+	char *data;
 
 	if (grp->top == NULL) return NULL;
 
@@ -273,29 +261,24 @@ KB_File * KB_fopenCC_by(int i, KB_DIR *dirp)
 
 	if (stream == NULL) return NULL;
 
-	str = malloc(sizeof(struct lzwStream));
-
-	if (str == NULL) { free(stream); return NULL; }
-
 	/* Read out "uncompressed size" if we haven't already */
 	ccGroup_read(grp, i, 1);
 
-	/* Save pointer */
-	stream->d = (void*)str;
+	/* Allocate that much bytes */
+	stream->len = grp->cache.files[i].size;
+	data = malloc(sizeof(char) * stream->len);
 
-	/* Private view: */
-	str->pos = 0;
-	str->size = grp->cache.files[i].size;
-	str->data = malloc(sizeof(char) * str->size);
+	if (data == NULL) { free(stream); return NULL; }
 
-	/* Public view: */
-	stream->len = str->size;
-
+	/* Unpack LZw data */
 	KB_fseek(grp->top, grp->head.files[i].offset, 0);
-	KB_funLZW(grp->top, str->data);
+	KB_funLZW(data, grp->top);
 
+	/* Save pointer */
+	stream->d = (void*)data;
+	stream->pos = 0;
 #if 1
-printf("[%02x][%02x][%02x][%02x]\n", str->data[0], str->data[1], str->data[2], str->data[3]);
+printf("[%02x][%02x][%02x][%02x]\n", data[0], data[1], data[2], data[3]);
 #endif
 	return stream;
 }
@@ -322,21 +305,17 @@ KB_File * KB_fopenCC_in( const char * filename, const char * mode, KB_DIR *dirp 
 
 int KB_freadCC ( void * ptr, int size, int count, KB_File * stream )
 {
-	struct lzwStream *str = (struct lzwStream *)stream->d;
-
+	char *data = stream->d;
 	/* Bytes left */
-	int rcount = str->size - str->pos;
-#if 0
+	int rcount = stream->len - stream->pos;
+#if 1
 	printf("Guy asked for %d bytes, not giving more then %d to him....\n", count, rcount);
 #endif
 	/* If he asked more than that */
 	if (count > rcount) count = rcount;
 
 	/* --read-- */
-	memcpy(ptr, &str->data[str->pos], count);
-
-	/* Private view: */
-	str->pos += count;
+	memcpy(ptr, &data[stream->pos], count);
 
 	/* Public view: */
 	stream->pos += count;
@@ -346,27 +325,23 @@ int KB_freadCC ( void * ptr, int size, int count, KB_File * stream )
 
 int KB_fcloseCC( KB_File * stream )
 {
-	struct lzwStream *str = stream->d;
-	free(str->data);
-	free(str);
+	char *data = stream->d;
+	free(data);
 	free(stream);
 	return 0;
 }
 
 int KB_fseekCC(KB_File * stream, long int offset, int origin)
 {
-	struct lzwStream *str = stream->d;
 #if 0
 	printf("Seeking inside stream into %ld\n", offset);
 #endif
-	str->pos = offset;
 	stream->pos = offset;
 	return 0;
 }
 
 long int KB_ftellCC(KB_File * stream)
 {
-	struct lzwStream *str = stream->d;
 	return stream->pos;
 }
 
@@ -376,7 +351,7 @@ long int KB_ftellCC(KB_File * stream)
 /*
  * Returns Number of bytes read, 0 on error 
  */
-int KB_funLZW(KB_File *f, char *result) {
+int KB_funLZW(char *result, KB_File *f) {
 
 	int i, n, j;
 
