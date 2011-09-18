@@ -20,6 +20,8 @@
 #ifndef _OPENKB_LIBKB_STD
 #define _OPENKB_LIBKB_STD
 
+#include <malloc.h>
+
 #ifdef USE_WINAPI
 #define PATH_SEP "\\"
 #define PATH_SEP_SYM '\\'

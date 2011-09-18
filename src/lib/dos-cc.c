@@ -21,9 +21,6 @@
 #include "kbstd.h"
 #include "kbfile.h"
 
-#include "malloc.h"
-#include "string.h"
-
 #define MAX_CC_FILES	133
 #define HEADER_SIZE_CC 1122
 
@@ -166,7 +163,6 @@ void ccGroup_read(struct ccGroup* grp, int first, int frames) {
 	}
 }
 
-
 int ccGroup_append_list(struct ccGroup *grp, const char *filename) {
 
 	char listfile[1024];
@@ -208,141 +204,6 @@ int ccGroup_append_list(struct ccGroup *grp, const char *filename) {
 		return 1;
 	}
 	return 0;
-}
-
-void KB_seekdirCC(KB_DIR *dirp, long loc) {
-	struct ccGroup *grp = (struct ccGroup *)dirp->d;
-	grp->i = loc;
-}
-
-long KB_telldirCC(KB_DIR *dirp) {
-	struct ccGroup *grp = (struct ccGroup *)dirp->d;
-	return grp->i;
-}
-
-struct KB_Entry * KB_readdirCC(KB_DIR *dirp) 
-{
-	KB_Entry *entry = &dirp->dit;
-	struct ccGroup *grp = (struct ccGroup *)dirp->d;
-
-	if (grp->i >= grp->head.num_files) return NULL;
-
-	entry->d_ino = grp->head.files[grp->i].key;
-
-	/* Name */
-	if (grp->list.files[grp->i].name[0] != '\0')
-		strcpy(entry->d_name, grp->list.files[grp->i].name);
-	else
-		sprintf(entry->d_name, "file.%d-%04x", grp->i, grp->head.files[grp->i].key);
-
-	/* Read out "uncompressed size" if we haven't already */
-	ccGroup_read(grp, grp->i, 1);
-
-	/* Extra data */
-	entry->d_info.cmp.cmpSize = grp->head.files[grp->i].size;
-	entry->d_info.cmp.fullSize = grp->cache.files[grp->i].size;
-
-	grp->i++;
-
-	return entry;
-}
-
-int KB_funLZW(char *result, KB_File *f);
-KB_File * KB_fopenCC_by(int i, KB_DIR *dirp)
-{
-	struct ccGroup *grp = (struct ccGroup *)dirp->d;
-
-	KB_File *stream;
-	char *data;
-
-	if (grp->top == NULL) return NULL;
-
-	stream = malloc(sizeof(KB_File));
-
-	if (stream == NULL) return NULL;
-
-	/* Read out "uncompressed size" if we haven't already */
-	ccGroup_read(grp, i, 1);
-
-	/* Allocate that much bytes */
-	stream->len = grp->cache.files[i].size;
-	data = malloc(sizeof(char) * stream->len);
-
-	if (data == NULL) { free(stream); return NULL; }
-
-	/* Unpack LZw data */
-	KB_fseek(grp->top, grp->head.files[i].offset, 0);
-	KB_funLZW(data, grp->top);
-
-	/* Save pointer */
-	stream->d = (void*)data;
-	stream->pos = 0;
-#if 1
-printf("[%02x][%02x][%02x][%02x]\n", data[0], data[1], data[2], data[3]);
-#endif
-	return stream;
-}
-
-/* Open file "filename" in CC directory "dirp" */
-KB_File * KB_fopenCC_in( const char * filename, const char * mode, KB_DIR *dirp )
-{
-	if (dirp == NULL || dirp->type != KBDTYPE_GRPCC) {
-		fprintf(stderr, "Error! Unable to read CC file, incorrect CC directory %p.\n", filename, dirp);
-		return NULL;
-	}
-	struct ccGroup *grp = (struct ccGroup *)dirp->d;
-	word hash = KB_ccHash(filename);
-	int i;
-
-	for (i = 0; i < grp->head.num_files; i++) {
-		if (grp->head.files[i].key == hash) {
-			return KB_fopenCC_by( i, dirp );
-		} 
-	}
-
-	return NULL;
-}
-
-int KB_freadCC ( void * ptr, int size, int count, KB_File * stream )
-{
-	char *data = stream->d;
-	/* Bytes left */
-	int rcount = stream->len - stream->pos;
-#if 0
-	printf("Guy asked for %d bytes, not giving more then %d to him....\n", count, rcount);
-#endif
-	/* If he asked more than that */
-	if (count > rcount) count = rcount;
-
-	/* --read-- */
-	memcpy(ptr, &data[stream->pos], count);
-
-	/* Public view: */
-	stream->pos += count;
-
-	return count;
-}
-
-int KB_fcloseCC( KB_File * stream )
-{
-	char *data = stream->d;
-	free(data);
-	free(stream);
-	return 0;
-}
-
-int KB_fseekCC(KB_File * stream, long int offset, int origin)
-{
-#if 0
-	printf("Seeking inside stream into %ld\n", offset);
-#endif
-	stream->pos = offset;
-	return 0;
-}
-
-long int KB_ftellCC(KB_File * stream)
-{
-	return stream->pos;
 }
 
 #define MBUFFER_SIZE 1024
@@ -554,6 +415,9 @@ printf("%04d\t0x%04X:%01X\t", pos, byte_pos, bit_pos);
 	return res_pos;
 }
 
+/*
+ * KB_DirDriver interface
+ */
 
 /* Open CC-directory "filename" in abstract directory "dirs" */
 void* KB_loaddirCC(const char *filename, KB_DIR *dirs, int *max)
@@ -582,10 +446,148 @@ void* KB_loaddirCC(const char *filename, KB_DIR *dirs, int *max)
 	return grp;
 }
 
+void KB_seekdirCC(KB_DIR *dirp, long loc) {
+	struct ccGroup *grp = (struct ccGroup *)dirp->d;
+	grp->i = loc;
+}
+
+long KB_telldirCC(KB_DIR *dirp) {
+	struct ccGroup *grp = (struct ccGroup *)dirp->d;
+	return grp->i;
+}
+
+struct KB_Entry * KB_readdirCC(KB_DIR *dirp) 
+{
+	KB_Entry *entry = &dirp->dit;
+	struct ccGroup *grp = (struct ccGroup *)dirp->d;
+
+	if (grp->i >= grp->head.num_files) return NULL;
+
+	entry->d_ino = grp->head.files[grp->i].key;
+
+	/* Name */
+	if (grp->list.files[grp->i].name[0] != '\0')
+		strcpy(entry->d_name, grp->list.files[grp->i].name);
+	else
+		sprintf(entry->d_name, "file.%d-%04x", grp->i, grp->head.files[grp->i].key);
+
+	/* Read out "uncompressed size" if we haven't already */
+	ccGroup_read(grp, grp->i, 1);
+
+	/* Extra data */
+	entry->d_info.cmp.cmpSize = grp->head.files[grp->i].size;
+	entry->d_info.cmp.fullSize = grp->cache.files[grp->i].size;
+
+	grp->i++;
+
+	return entry;
+}
+
 int KB_closedirCC(KB_DIR *dirp) 
 {
 	struct ccGroup *grp = (struct ccGroup *)dirp->d;
 	ccGroup_unload(grp);
 	free(dirp);
+	return 0;
+}
+
+
+/*
+ * KB_FileDriver interface
+ */
+KB_File * KB_fopenCC_by(int i, KB_DIR *dirp)
+{
+	struct ccGroup *grp = (struct ccGroup *)dirp->d;
+
+	KB_File *stream;
+	char *data;
+
+	if (grp->top == NULL) return NULL;
+
+	stream = malloc(sizeof(KB_File));
+
+	if (stream == NULL) return NULL;
+
+	/* Read out "uncompressed size" if we haven't already */
+	ccGroup_read(grp, i, 1);
+
+	/* Allocate that much bytes */
+	stream->len = grp->cache.files[i].size;
+	data = malloc(sizeof(char) * stream->len);
+
+	if (data == NULL) { free(stream); return NULL; }
+
+	/* Unpack LZw data */
+	KB_fseek(grp->top, grp->head.files[i].offset, 0);
+	KB_funLZW(data, grp->top);
+
+	/* Save pointer */
+	stream->d = (void*)data;
+	stream->pos = 0;
+#if 1
+printf("[%02x][%02x][%02x][%02x]\n", data[0], data[1], data[2], data[3]);
+#endif
+	return stream;
+}
+
+/* Open file "filename" in CC directory "dirp" */
+KB_File * KB_fopenCC_in( const char * filename, const char * mode, KB_DIR *dirp )
+{
+	if (dirp == NULL || dirp->type != KBDTYPE_GRPCC) {
+		fprintf(stderr, "Error! Unable to read CC file, incorrect CC directory %p.\n", filename, dirp);
+		return NULL;
+	}
+	struct ccGroup *grp = (struct ccGroup *)dirp->d;
+	word hash = KB_ccHash(filename);
+	int i;
+
+	for (i = 0; i < grp->head.num_files; i++) {
+		if (grp->head.files[i].key == hash) {
+			return KB_fopenCC_by( i, dirp );
+		} 
+	}
+
+	return NULL;
+}
+
+int KB_fseekCC(KB_File * stream, long int offset, int origin)
+{
+#if 0
+	printf("Seeking inside stream into %ld\n", offset);
+#endif
+	stream->pos = offset;
+	return 0;
+}
+
+long int KB_ftellCC(KB_File * stream)
+{
+	return stream->pos;
+}
+
+int KB_freadCC ( void * ptr, int size, int count, KB_File * stream )
+{
+	char *data = stream->d;
+	/* Bytes left */
+	int rcount = stream->len - stream->pos;
+#if 0
+	printf("Guy asked for %d bytes, not giving more then %d to him....\n", count, rcount);
+#endif
+	/* If he asked more than that */
+	if (count > rcount) count = rcount;
+
+	/* --read-- */
+	memcpy(ptr, &data[stream->pos], count);
+
+	/* Public view: */
+	stream->pos += count;
+
+	return count;
+}
+
+int KB_fcloseCC( KB_File * stream )
+{
+	char *data = stream->d;
+	free(data);
+	free(stream);
 	return 0;
 }

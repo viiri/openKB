@@ -17,13 +17,12 @@
  *  You should have received a copy of the GNU General Public License
  *  along with openkb.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "stdio.h"
-#include "malloc.h"
-
-#include "string.h"
+#include <stdio.h>
+#include <string.h>
 
 #include "kbfile.h"
 #include "kbdir.h"
+#include "kbstd.h"
 
 #define KB_FILE_IF_REP_ADD(SUFFIX) \
 		&KB_fopen ## SUFFIX ## _in, \

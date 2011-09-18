@@ -146,43 +146,9 @@ byte imgGroup_filename_to_bpp(const char *filename) {
 	return 2;
 }
 
-void KB_seekdirIMG(KB_DIR *dirp, long loc) {
-	struct imgGroup *grp = (struct imgGroup *)dirp->d;
-	grp->i = loc;
-}
-
-long KB_telldirIMG(KB_DIR *dirp) {
-	struct imgGroup *grp = (struct imgGroup *)dirp->d;
-	return (long)grp->i;
-}
-
-
-struct KB_Entry * KB_readdirIMG(KB_DIR *dirp)
-{
-	KB_Entry *entry = &dirp->dit;
-	struct imgGroup *grp = (struct imgGroup *)dirp->d;
-
-	if (grp->i >= grp->head.num_files) return NULL;
-
-	/* Serial Number */
-	entry->d_ino = grp->i;//grp->head.files[grp->i].key;
-
-	/* Name */
-	sprintf(entry->d_name, "img.%d", grp->i, grp->head.files[grp->i].offset);
-
-	/* [Read w & h] */
-	imgGroup_read(grp, grp->i, 1);
-
-	/* Extra data */
-	entry->d_info.img.w = grp->cache.files[grp->i].w;
-	entry->d_info.img.h = grp->cache.files[grp->i].h;
-	entry->d_info.img.bpp = grp->cache.bpp;
-
-	grp->i++;
-
-	return entry;
-}
-
+/*
+ * KB_DirDriver interface
+ */
 /* Open an IMG directory "filename" inside a directory "dirs" */
 void* KB_loaddirIMG(const char *filename, KB_DIR *dirs, int *max)
 {
@@ -212,6 +178,42 @@ void* KB_loaddirIMG(const char *filename, KB_DIR *dirs, int *max)
 	return grp;
 }
 
+void KB_seekdirIMG(KB_DIR *dirp, long loc) {
+	struct imgGroup *grp = (struct imgGroup *)dirp->d;
+	grp->i = loc;
+}
+
+long KB_telldirIMG(KB_DIR *dirp) {
+	struct imgGroup *grp = (struct imgGroup *)dirp->d;
+	return (long)grp->i;
+}
+
+struct KB_Entry * KB_readdirIMG(KB_DIR *dirp)
+{
+	KB_Entry *entry = &dirp->dit;
+	struct imgGroup *grp = (struct imgGroup *)dirp->d;
+
+	if (grp->i >= grp->head.num_files) return NULL;
+
+	/* Serial Number */
+	entry->d_ino = grp->i;//grp->head.files[grp->i].key;
+
+	/* Name */
+	sprintf(entry->d_name, "img.%d", grp->i, grp->head.files[grp->i].offset);
+
+	/* [Read w & h] */
+	imgGroup_read(grp, grp->i, 1);
+
+	/* Extra data */
+	entry->d_info.img.w = grp->cache.files[grp->i].w;
+	entry->d_info.img.h = grp->cache.files[grp->i].h;
+	entry->d_info.img.bpp = grp->cache.bpp;
+
+	grp->i++;
+
+	return entry;
+}
+
 int KB_closedirIMG(KB_DIR *dirp)
 {
 	struct imgGroup *grp = (struct imgGroup *)dirp->d;
@@ -220,6 +222,9 @@ int KB_closedirIMG(KB_DIR *dirp)
 	return 0;
 }
 
+/*
+ * KB_FileDriver interface
+ */
 KB_File* KB_fopenIMG_in(const char * filename, const char * mode, KB_DIR *dirp)
 {
 	struct imgGroup *grp = (struct imgGroup *)dirp->d;
@@ -284,7 +289,9 @@ int KB_fcloseIMG( KB_File * stream )
 	return 0;
 }
 
-
+/*
+ * SDL flavor.
+ */
 #if HAVE_LIBSDL
 void SDL_add_DOS_palette(SDL_Surface *surf, int bpp) {
 

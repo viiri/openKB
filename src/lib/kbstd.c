@@ -19,14 +19,13 @@
  */
 #include <stdarg.h>
 #include <stdio.h>
-
-#include "kbstd.h"
-
-#include "string.h"
+#include <string.h>
 
 #ifdef USE_WINAPI
 #include <windows.h>
 #endif
+
+#include "kbstd.h"
 
 void KB_debuglog(int mod, char *fmt, ...) 
 {

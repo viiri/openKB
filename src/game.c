@@ -20,6 +20,7 @@
 #include "bounty.h"
 #include "lib/kbconf.h"
 #include "lib/kbres.h"
+#include "lib/kbauto.h"
 
 // For the meantime, use SDL directly, it if gets unwieldy, abstract it away 
 #include "SDL.h"
@@ -27,8 +28,6 @@
 #include "../vendor/vendor.h" /* scale2x, inprint, etc */
 
 #include "env.h"
-
-#include "lib/kbauto.h"
 
 #define MAX_HOTSPOTS	64
 
@@ -94,6 +93,17 @@ KBgamestate module_selection = {
 
 void render_game(KBenv *env, KBgame *game, KBgamestate *state, KBconfig *conf) {
 
+}
+
+inline void SDL_CenterRect(SDL_Rect *rect, SDL_Surface *img, SDL_Surface *host) 
+{
+	/* Size */
+	rect->w = img->w;
+	rect->h = img->h;
+
+	/* To the center of the screen */
+	rect->x = (host->w - rect->w) / 2;
+	rect->y = (host->h - rect->h) / 2; 
 }
 
 KBenv *KB_startENV(KBconfig *conf) {
@@ -397,18 +407,6 @@ int select_module() {
 
 	main_module = &conf->modules[sel];
 	return sel;
-}
-
-
-inline void SDL_CenterRect(SDL_Rect *rect, SDL_Surface *img, SDL_Surface *host) 
-{
-	/* Size */
-	rect->w = img->w;
-	rect->h = img->h;
-
-	/* To the center of the screen */
-	rect->x = (host->w - rect->w) / 2;
-	rect->y = (host->h - rect->h) / 2; 
 }
 
 void display_logo() {

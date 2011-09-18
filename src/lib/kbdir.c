@@ -17,16 +17,11 @@
  *  You should have received a copy of the GNU General Public License
  *  along with openkb.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "malloc.h"
-#include "string.h" 
- 
-#include <stdio.h>
-
-#include <sys/types.h> 
+#include <sys/types.h>
 #include <dirent.h>
 
 #include "kbdir.h"
-#include "kbfile.h"
+#include "kbstd.h"
 
 #define KB_DIR_IF_REP_ADD(SUFFIX) \
 		&KB_loaddir ## SUFFIX , \
@@ -101,9 +96,9 @@ KB_DIR * KB_opendir_in(const char *filename, KB_DIR *top)
 	return dirp;
 }
 
-struct KB_Entry * KB_readdir(KB_DIR *dirp)
+void KB_seekdir(KB_DIR *dirp, long loc)
 {
-	return (KB_DIRS[dirp->type].readdir)(dirp);
+	(void)(KB_DIRS[dirp->type].seekdir)(dirp, loc);
 }
 
 long KB_telldir(KB_DIR *dirp)
@@ -111,14 +106,14 @@ long KB_telldir(KB_DIR *dirp)
 	return (KB_DIRS[dirp->type].telldir)(dirp);
 }
 
-void KB_seekdir(KB_DIR *dirp, long loc)
-{
-	(void)(KB_DIRS[dirp->type].seekdir)(dirp, loc);
-}
-
 void KB_rewinddir(KB_DIR *dirp)
 {
 	KB_seekdir(dirp, 0);
+}
+
+struct KB_Entry * KB_readdir(KB_DIR *dirp)
+{
+	return (KB_DIRS[dirp->type].readdir)(dirp);
 }
 
 int KB_closedir(KB_DIR *dirp)
@@ -155,6 +150,16 @@ void* KB_loaddirD(const char *filename, KB_DIR *wth, int *max)
 	return d;
 }
 
+void KB_seekdirD(KB_DIR *dirp, long loc)
+{
+	seekdir(dirp->d, loc);
+}
+
+long KB_telldirD(KB_DIR *dirp)
+{
+	return telldir(dirp->d);
+}
+
 struct KB_Entry * KB_readdirD(KB_DIR *dirp)
 {
 	struct dirent *dit;
@@ -164,20 +169,10 @@ struct KB_Entry * KB_readdirD(KB_DIR *dirp)
     dit = readdir(dirp->d);
     if (dit == NULL) return NULL;
 
-	strcpy(entry->d_name, dit->d_name);
+	KB_strcpy(entry->d_name, dit->d_name);
 	entry->d_ino = dit->d_ino;
 
 	return entry;
-}
-
-long KB_telldirD(KB_DIR *dirp)
-{
-	return telldir(dirp->d);
-}
-
-void KB_seekdirD(KB_DIR *dirp, long loc)
-{
-	seekdir(dirp->d, loc);
 }
 
 int KB_closedirD(KB_DIR *dirp)
