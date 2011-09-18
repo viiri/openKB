@@ -44,7 +44,7 @@ void examine_directory(const char *path) {
 
 	int selected_file = 0;
 	
-	KB_Entry list[20];	
+	KB_Entry list[20];
 
 	int reading_offset = 0;
 	int display_lines = 20;
@@ -90,7 +90,7 @@ void examine_directory(const char *path) {
 
 			//KB_seekdir(dirp, reading_offset);			
 			KB_seekdir(dirp, 0);
-			
+
 			for (i = 0; i < reading_offset; i++) {
 				KB_Entry *e = KB_readdir(dirp);
 			}
@@ -104,7 +104,6 @@ void examine_directory(const char *path) {
 				}
 
 				memcpy(&list[i], e, sizeof(KB_Entry));
-				
 			}
 
 			if (known_maximum && selected_file > known_maximum - 1) {
@@ -114,11 +113,36 @@ void examine_directory(const char *path) {
 			redraw = 1;
 			reread = 0;
 		}
+#if 0
+		if (key == SDLK_g) {
 
+			char buffer[4096];
+			strcpy(buffer, path);
+			if (buffer[strlen(buffer)-1] != '#') 
+				strcat(buffer, "#");
+			strcat(buffer, "ammi.4");
+
+			examine_directory(buffer);
+
+			redraw = 1;
+		}
+		if (key == SDLK_h) {
+
+			char buffer[4096];
+			strcpy(buffer, path);
+			if (buffer[strlen(buffer)-1] != '/') 
+				strcat(buffer, "/");
+			strcat(buffer, "416.CC");
+
+			examine_directory(buffer);
+
+			redraw = 1;
+		}
+#endif
 		if (key == SDLK_RETURN) {
-		
+
 			if (!strcasecmp(list[selected_file].d_name, "..")) { done = 1; continue; }		
-		
+
 			if (!strcasecmp(list[selected_file].d_name, ".")) continue;
 
 			char buffer[4096];
@@ -138,7 +162,7 @@ void examine_directory(const char *path) {
 			int i;
 			for (i = 0; i < display_lines; i++) {
 
-				if (known_maximum && i + reading_offset > known_maximum) {
+				if (known_maximum && i + reading_offset >= known_maximum) {
 					break;
 				}
 
@@ -181,9 +205,13 @@ int main(int argc, char* argv[]) {
        	exit(-1);
 	}
 
-	infont(SDL_LoadBMP("/home/driedfruit/src/okb/openkb8x8.bmp")); //YUCK :-/
+	SDL_Surface *font = SDL_LoadBMP("../../data/free/openkb8x8.bmp"); 
+
+	infont(font);
 
 	examine_directory(argv[1]);
+
+	SDL_FreeSurface(font);
 
 	SDL_Quit(); 
 	return 0; 
