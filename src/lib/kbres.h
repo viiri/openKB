@@ -37,6 +37,8 @@
 #define GR_UI		0x20	/* subId - element index */
 #define GR_SELECT	0x21	/* subId - undefined */
 
+#define GR_PORTRAIT	0x22	/* subId - player class */
+
 #define SN_TUNE		0x60	/* subId - tune index (0-10) */
 
 #include "SDL.h"

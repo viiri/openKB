@@ -65,6 +65,7 @@ KBgamestate character_selection = {
 		{	{ 0, 0, 0, 0 }, SDLK_b, 0      	},
 		{	{ 0, 0, 0, 0 }, SDLK_c, 0      	},
 		{	{ 0, 0, 0, 0 }, SDLK_d, 0      	},
+		{	{ 0, 0, 0, 0 }, SDLK_l, 0      	},		
 		0,
 	},
 	0
@@ -104,8 +105,10 @@ KBenv *KB_startENV(KBconfig *conf) {
     SDL_Init( SDL_INIT_VIDEO );
 
     nsys->screen = SDL_SetVideoMode( 320, 200, 32, SDL_SWSURFACE );
-    
+
     nsys->conf = conf;
+
+	nsys->font = NULL;
 
 	prepare_inline_font();	// <-- inline font
 
@@ -114,7 +117,11 @@ KBenv *KB_startENV(KBconfig *conf) {
 
 void KB_stopENV(KBenv *env) {
 
+	if (env->font) SDL_FreeSurface(env->font);
+
 	kill_inline_font();
+
+	free(env);
 
 	SDL_Quit();
 }
@@ -143,7 +150,7 @@ int KB_event(KBgamestate *state) {
 		 		eve = 0xFF;
 		 		break;
 			}
-		if (event.type == SDL_KEYUP) {
+		if (event.type == SDL_KEYDOWN) {
 			int i, j = 0;
 			for (i = 0; i < MAX_HOTSPOTS; i++) {
 				if (state->spots[i].hot_key == 0) break;
@@ -221,8 +228,81 @@ void SDL_TextRect(SDL_Surface *dest, SDL_Rect *r, Uint32 fore, Uint32 back) {
 	inprint(dest, "\x12", r->x, j);/* Bottom-left */
 	inprint(dest, "\x13", i, j);/* Bottom-right */
 }
+/* create game */
+KBgame *create_game(int pclass) {
+
+	return NULL;
+}
+/* load game */
+KBgame *load_game() {
+//'ESC' to exit arrowup/dn Return to Select
+// Select game:
+//  [rank]
+//
+// 1.
+// 2.
+// 3.
+	return NULL;
+}
 
 KBgame *select_game(KBconfig *conf) {
+
+	SDL_Surface *screen = sys->screen;
+
+	int key = 0;
+	int done = 0;
+	int redraw = 1;
+
+	KBgame *game = NULL;
+
+	while (!done) {
+
+		key = KB_event(&character_selection);
+
+		/* New game (class 1-4) */
+		if (key > 0 && key < 5) 
+		{
+			game = create_game(key - 1);
+			if (game) done = 1;
+			redraw = 1;
+		}
+
+		/* Pressed 'L' */
+		if (key == 5) {
+			game = load_game();
+			if (game) done = 1;
+			redraw = 1;
+		}
+
+		if (key == 0xFF) done = 1;
+
+		if (redraw) {
+
+			SDL_Rect pos;
+
+			SDL_Surface *title = KB_LoadIMG8(GR_SELECT, 0);
+			
+			if (title == NULL) {
+				KB_errlog("Can't find 'SELECT'!\n");
+				return NULL;
+			}
+
+			SDL_CenterRect(&pos, title, screen);
+
+			SDL_BlitSurface( title, NULL , screen, &pos );
+
+	inprint(screen, "Select Char A-D or L-Load saved game", 8 + 8, 8);
+
+	    	SDL_Flip( screen );
+
+			SDL_FreeSurface(title);
+
+			SDL_Delay(10);
+
+			redraw = 0;
+		}
+
+	}
 
 	return NULL;
 }
@@ -378,6 +458,43 @@ void display_title() {
 	int done = 0;
 	int redraw = 1;
 
+	while (!done) {
+
+		key = KB_event(&press_any_key);
+
+		if (key) done = 1;
+
+		if (redraw) {
+
+			SDL_Rect pos;
+
+			SDL_Surface *title = KB_LoadIMG8(GR_TITLE, 0);
+
+			SDL_CenterRect(&pos, title, screen);
+
+			SDL_FillRect( screen , NULL, 0x000000);
+
+			SDL_BlitSurface( title, NULL , screen, &pos );
+			
+	    	SDL_Flip( screen );
+
+			SDL_FreeSurface(title);
+
+			redraw = 0;
+		}
+
+	}
+ 
+}
+
+void display_debug() {
+
+	SDL_Surface *screen = sys->screen;
+
+	int key = 0;
+	int done = 0;
+	int redraw = 1;
+
 	int troop_frame = 0;
 	SDL_Rect src = {0, 0, 48, 32};
 
@@ -397,7 +514,7 @@ void display_title() {
 
 			SDL_CenterRect(&pos, peasant, screen);
 
-			SDL_FillRect( screen , NULL, 0x000000);
+			SDL_FillRect( screen , NULL, 0xF1F101);
 
 			SDL_BlitSurface( title, NULL , screen, &pos );
 
@@ -454,6 +571,10 @@ int run_game(KBconfig *conf) {
 		return -1;
 	}
 
+	/* Load and use module font */
+	sys->font = KB_LoadIMG8(GR_FONT, 0);
+	infont(sys->font);
+
 	/* --- X X X --- */
 	display_logo();
 
@@ -461,6 +582,8 @@ int run_game(KBconfig *conf) {
 
 	/* Select a game to play (new/load) */
 	KBgame *game = select_game(conf);
+
+	display_debug();//debug(game);
 
 	/* No game! Quit */
 	if (!game) {
@@ -471,8 +594,6 @@ int run_game(KBconfig *conf) {
 
 	/* Just for fun, output game name */
 	KB_stdlog("%s the %s\n", game->name, classes[game->class][game->rank].title);
-
-	//debug(game);
 
 	/* Stop environment */
 	KB_stopENV(sys);

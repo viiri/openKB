@@ -308,7 +308,7 @@ int KB_freadCC ( void * ptr, int size, int count, KB_File * stream )
 	char *data = stream->d;
 	/* Bytes left */
 	int rcount = stream->len - stream->pos;
-#if 1
+#if 0
 	printf("Guy asked for %d bytes, not giving more then %d to him....\n", count, rcount);
 #endif
 	/* If he asked more than that */

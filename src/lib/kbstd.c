@@ -127,7 +127,8 @@ void KB_dirnsep(char *dst, unsigned int n) {
 }
 
 void KB_dirncpy(char *dst, const char *src, unsigned int n) {
-	int l = strlen(src);
-	int k = strlcpy(dst, src, n);
+	int k, l = strlen(src);
+	dst[0] = '\0';
+	k = strlcpy(dst, src, n);
 	if (l && src[l - 1] == PATH_SEP_SYM) dst[k - 1] = '\0';
 }

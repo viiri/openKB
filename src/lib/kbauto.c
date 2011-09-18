@@ -587,6 +587,7 @@ void* GNU_Resolve(int id, int sub_id) {
 
 	char *image_name = NULL;
 	char *image_suffix = NULL;
+	char *image_subid = "";
 	int is_transparent = 1;
 
 	KBmodule *mod;
@@ -601,6 +602,21 @@ void* GNU_Resolve(int id, int sub_id) {
 			is_transparent = 0;
 		}
 		break;
+		case GR_TITLE:
+		{
+			image_name = "title";
+			image_suffix = ".png";
+			is_transparent = 0;
+		}
+		break;		
+		case GR_SELECT:
+		{
+			image_name = "select";
+			image_subid = "-0";
+			image_suffix = ".png";
+			is_transparent = 0;
+		}
+		break;		
 		case GR_FONT:
 		{
 			image_name = "openkb8x8";
@@ -624,6 +640,7 @@ void* GNU_Resolve(int id, int sub_id) {
 		KB_dircpy(realname, mod->slotA_name);
 		KB_dirsep(realname);
 		KB_strcat(realname, image_name);
+		KB_strcat(realname, image_subid);
 		KB_strcat(realname, image_suffix);
 
 		printf("? FREE IMG FILE: %s\n", realname);
