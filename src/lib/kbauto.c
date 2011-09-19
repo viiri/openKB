@@ -34,8 +34,6 @@
 
 #include "kbconf.h"
 
-KBconfig *main_config = NULL;
-
 #define KBTYPE_ROM		0x0F
 
 #define KBTYPE_DSK  	0x01
@@ -44,7 +42,6 @@ KBconfig *main_config = NULL;
 #define KBTYPE_RAW_4	0x04
 #define KBTYPE_RAW_16	0x05
 #define KBTYPE_RAW_256	0x06
-
 
 
 int FileSize( const char * szFileName ) 
@@ -651,26 +648,3 @@ void* GNU_Resolve(KBmodule *mod, int id, int sub_id) {
 
 	return NULL;
 }
-
-void KB_RegisterConfig(void* p) {
-	main_config = (KBconfig*)p;
-}
-
-void* KB_Resolve(int id, int sub_id) {
-	int i, l;
-	void *ret = NULL;
-	l = (main_config->num_modules-1) * main_config->fallback + 1;
-	i = main_config->module;
-	for (; i < l; i++) {
-		KBmodule *mod = &main_config->modules[i];	
-		/* This could be a callback... */
-		switch (mod->kb_family) {
-			case KBFAMILY_GNU: ret = GNU_Resolve(mod, id, sub_id); break;
-			case KBFAMILY_DOS: ret = DOS_Resolve(mod, id, sub_id); break;
-			default: break;
-		}
-		if (ret != NULL) break;
-	}
-	return ret;
-}
-
