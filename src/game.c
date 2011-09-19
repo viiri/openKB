@@ -35,9 +35,24 @@
 /* Global/main environment */
 KBenv *sys = NULL;
 
+/*
+ * Hotspot is a possible player action.
+ *
+ * NOTE: The 'coords'/'timer' union should be taken care of.
+ * When hotspot acts as a timer, 'w' and 'h' read from SDL_Rect are zeroes,
+ * safely bypassing mouseover tests (e.g. "mouseX >= foo && mouseX < foo + 0").
+ * 
+ */
 typedef struct KBhotspot {
 
-	SDL_Rect coords;
+	union {
+		SDL_Rect coords;
+		struct {
+			Uint32 resolution;
+			Uint32 passed;
+		};
+	};
+
 	word	hot_key;
 	byte	hot_mod;
 	byte	flag;
@@ -47,23 +62,27 @@ typedef struct KBhotspot {
 typedef struct KBgamestate {
 
 	KBhotspot spots[MAX_HOTSPOTS];
+	int max_spots;
 	int hover;
 	Uint32 last;
-	Uint32 passed;
 
 } KBgamestate;
 
 #define KFLAG_ANYKEY	0x01
 #define KFLAG_RETKEY	0x02
-#define KFLAG_TIMER 	0x10
-#define KFLAG_SLOW  	0x20
-#define KFLAG_FAST  	0x40
 
+#define KFLAG_TIMER 	0x10
+
+#define SDLK_SYN 0x16
+
+#define _NON { 0 }
+#define _TIME(INTERVAL) { INTERVAL, 0 }
+#define _AREA(X,Y,W,H) { X, Y, W, H }
 
 KBgamestate debug_menu = {
 	{
-		{	{ 0  }, SDLK_LEFT, 0, KFLAG_RETKEY, },
-		{	{ 0  }, SDLK_RIGHT, 0, KFLAG_RETKEY, },
+		{	_NON, SDLK_LEFT, 0, KFLAG_RETKEY, },
+		{	_NON, SDLK_RIGHT, 0, KFLAG_RETKEY, },
 		0,
 	},
 	0
@@ -71,7 +90,7 @@ KBgamestate debug_menu = {
 
 KBgamestate press_any_key = {
 	{
-		{	{ 0, 0, 1024, 768  }, 0xFF, 0, KFLAG_ANYKEY },
+		{	_AREA(0, 0, 1024, 768), 0xFF, 0, KFLAG_ANYKEY },
 		0,
 	},
 	0
@@ -79,34 +98,31 @@ KBgamestate press_any_key = {
 
 KBgamestate difficulty_selection = {
 	{
-		{	{ 0, 0, 0, 0  }, SDLK_UP, 0, KFLAG_RETKEY },
-		{	{ 0, 0, 0, 0  }, SDLK_DOWN, 0, KFLAG_RETKEY },
-		{	{ 0, 0, 0, 0  }, SDLK_RETURN, 0, KFLAG_RETKEY },
+		{	_NON, SDLK_UP, 0, KFLAG_RETKEY },
+		{	_NON, SDLK_DOWN, 0, KFLAG_RETKEY },
+		{	_NON, SDLK_RETURN, 0, KFLAG_RETKEY },
 		0,
 	},
 	0
 };
-
-#define SDLK_SYN 0x16
 
 KBgamestate enter_string = {
 	{
-		{	{ 0, 0, 0, 0  }, SDLK_BACKSPACE, 0, KFLAG_RETKEY },	
-		{	{ 0, 0, 0, 0  }, 0xFF, 0, KFLAG_ANYKEY | KFLAG_RETKEY },
-		{	{ 0, 0, 0, 60 }, SDLK_SYN, 0, KFLAG_TIMER | KFLAG_RETKEY },
+		{	_NON, SDLK_BACKSPACE, 0, KFLAG_RETKEY },	
+		{	_NON, 0xFF, 0, KFLAG_ANYKEY | KFLAG_RETKEY },
+		{	_TIME(60), SDLK_SYN, 0, KFLAG_TIMER | KFLAG_RETKEY },
 		0,
 	},
 	0
 };
 
-
 KBgamestate character_selection = {
 	{
-		{	{ 0, 0, 0, 0 }, SDLK_a, 0, 0      	},
-		{	{ 0, 0, 0, 0 }, SDLK_b, 0, 0      	},
-		{	{ 0, 0, 0, 0 }, SDLK_c, 0, 0      	},
-		{	{ 0, 0, 0, 0 }, SDLK_d, 0, 0      	},
-		{	{ 180, 8, 140, 8 }, SDLK_l, 0, 0   	},
+		{	_AREA(0, 0, 0, 0), SDLK_a, 0, 0      	},
+		{	_AREA(0, 0, 0, 0), SDLK_b, 0, 0      	},
+		{	_AREA(0, 0, 0, 0), SDLK_c, 0, 0      	},
+		{	_AREA(0, 0, 0, 0), SDLK_d, 0, 0      	},
+		{	_AREA(180, 8, 140, 8), SDLK_l, 0, 0   	},
 		0,
 	},
 	0
@@ -114,20 +130,20 @@ KBgamestate character_selection = {
 
 KBgamestate module_selection = {
 	{
-		{	{ 0, 0, 0, 0 }, SDLK_UP, 0, 0		},
-		{	{ 0, 0, 0, 0 }, SDLK_DOWN, 0, 0 	},
-		{	{ 0, 0, 0, 0 }, SDLK_RETURN, 0, 0	},
-		{	{ 0, 0, 0, 0 }, SDLK_1, 0, 0		},
-		{	{ 0, 0, 0, 0 }, SDLK_2, 0, 0		},
-		{	{ 0, 0, 0, 0 }, SDLK_3, 0, 0		},
-		{	{ 0, 0, 0, 0 }, SDLK_4, 0, 0		},
-		{	{ 0, 0, 0, 0 }, SDLK_5, 0, 0		},
-		{	{ 0, 0, 0, 0 }, SDLK_6, 0, 0		},
-		{	{ 0, 0, 0, 0 }, SDLK_7, 0, 0		},
-		{	{ 0, 0, 0, 0 }, SDLK_8, 0, 0		},
-		{	{ 0, 0, 0, 0 }, SDLK_9, 0, 0		},
-		{	{ 0, 0, 0, 0 }, SDLK_0, 0, 0		},
-		{	{ 0, 0, 0, 0 }, SDLK_MINUS, 0, 0	},
+		{	_NON, SDLK_UP, 0, 0		},
+		{	_NON, SDLK_DOWN, 0, 0 	},
+		{	_NON, SDLK_RETURN, 0, 0	},
+		{	_AREA(0, 0, 0, 0), SDLK_1, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_2, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_3, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_4, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_5, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_6, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_7, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_8, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_9, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_0, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_MINUS, 0, 0	},
 		0,
 	},
 	0
@@ -135,22 +151,26 @@ KBgamestate module_selection = {
 
 KBgamestate savegame_selection = {
 	{
-		{	{ 0, 0, 0, 0 }, SDLK_UP, 0, 0		},
-		{	{ 0, 0, 0, 0 }, SDLK_DOWN, 0, 0 	},
-		{	{ 0, 0, 0, 0 }, SDLK_RETURN, 0, 0	},
-		{	{ 0, 0, 0, 0 }, SDLK_1, 0, 0		},
-		{	{ 0, 0, 0, 0 }, SDLK_2, 0, 0		},
-		{	{ 0, 0, 0, 0 }, SDLK_3, 0, 0		},
-		{	{ 0, 0, 0, 0 }, SDLK_4, 0, 0		},
-		{	{ 0, 0, 0, 0 }, SDLK_5, 0, 0		},
-		{	{ 0, 0, 0, 0 }, SDLK_6, 0, 0		},
-		{	{ 0, 0, 0, 0 }, SDLK_7, 0, 0		},
-		{	{ 0, 0, 0, 0 }, SDLK_8, 0, 0		},		
-		{	{ 0, 0, 0, 0 }, SDLK_9, 0, 0		},
+		{	_NON, SDLK_UP, 0, 0		},
+		{	_NON, SDLK_DOWN, 0, 0 	},
+		{	_NON, SDLK_RETURN, 0, 0	},
+		{	_AREA(0, 0, 0, 0), SDLK_1, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_2, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_3, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_4, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_5, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_6, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_7, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_8, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_9, 0, 0		},		
 		0,
 	},
 	0
 };
+
+#undef _NON
+#undef _TIME
+#undef _AREA
 
 void render_game(KBenv *env, KBgame *game, KBgamestate *state, KBconfig *conf) {
 
@@ -223,7 +243,7 @@ void KB_stopENV(KBenv *env) {
 
 int KB_reset(KBgamestate *state) {
 
-	SDL_Event *event;
+	SDL_Event event;
 	int i;
 
 	/* Flush all events (Evil) */
@@ -253,30 +273,32 @@ int KB_event(KBgamestate *state) {
 
 	Uint32 passed, now;
 
-	/* Update time */
+	/* If we don't know max number of hotspots, let's find out,
+	 * ...because it surely beats testing for it 3 times below
+	 * TODO? If KB_reset ever becomes mandatory, move it there... 
+	 */ 
+	if (state->max_spots == 0) {
+		for (i = 0; i < MAX_HOTSPOTS; i++) 
+			if (state->spots[i].hot_key == 0) break;
+		state->max_spots = i;
+	}
+
+	/* Update current time */
 	now = SDL_GetTicks();
 	passed = now - state->last;
 	state->last = now;
 
-	SDL_Rect *r;
 	/* Trigger "timed hotspots" (basicly, timers) */
-	for (i = 0; i < MAX_HOTSPOTS; i++) {
-		if (state->spots[i].hot_key == 0) break;
-		if (!(state->spots[i].flag & KFLAG_TIMER)) continue;
+	for (i = 0; i < state->max_spots; i++) {
+		KBhotspot *sp = &state->spots[i]; 
+		if (!(sp->flag & KFLAG_TIMER)) continue;
 
-		/* As a hack, they keep their intervals / phases inside the SDL_Rect */
-		/* TODO: make it a union for cleaner semantics? */
-		r = &state->spots[i].coords;
+		sp->passed += passed;
 
-		/* "w" is "time passed since last check" */
-		/* "h" is "ammount of time must pass to tigger" */
-		r->w += passed;
-
-		if (r->w >= r->h) {	/* "h" ms passed */
-			r->w -= r->h;
-			eve = i + 1;
-			if (state->spots[i].flag & KFLAG_RETKEY)
-				eve = state->spots[i].hot_key;
+		if (sp->passed >= sp->resolution) {
+			sp->passed -= sp->passed;
+			eve = i + 1; /* !!! */
+			if (sp->flag & KFLAG_RETKEY) eve = sp->hot_key;
 			break;
 		}
 	}
@@ -299,17 +321,16 @@ int KB_event(KBgamestate *state) {
 
 		if (event.type == SDL_KEYDOWN) {
 			SDL_keysym *kbd = &event.key.keysym;
-			for (i = 0; i < MAX_HOTSPOTS; i++) {
-				KBhotspot *spot = &state->spots[i];
-				if (spot->hot_key == 0) break;
-				if ((spot->flag & KFLAG_ANYKEY) || 
-					(spot->hot_key == kbd->sym && 
-					( !spot->hot_mod || (spot->hot_mod & kbd->mod) )))
+			for (i = 0; i < state->max_spots; i++) {
+				KBhotspot *sp = &state->spots[i];
+				if ((sp->flag & KFLAG_ANYKEY) || 
+					(sp->hot_key == kbd->sym && 
+					( !sp->hot_mod || (sp->hot_mod & kbd->mod) )))
 					{
-						eve = i + 1;
-						if (spot->flag & KFLAG_RETKEY)
+						eve = i + 1; /* !!! */
+						if (sp->flag & KFLAG_RETKEY)
 						{
-							eve = kbd->sym;
+							eve = kbd->sym; /* !!! */
 							if ((kbd->mod & KMOD_SHIFT) && (eve < 128)) { //shift -- uppercase!
 								if (eve >= SDLK_a && eve <= SDLK_z) eve -= 32;
 								if (eve >= SDLK_0 && eve <= SDLK_9) eve -= 16;
@@ -331,19 +352,16 @@ int KB_event(KBgamestate *state) {
 
 	/* Mouse moved */
 	if (mouse_x != -1 || mouse_y != -1) {
-		SDL_Rect *r;
 		int zoom = 1;
+		SDL_Rect *r;
 		mouse_x /= zoom;
 		mouse_y /= zoom;
-		for (i = 0; i < MAX_HOTSPOTS; i++) {
-			if (state->spots[i].hot_key == 0) break;
-
+		for (i = 0; i < state->max_spots; i++) {
 			r = &state->spots[i].coords;
-
-			if (mouse_x >= r->x && mouse_x <= (r->x+r->w)
-			 && mouse_y >= r->y && mouse_y <= (r->y+r->h)) 
+			if (mouse_x >= r->x && mouse_x < (r->x+r->w)
+			 && mouse_y >= r->y && mouse_y < (r->y+r->h)) 
 			{
-				new_hover = i;					
+				new_hover = i;
 			}
 		}
 	}
@@ -352,7 +370,7 @@ int KB_event(KBgamestate *state) {
 	if (new_hover != -1) {
 		state->hover = new_hover;
 		if (click != -1) {
-			eve = new_hover + 1;
+			eve = new_hover + 1; /* !!! */
 			if (state->spots[new_hover].flag & KFLAG_RETKEY)
 				eve = state->spots[new_hover].hot_key;
 		}
@@ -526,7 +544,7 @@ KBgame *spawn_game(char *name, int pclass, int difficulty) {
 	game = malloc(sizeof(KBgame));
 	if (game == NULL) return NULL;
 
-	strcpy(game->name, name);
+	KB_strcpy(game->name, name);
 
 	game->class = pclass;
 	game->rank = 0;
