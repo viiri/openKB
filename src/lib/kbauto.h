@@ -48,6 +48,4 @@ typedef struct KBmodule {
 
 } KBmodule;
 
-extern void KB_RegisterConfig(void*);
-
 #endif /* _OPENKB_LIBKB_AUTO */

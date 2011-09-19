@@ -110,6 +110,33 @@ int read_file_config(struct KBconfig *conf, const char *path) {
 				conf->fallback = atoi(buf2);
 				conf->set[C_fallback] = 1;
 			} else
+			if (!KB_strcasecmp(buf1, "filter")) {
+				switch(KB_strlistcmp(
+					"none\0" "normal2x\0"//1, 2
+					"scale2x\0" //3
+					"\0", buf2)) {
+					case 1://none
+						conf->filter = 0;
+						conf->set[C_filter] = 1;
+					break;
+					case 2://normal2x
+						conf->filter = 1;
+						conf->set[C_filter] = 1;
+					break;
+					case 3://scale2x
+						conf->filter = 2;
+						conf->set[C_filter] = 1;
+					break;
+					default:
+						err = -1;					
+					break;
+				}
+				if (err == -1) {
+					KB_errlog("[config] Unrecognized filter '%s' on line %d, accepted filters are: none, normal2x, scale2x \n", &buf2[0], lineno);
+					err = -1;
+					break;
+				}			
+			} else
 			if (!KB_strcasecmp(buf1, "name")) {
 				mN++;
 				slot = 0;
@@ -268,6 +295,9 @@ void wipe_config(struct KBconfig *conf) {
 	conf->fullscreen = 0;
 	conf->set[C_fullscreen] = 0;
 
+	conf->filter = 0;
+	conf->set[C_filter] = 0;
+
 	conf->module = 0;
 	conf->set[C_module] = 0;
 
@@ -384,6 +414,8 @@ void apply_config(struct KBconfig* dst, struct KBconfig* src) {
 	if (src->set[C_data_dir]) KB_strcpy(dst->data_dir, src->data_dir);
 
 	if (src->set[C_fullscreen]) dst->fullscreen = src->fullscreen;
+	if (src->set[C_filter]) dst->filter = src->filter;
+	
 	if (src->set[C_autodiscover]) dst->autodiscover = src->autodiscover;
 	if (src->set[C_fallback]) dst->fallback = src->fallback;
 

@@ -42,7 +42,6 @@
 #define SN_TUNE		0x60	/* subId - tune index (0-10) */
 
 #include "SDL.h"
-extern SDL_Surface* KB_LoadIMG8(int id, int sub_id);
 
 /* From dos-img.c: */
 extern void SDL_add_DOS_palette(SDL_Surface *surf, int bpp);

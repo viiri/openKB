@@ -37,7 +37,6 @@ typedef struct KBenv {
 	int bpp;
 
 	int fullscreen;
-
 	int filter;
 
 } KBenv;
@@ -50,7 +49,7 @@ typedef struct KBenv {
  */
 typedef struct KBwin {
 
-	void *cache;
+	SDL_Surface *cache;
 	int need_redraw;
 
 	int x;
@@ -62,6 +61,14 @@ typedef struct KBwin {
 	void *udata;
 
 } KBwin;
+
+extern void SDL_SBlitSurface(SDL_Surface *src, SDL_Rect *srcrect, SDL_Surface *dst, SDL_Rect *dstrect);
+
+extern void RESOURCE_DefaultConfig(KBconfig* _conf);
+
+extern void* KB_Resolve(int id, int sub_id);
+
+extern SDL_Surface* KB_LoadIMG8(int id, int sub_id);
 
 extern SDL_Surface *SDL_LoadRESOURCE(int id, int sub_id, int flip);
 
