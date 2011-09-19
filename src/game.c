@@ -39,7 +39,8 @@ typedef struct KBhotspot {
 
 	SDL_Rect coords;
 	word	hot_key;
-	char	hot_mod;
+	byte	hot_mod;
+	byte	flag;
 
 } KBhotspot;
 
@@ -50,15 +51,24 @@ typedef struct KBgamestate {
 
 } KBgamestate;
 
-#define KMOD_ANYKEY	0x01
-#define KMOD_RETKEY	0x02
-#define KMOD_XXX_1	0x04
-#define KMOD_XXX_2	0x08
+#define KFLAG_ANYKEY	0x01
+#define KFLAG_RETKEY	0x02
+#define KFLAG_XXX_1	0x04
+#define KFLAG_XXX_2	0x08
 
+
+KBgamestate debug_menu = {
+	{
+		{	{ 0  }, SDLK_LEFT, 0, KFLAG_RETKEY, },
+		{	{ 0  }, SDLK_RIGHT, 0, KFLAG_RETKEY, },
+		0,
+	},
+	0
+};
 
 KBgamestate press_any_key = {
 	{
-		{	{ 0, 0, 1024, 768  }, 0xFF, KMOD_ANYKEY },
+		{	{ 0, 0, 1024, 768  }, 0xFF, 0, KFLAG_ANYKEY },
 		0,
 	},
 	0
@@ -66,9 +76,9 @@ KBgamestate press_any_key = {
 
 KBgamestate difficulty_selection = {
 	{
-		{	{ 0, 0, 0, 0  }, SDLK_UP, KMOD_RETKEY },
-		{	{ 0, 0, 0, 0  }, SDLK_DOWN, KMOD_RETKEY },
-		{	{ 0, 0, 0, 0  }, SDLK_RETURN, KMOD_RETKEY },
+		{	{ 0, 0, 0, 0  }, SDLK_UP, 0, KFLAG_RETKEY },
+		{	{ 0, 0, 0, 0  }, SDLK_DOWN, 0, KFLAG_RETKEY },
+		{	{ 0, 0, 0, 0  }, SDLK_RETURN, 0, KFLAG_RETKEY },
 		0,
 	},
 	0
@@ -76,8 +86,8 @@ KBgamestate difficulty_selection = {
 
 KBgamestate enter_string = {
 	{
-		{	{ 0, 0, 0, 0  }, SDLK_BACKSPACE, KMOD_RETKEY },	
-		{	{ 0, 0, 0, 0  }, 0xFF, KMOD_ANYKEY | KMOD_RETKEY },
+		{	{ 0, 0, 0, 0  }, SDLK_BACKSPACE, 0, KFLAG_RETKEY },	
+		{	{ 0, 0, 0, 0  }, 0xFF, 0, KFLAG_ANYKEY | KFLAG_RETKEY },
 		0,
 	},
 	0
@@ -86,11 +96,11 @@ KBgamestate enter_string = {
 
 KBgamestate character_selection = {
 	{
-		{	{ 0, 0, 0, 0 }, SDLK_a, 0      	},
-		{	{ 0, 0, 0, 0 }, SDLK_b, 0      	},
-		{	{ 0, 0, 0, 0 }, SDLK_c, 0      	},
-		{	{ 0, 0, 0, 0 }, SDLK_d, 0      	},
-		{	{ 180, 8, 140, 8 }, SDLK_l, 0      	},		
+		{	{ 0, 0, 0, 0 }, SDLK_a, 0, 0      	},
+		{	{ 0, 0, 0, 0 }, SDLK_b, 0, 0      	},
+		{	{ 0, 0, 0, 0 }, SDLK_c, 0, 0      	},
+		{	{ 0, 0, 0, 0 }, SDLK_d, 0, 0      	},
+		{	{ 180, 8, 140, 8 }, SDLK_l, 0, 0   	},
 		0,
 	},
 	0
@@ -98,20 +108,20 @@ KBgamestate character_selection = {
 
 KBgamestate module_selection = {
 	{
-		{	{ 0, 0, 0, 0 }, SDLK_UP, 0		},
-		{	{ 0, 0, 0, 0 }, SDLK_DOWN, 0	},
-		{	{ 0, 0, 0, 0 }, SDLK_RETURN, 0	},
-		{	{ 0, 0, 0, 0 }, SDLK_1, 0		},
-		{	{ 0, 0, 0, 0 }, SDLK_2, 0		},
-		{	{ 0, 0, 0, 0 }, SDLK_3, 0		},
-		{	{ 0, 0, 0, 0 }, SDLK_4, 0		},
-		{	{ 0, 0, 0, 0 }, SDLK_5, 0		},
-		{	{ 0, 0, 0, 0 }, SDLK_6, 0		},
-		{	{ 0, 0, 0, 0 }, SDLK_7, 0		},
-		{	{ 0, 0, 0, 0 }, SDLK_8, 0		},		
-		{	{ 0, 0, 0, 0 }, SDLK_9, 0		},
-		{	{ 0, 0, 0, 0 }, SDLK_0, 0		},
-		{	{ 0, 0, 0, 0 }, SDLK_MINUS, 0	},
+		{	{ 0, 0, 0, 0 }, SDLK_UP, 0, 0		},
+		{	{ 0, 0, 0, 0 }, SDLK_DOWN, 0, 0 	},
+		{	{ 0, 0, 0, 0 }, SDLK_RETURN, 0, 0	},
+		{	{ 0, 0, 0, 0 }, SDLK_1, 0, 0		},
+		{	{ 0, 0, 0, 0 }, SDLK_2, 0, 0		},
+		{	{ 0, 0, 0, 0 }, SDLK_3, 0, 0		},
+		{	{ 0, 0, 0, 0 }, SDLK_4, 0, 0		},
+		{	{ 0, 0, 0, 0 }, SDLK_5, 0, 0		},
+		{	{ 0, 0, 0, 0 }, SDLK_6, 0, 0		},
+		{	{ 0, 0, 0, 0 }, SDLK_7, 0, 0		},
+		{	{ 0, 0, 0, 0 }, SDLK_8, 0, 0		},
+		{	{ 0, 0, 0, 0 }, SDLK_9, 0, 0		},
+		{	{ 0, 0, 0, 0 }, SDLK_0, 0, 0		},
+		{	{ 0, 0, 0, 0 }, SDLK_MINUS, 0, 0	},
 		0,
 	},
 	0
@@ -119,18 +129,18 @@ KBgamestate module_selection = {
 
 KBgamestate savegame_selection = {
 	{
-		{	{ 0, 0, 0, 0 }, SDLK_UP, 0		},
-		{	{ 0, 0, 0, 0 }, SDLK_DOWN, 0	},
-		{	{ 0, 0, 0, 0 }, SDLK_RETURN, 0	},
-		{	{ 0, 0, 0, 0 }, SDLK_1, 0		},
-		{	{ 0, 0, 0, 0 }, SDLK_2, 0		},
-		{	{ 0, 0, 0, 0 }, SDLK_3, 0		},
-		{	{ 0, 0, 0, 0 }, SDLK_4, 0		},
-		{	{ 0, 0, 0, 0 }, SDLK_5, 0		},
-		{	{ 0, 0, 0, 0 }, SDLK_6, 0		},
-		{	{ 0, 0, 0, 0 }, SDLK_7, 0		},
-		{	{ 0, 0, 0, 0 }, SDLK_8, 0		},		
-		{	{ 0, 0, 0, 0 }, SDLK_9, 0		},
+		{	{ 0, 0, 0, 0 }, SDLK_UP, 0, 0		},
+		{	{ 0, 0, 0, 0 }, SDLK_DOWN, 0, 0 	},
+		{	{ 0, 0, 0, 0 }, SDLK_RETURN, 0, 0	},
+		{	{ 0, 0, 0, 0 }, SDLK_1, 0, 0		},
+		{	{ 0, 0, 0, 0 }, SDLK_2, 0, 0		},
+		{	{ 0, 0, 0, 0 }, SDLK_3, 0, 0		},
+		{	{ 0, 0, 0, 0 }, SDLK_4, 0, 0		},
+		{	{ 0, 0, 0, 0 }, SDLK_5, 0, 0		},
+		{	{ 0, 0, 0, 0 }, SDLK_6, 0, 0		},
+		{	{ 0, 0, 0, 0 }, SDLK_7, 0, 0		},
+		{	{ 0, 0, 0, 0 }, SDLK_8, 0, 0		},		
+		{	{ 0, 0, 0, 0 }, SDLK_9, 0, 0		},
 		0,
 	},
 	0
@@ -178,7 +188,7 @@ KBenv *KB_startENV(KBconfig *conf) {
 
 	nsys->font = NULL;
 
-	KB_RegisterConfig(conf);
+	RESOURCE_DefaultConfig(conf);
 
 	prepare_inline_font();	// <-- inline font
 
@@ -201,7 +211,7 @@ int KB_event(KBgamestate *state) {
 
 	int eve = 0;
 	int new_hover = -1;
-	
+
 	int click = -1;
 	int mouse_x = -1;
 	int mouse_y = -1;
@@ -220,37 +230,37 @@ int KB_event(KBgamestate *state) {
 		 		eve = 0xFF;
 		 		break;
 			}
+
 		if (event.type == SDL_KEYDOWN) {
-			int i, j = 0;
+			SDL_keysym *kbd = &event.key.keysym;
+			int i, done;
 			for (i = 0; i < MAX_HOTSPOTS; i++) {
-				if (state->spots[i].hot_key == 0) break;
-				if (state->spots[i].hot_mod & KMOD_ANYKEY 
-				 || (state->spots[i].hot_key == event.key.keysym.sym
-				 	&& (1 == 1))	/* Modifier */
-				 ) 
-				{
-					eve = i + 1;
-					if (state->spots[i].hot_mod & KMOD_RETKEY)
+				KBhotspot *spot = &state->spots[i];
+				if (spot->hot_key == 0) break;
+				if ((spot->flag & KFLAG_ANYKEY) || 
+					(spot->hot_key == kbd->sym && 
+					( !spot->hot_mod || (spot->hot_mod & kbd->mod) )))
 					{
-						eve = event.key.keysym.sym;
-						if (event.key.keysym.mod & KMOD_SHIFT && eve < 128) { //shift -- uppercase!
-							if ((char)eve >= SDLK_a && (char)eve <= SDLK_z) {
-								eve = (char)eve - 32;
+						eve = i + 1;
+						if (spot->flag & KFLAG_RETKEY)
+						{
+							eve = kbd->sym;
+							if ((kbd->mod & KMOD_SHIFT) && (eve < 128)) { //shift -- uppercase!
+								if (eve >= SDLK_a && eve <= SDLK_z) eve -= 32;
 							}
 						}
+						done = 1;							
+						break;
 					}
-					j = 1;									
-					break;
-				}
 			}
-			if (j) break;
+			if (done) break;
 		}
 		if (event.type == SDL_MOUSEBUTTONUP) {
-			if (event.button.button == 1) {
 			mouse_x = event.button.x;
 			mouse_y = event.button.y;
-			click = 1;
-			break;
+			if (event.button.button == 1) {
+				click = 1;
+				break;
 			}
 		}
 	}
@@ -259,6 +269,9 @@ int KB_event(KBgamestate *state) {
 	if (mouse_x != -1 || mouse_y != -1) {
 		int i;
 		SDL_Rect *r;
+		int zoom = 1;
+		mouse_x /= zoom;
+		mouse_y /= zoom;
 		for (i = 0; i < MAX_HOTSPOTS; i++) {
 			if (state->spots[i].hot_key == 0) break;
 
@@ -279,8 +292,6 @@ int KB_event(KBgamestate *state) {
 			eve = new_hover + 1;
 		}
 	}
-
-	//if (click != -1) eve = 1;
 
 	return eve;
 }
@@ -842,30 +853,39 @@ void display_debug() {
 	int done = 0;
 	int redraw = 1;
 
+	int troop_id = 0;
 	int troop_frame = 0;
 	SDL_Rect src = {0, 0, 48, 32};
 	
-//	RESOURCE_DefaultConfig(sys->conf);
+	RESOURCE_DefaultConfig(sys->conf);
 
 	while (!done) {
 
-		key = KB_event(&press_any_key);
+		key = KB_event(&debug_menu);
 
-		if (key) done = 1;
+		if (key == 0xFF) done = 1;
+		if (key == SDLK_LEFT) troop_id--;
+		if (troop_id < 0) troop_id = 0;
+		if (key == SDLK_RIGHT) troop_id++;
+		if (troop_id > MAX_TROOPS - 1) troop_id = MAX_TROOPS - 1;
 
 		if (redraw) {
 
 			SDL_Rect pos;
+			SDL_Rect pos2 = { 48, 0, 48, 32 };
 
-			SDL_Surface *title = KB_LoadIMG8(GR_TROOP, 0);
+			SDL_Surface *title = SDL_LoadRESOURCE(GR_TROOP, troop_id, 0);
 			SDL_Surface *font = KB_LoadIMG8(GR_FONT, 0);
-			SDL_Surface *peasant = KB_LoadIMG8(GR_TROOP, 2);
+			SDL_Surface *peasant = KB_LoadIMG8(GR_TROOP, troop_id);
+			//sys->conf->module++;
+			SDL_Surface *peasant2 = SDL_LoadRESOURCE(GR_TROOP, troop_id, 1);
+			//sys->conf->module--;
 
-			SDL_CenterRect(&pos, peasant, screen);
+			SDL_CenterRect(&pos, peasant2, screen);
 
-			SDL_FillRect( screen , NULL, 0xF1F101);
+			SDL_FillRect( screen , NULL, 0x4664B4);
 
-			SDL_BlitSurface( title, NULL , screen, &pos );
+			SDL_BlitSurface( peasant2, NULL , screen, &pos );
 
 			//SDL_BlitSurface( font, NULL , screen, &pos );
 
@@ -877,6 +897,10 @@ void display_debug() {
 			if (troop_frame > 3) troop_frame = 0; 			
 			
 			SDL_BlitSurface( peasant, &src , screen, NULL );
+			
+			src.y += 34;
+			SDL_SBlitSurface( peasant2, &src , screen, &pos2 );
+			src.y -= 34;
 
 	    	SDL_Flip( screen );
 
