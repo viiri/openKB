@@ -35,6 +35,10 @@
 /* Global/main environment */
 KBenv *sys = NULL;
 
+/* TOH */
+KBgame* KB_loadDAT(const char* filename);
+int KB_saveDAT(const char* filename, KBgame *game);
+
 /*
  * Hotspot is a possible player action.
  *
@@ -639,6 +643,7 @@ KBgame *create_game(int pclass) {
 
 	return game;
 }
+
 /* load game screen (pick savefile) */
 KBgame *load_game() {
 	SDL_Surface *screen = sys->screen;

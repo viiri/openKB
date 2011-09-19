@@ -21,14 +21,29 @@
 #define _OPENKB_LIBKB_RESOURCES
 
 #include "kbsys.h"
-
+/*
+ * A "resource" is identified by 2 integers 'id' and 'sub_id'.
+ *
+ * GR_ resources are ready-to-blit SDL_Surfaces.
+ * SN_ resources are tunes in ? format
+ * PAL_ are arrays of 255 SDL_Colors.
+ * DAT_ are byte arrays of pre-defined length.
+ * STR_ are asiiz strings.
+ * STRL_ are asiiz-lists (\0 acts as a separator, \0\0 ends the list).
+ */
 #define GR_LOGO 	0x00	/* subId - undefined */
 #define GR_TITLE 	0x01	/* subId - undefined */
 
 #define GR_TROOP	0x02	/* subId - troop index */
 #define GR_TILE		0x03	/* subId - tile index */
-#define GR_TILESET	0x04	/* subId - continent */
+#define GR_TILESET	0x04	/* subId - continent flavor */
 #define GR_VILLAIN	0x05	/* subId - villain index */
+
+#define GR_FACE 	0x07	/* subId - face index (villain index * 4) */
+#define GR_FACES 	0x0C	/* subId - undefined */
+
+#define GR_COMTILE	0x09	/* subId - combat tile index */
+#define GR_COMTILES	0x0A	/* subId - undefined */
 
 #define GR_LOCATION 0x06	/* subId - 0 home 1 town 2 - 6 dwelling */
 
@@ -38,8 +53,23 @@
 #define GR_SELECT	0x21	/* subId - undefined */
 
 #define GR_PORTRAIT	0x22	/* subId - player class */
+#define GR_VIEW 	0x24	/* subId - undefined */
+
+#define GR_GOLD 	0x25	/* subId - undefined */
 
 #define SN_TUNE		0x60	/* subId - tune index (0-10) */
+#define PAL_PALETTE	0x70	/* subId - undefined */
+
+#define DAT_WORLD	0x90	/* complete world map ; subId - undefined */
+#define DAT_LAND	0x91	/* map for specific continent ; subId - continent index */
+
+#define STR_SIGN	0xE0	/* signpost text ; subId - signpost index */
+#define STR_TROOP	0xE1	/* troop name ; subId - troop index */
+#define STR_MULTI	0xE2	/* troops name ; subId - troop index */
+
+#define STRL_SIGNS	0xF0	/* signpost texts ; subId - undefined */
+#define STRL_TROOPS	0xF1	/* troop names ; subId - undefined */
+#define STRL_MULTIS	0xF2	/* troops names ; subId - undefined */
 
 #include "SDL.h"
 
