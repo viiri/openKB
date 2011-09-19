@@ -48,13 +48,16 @@ typedef struct KBgamestate {
 
 	KBhotspot spots[MAX_HOTSPOTS];
 	int hover;
+	Uint32 last;
+	Uint32 passed;
 
 } KBgamestate;
 
 #define KFLAG_ANYKEY	0x01
 #define KFLAG_RETKEY	0x02
-#define KFLAG_XXX_1	0x04
-#define KFLAG_XXX_2	0x08
+#define KFLAG_TIMER 	0x10
+#define KFLAG_SLOW  	0x20
+#define KFLAG_FAST  	0x40
 
 
 KBgamestate debug_menu = {
@@ -84,10 +87,13 @@ KBgamestate difficulty_selection = {
 	0
 };
 
+#define SDLK_SYN 0x16
+
 KBgamestate enter_string = {
 	{
 		{	{ 0, 0, 0, 0  }, SDLK_BACKSPACE, 0, KFLAG_RETKEY },	
 		{	{ 0, 0, 0, 0  }, 0xFF, 0, KFLAG_ANYKEY | KFLAG_RETKEY },
+		{	{ 0, 0, 0, 60 }, SDLK_SYN, 0, KFLAG_TIMER | KFLAG_RETKEY },
 		0,
 	},
 	0
@@ -150,29 +156,38 @@ void render_game(KBenv *env, KBgame *game, KBgamestate *state, KBconfig *conf) {
 
 }
 
+/*
+ * "inline" functions to adjust SDL_Rect around HOST.
+ *
+ * HOST could be another SDL_Rect or SDL_Surface, or anything
+ * that has ->w and ->h members (thus the usage of macros).
+ */
+#define RECT_Size(RECT, HOST) \
+		RECT->w = HOST->w, \
+		RECT->h = HOST->h
+
+#define RECT_Center(RECT, HOST) \
+		RECT->x = (HOST->w - RECT->w) / 2, \
+		RECT->y = (HOST->h - RECT->h) / 2
+
+/* In this one, ROWS and COLS of text are used */
+#define RECT_Text(RECT, ROWS, COLS) \
+		RECT->w = COLS * 8, \
+		RECT->h = ROWS * 8
+
+//
+// TODO: get rid of those, call RECT_* directly
 inline void SDL_CenterRect(SDL_Rect *rect, SDL_Surface *img, SDL_Surface *host) 
 {
-	/* Size */
-	rect->w = img->w;
-	rect->h = img->h;
-
-	/* To the center of the screen */
-	rect->x = (host->w - rect->w) / 2;
-	rect->y = (host->h - rect->h) / 2; 
+	RECT_Size(rect, img);
+	RECT_Center(rect, host);
 }
 
 inline void SDL_CenterRectTxt(SDL_Rect *rect, int rows, int cols, SDL_Surface *host)
 {
-	/* Size */
-	rect->w = cols * 8;
-	rect->h = rows * 8;
-
-	/* To the center of the screen */
-	rect->x = (host->w - rect->w) / 2;
-	rect->y = (host->h - rect->h) / 2; 
+	RECT_Text(rect, rows, cols);
+	RECT_Center(rect, host); 
 }
-
-
 
 KBenv *KB_startENV(KBconfig *conf) {
 
@@ -206,6 +221,24 @@ void KB_stopENV(KBenv *env) {
 	SDL_Quit();
 }
 
+int KB_reset(KBgamestate *state) {
+
+	SDL_Event *event;
+	int i;
+
+	/* Flush all events (Evil) */
+	while (SDL_PollEvent(&event)) 
+		;
+
+	/* Reset all timers */
+	for (i = 0; i < MAX_HOTSPOTS; i++) {
+		if (state->spots[i].hot_key == 0) break;
+		if (state->spots[i].flag & KFLAG_TIMER) {
+			state->spots[i].coords.w = 0;
+		}
+	}
+}
+
 int KB_event(KBgamestate *state) {
 	SDL_Event event;
 
@@ -216,6 +249,39 @@ int KB_event(KBgamestate *state) {
 	int mouse_x = -1;
 	int mouse_y = -1;
 
+	int i;
+
+	Uint32 passed, now;
+
+	/* Update time */
+	now = SDL_GetTicks();
+	passed = now - state->last;
+	state->last = now;
+
+	SDL_Rect *r;
+	/* Trigger "timed hotspots" (basicly, timers) */
+	for (i = 0; i < MAX_HOTSPOTS; i++) {
+		if (state->spots[i].hot_key == 0) break;
+		if (!(state->spots[i].flag & KFLAG_TIMER)) continue;
+
+		/* As a hack, they keep their intervals / phases inside the SDL_Rect */
+		/* TODO: make it a union for cleaner semantics? */
+		r = &state->spots[i].coords;
+
+		/* "w" is "time passed since last check" */
+		/* "h" is "ammount of time must pass to tigger" */
+		r->w += passed;
+
+		if (r->w >= r->h) {	/* "h" ms passed */
+			r->w -= r->h;
+			eve = i + 1;
+			if (state->spots[i].flag & KFLAG_RETKEY)
+				eve = state->spots[i].hot_key;
+			break;
+		}
+	}
+
+	if (!eve)
 	while (SDL_PollEvent(&event)) {
 		//switch (event.type) {
 		//	case SDL_MOUSEMOTION:
@@ -233,7 +299,6 @@ int KB_event(KBgamestate *state) {
 
 		if (event.type == SDL_KEYDOWN) {
 			SDL_keysym *kbd = &event.key.keysym;
-			int i, done;
 			for (i = 0; i < MAX_HOTSPOTS; i++) {
 				KBhotspot *spot = &state->spots[i];
 				if (spot->hot_key == 0) break;
@@ -247,13 +312,12 @@ int KB_event(KBgamestate *state) {
 							eve = kbd->sym;
 							if ((kbd->mod & KMOD_SHIFT) && (eve < 128)) { //shift -- uppercase!
 								if (eve >= SDLK_a && eve <= SDLK_z) eve -= 32;
+								if (eve >= SDLK_0 && eve <= SDLK_9) eve -= 16;
 							}
 						}
-						done = 1;							
-						break;
 					}
 			}
-			if (done) break;
+			if (eve) break;
 		}
 		if (event.type == SDL_MOUSEBUTTONUP) {
 			mouse_x = event.button.x;
@@ -267,7 +331,6 @@ int KB_event(KBgamestate *state) {
 
 	/* Mouse moved */
 	if (mouse_x != -1 || mouse_y != -1) {
-		int i;
 		SDL_Rect *r;
 		int zoom = 1;
 		mouse_x /= zoom;
@@ -290,6 +353,8 @@ int KB_event(KBgamestate *state) {
 		state->hover = new_hover;
 		if (click != -1) {
 			eve = new_hover + 1;
+			if (state->spots[new_hover].flag & KFLAG_RETKEY)
+				eve = state->spots[new_hover].hot_key;
 		}
 	}
 
@@ -335,6 +400,9 @@ char *enter_name(int x, int y) {
 	entered_name[0] = '\0';
 	int curs = 0;
 
+	const char *twirl = "\x1D" "\x05" "\x1F" "\x1C" ; /* stands for: | / - \ */  
+	byte twirl_pos = 0;
+
 	while (!done) {
 
 		key = KB_event(&enter_string);
@@ -354,8 +422,13 @@ char *enter_name(int x, int y) {
 			}
 		}
 		else
+		if (key == SDLK_SYN) {
+			twirl_pos++;
+			if (twirl_pos > 3) twirl_pos = 0;
+			redraw = 1;
+		} else
 		if (key) {
-			if (key < 128 && isascii((char)key)) {
+			if (key < 128 && isascii(key)) {
 				if (curs < 10) {
 					entered_name[curs] = (char)key;
 					curs++;
@@ -368,7 +441,8 @@ char *enter_name(int x, int y) {
 		if (redraw) {
 
 			inprint(screen, entered_name, x, y);
-			inprint(screen, "/", x + curs * 8, y);
+			char buf[2]; sprintf(buf, "%c", twirl[twirl_pos]); 
+			inprint(screen, buf, x + curs * 8, y);
 
 	    	SDL_Flip( screen );
 
@@ -380,6 +454,68 @@ char *enter_name(int x, int y) {
 	entered_name[curs] = '\0';
 
 	return &entered_name;	
+}
+
+/* Wait for a keypress */
+inline void KB_Pause() { 
+ 	while (!KB_event(&press_any_key));
+}
+
+/* Display a message. Wait for a key to discard. */
+void KB_MessageBox(const char *str, int wait) {
+	SDL_Surface *screen = sys->screen;
+	
+	int i, max_w = 28;
+
+	SDL_Rect rect;
+
+	/* Faux-pass to get max dimensions */
+	int h = 0, w = 0; i = 0;
+	do {
+		w++;
+		if (str[i] == '\n' || str[i] == '\0' || (str[i] == ' ' && w > max_w - 3)) {
+			w = 0;
+			h++;
+		}
+		i++;
+	} while (str[i - 1] != '\0');
+
+	/* Keep in rect */
+	rect.w = max_w * 8;
+	rect.h = h * 8;
+
+	/* To the center of the screen */
+	rect.x = (screen->w - rect.w) / 2;
+	rect.y = (screen->h - rect.h) / 2;
+
+	/* A little bit up */
+	rect.y -= 16;
+
+	/* A nice frame */
+	rect.x -= 8;rect.y -= 8;rect.w += 16;rect.h += (8*2);
+	SDL_TextRect(screen, &rect, 0xFFFFFF, 0x000000);
+	rect.x += 8;rect.y += 8;rect.w -= 16;rect.h -= (8*2);
+	SDL_FillRect(screen, &rect, 0xFF0000);
+
+	/* True-pass */
+	i = 0; h = 0; w = 0;
+	char buffer[80];
+	do {
+		buffer[w++] = str[i];
+		if (str[i] == '\n' || str[i] == '\0' || (str[i] == ' ' && w > max_w - 3)) {
+			buffer[w] = '\0';
+			buffer[w-1] = '\0';
+			inprint(screen, buffer, rect.x, rect.y + h * 8);
+			w = 0;
+			buffer[0] = '\0';
+			h++;
+		}
+		i++;
+	} while (str[i - 1] != '\0');
+	
+	SDL_Flip(screen);
+	SDL_Delay(10);
+	if (wait) KB_Pause();
 }
 
 /* Actual KBgame* allocator */
@@ -399,7 +535,7 @@ KBgame *spawn_game(char *name, int pclass, int difficulty) {
 	return game;
 }
 
-/* create game screen (pick name and difficulty) */
+/* "create game" screen (pick name and difficulty) */
 KBgame *create_game(int pclass) {
 
 	KBgame *game = NULL;
@@ -516,13 +652,18 @@ KBgame *load_game() {
 		char ext[255];
 		
 		name_split(e->d_name, &base, &ext);
-		
+
 		if (strcasecmp("DAT", ext)) continue;
 		strcpy(filename[num_files], base);
 		strcpy(fullname[num_files], e->d_name);
 		num_files++;
     }
 	KB_closedir(d);
+
+	if (num_files == 0) {
+		KB_MessageBox("This disk has no characters on it. Try creating a new\ncharacter or copy one from another disk.", 0);
+		return NULL;		
+	}
 
 	/* Prepare menu */
 	int i, l = 0;
@@ -640,7 +781,7 @@ KBgame *select_game(KBconfig *conf) {
 		/* Pressed 'L' */
 		if (key == 5) {
 			game = load_game();
-			if (game) done = 1;
+			if (game) done = 2;
 			redraw = 1;
 		}
 
@@ -672,6 +813,11 @@ KBgame *select_game(KBconfig *conf) {
 			redraw = 0;
 		}
 
+	}
+	
+	if (game) {
+		if (done == 1) KB_MessageBox("%s the %s,\n\nA new game is being created. Please wait while I perform godlike actions to make this game playable.",  0);
+		if (done == 2) KB_MessageBox("%s the %s,\n\nPlease wait while I prepare a suitable environment for your bountying enjoyment!",  0);
 	}
 
 	return game;
