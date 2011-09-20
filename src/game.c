@@ -87,6 +87,7 @@ KBgamestate debug_menu = {
 	{
 		{	_NON, SDLK_LEFT, 0, KFLAG_RETKEY, },
 		{	_NON, SDLK_RIGHT, 0, KFLAG_RETKEY, },
+		{	_NON, SDLK_SPACE, 0, KFLAG_RETKEY, },
 		0,
 	},
 	0
@@ -1027,6 +1028,8 @@ void display_debug() {
 	int troop_frame = 0;
 	SDL_Rect src = {0, 0, TILE_W, 0 };
 	
+	int heads = 0;
+	
 	RESOURCE_DefaultConfig(sys->conf);
 
 	while (!done) {
@@ -1037,6 +1040,7 @@ void display_debug() {
 		if (key == SDLK_LEFT) troop_id--;
 		if (troop_id < 0) troop_id = 0;
 		if (key == SDLK_RIGHT) troop_id++;
+		if (key == SDLK_SPACE) heads = 1 - heads;
 		if (troop_id > MAX_TROOPS - 1) troop_id = MAX_TROOPS - 1;
 
 		if (redraw) {
@@ -1048,7 +1052,9 @@ void display_debug() {
 			SDL_Surface *font = KB_LoadIMG8(GR_FONT, 0);
 			SDL_Surface *peasant = KB_LoadIMG8(GR_TROOP, troop_id);
 			//sys->conf->module++;
-			SDL_Surface *peasant2 = SDL_LoadRESOURCE(GR_TROOP, troop_id, 1);
+			int gr = GR_TROOP;
+			if (heads) gr = GR_VILLAIN;
+			SDL_Surface *peasant2 = SDL_LoadRESOURCE(gr, troop_id, 1);
 			//sys->conf->module--;
 
 		src.h = peasant->h;
