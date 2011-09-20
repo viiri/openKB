@@ -158,10 +158,10 @@ void SDL_ReplaceIndex(SDL_Surface *dest, SDL_Rect *dstrect, byte search, byte re
 
 Uint8 herc_pallete_ega[16] =
 {
-	0, // 00 // black // bin:00
-	15, // 01 // cyan // bin:01
-	15, // 02 // magenta // bin:10
-	15, // 03 // white // bin:11
+	0, // 00 
+	15, // 01
+	15, // 02
+	15, // 03
 };
 
 Uint8 cga_pallete_ega[16] =

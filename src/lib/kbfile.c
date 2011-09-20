@@ -48,6 +48,8 @@ KB_FileDriver KB_FS[MAX_KBDTYPE] = {
 
 KB_DIR * KB_follow_path( const char * filename, int *n, int *e, KB_DIR *top )
 {
+	char buf[PATH_LEN];
+
 	int i = 0;
 	int ext = 0;
 	int rem = 0;
@@ -63,23 +65,27 @@ KB_DIR * KB_follow_path( const char * filename, int *n, int *e, KB_DIR *top )
 			break;
 		}
 	}
-	if (i != l) {
-		*n = i;
-
-		char buf[1024];
-		strcpy(buf, filename);
-		buf[i] = '\0';
-
-		KB_DIR *d = KB_opendir_in( buf , top );
-
-		d->prev = top;
-		if (top) top->ref_count++;
-
-		return d;
-	}
-
+	/* Return extension position */
 	*e = ext;
-	return NULL;
+
+	/* Separator wasn't found */
+	if (i == l) return NULL;
+
+	/* Return separator position */
+	*n = i;
+
+	/* Copy left part of path (everything upto separtor) */ 
+	KB_strcpy(buf, filename);
+	buf[i] = '\0';
+
+	/* Follow path! */
+	KB_DIR *d = KB_opendir_in( buf , top );
+	if (d == NULL) return NULL;
+
+	d->prev = top;
+	if (top) top->ref_count++;
+
+	return d;
 }
 
 KB_File* KB_fopen_in( const char * filename, const char * mode, KB_DIR *top )
@@ -98,6 +104,8 @@ KB_File* KB_fopen_in( const char * filename, const char * mode, KB_DIR *top )
 	if (top != NULL) type = top->type;
 
 	KB_File *f = (KB_FS[type].fopen_in)(filename, mode, top);
+
+	if (f == NULL) return NULL;
 
 	/* Public view: */
 	f->type = type;

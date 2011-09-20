@@ -139,11 +139,18 @@ void imgGroup_read(struct imgGroup* grp, int first, int frames) {
 }
 
 byte imgGroup_filename_to_bpp(const char *filename) {
-	int l = strlen(filename);
 
-	printf("Convert: %s to bpp: %d\n", filename, 2);
+	char buf[256];
+	char ext[4];
 
-	return 2;
+	int bpp = 2;
+
+	name_split(filename, &buf, &ext);
+
+	if (!strcasecmp(ext, "256")) bpp = 8;
+	if (!strcasecmp(ext, "16")) bpp = 4;
+
+	return bpp;
 }
 
 /*
