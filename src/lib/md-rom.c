@@ -2,6 +2,7 @@
 
 #include "kbfile.h"
 #include "kbres.h"
+#include "kbconf.h"
 #include "kbauto.h"
 #include "kbstd.h"
 
@@ -30,7 +31,7 @@ SDL_Surface *MD_LoadIMGROW(const char *buf, int frames) {
 	int col, row, frame;
 	int pos = 0;
 
-	SDL_Surface *surf = SDL_CreateRGBSurface(SDL_SWSURFACE, TILE_W * frames, TILE_H, 8, 0xFF, 0xFF, 0xFF, 0x00);
+	SDL_Surface *surf = SDL_CreatePALSurface(TILE_W * frames, TILE_H);
 	if (surf == NULL) return NULL;
 
 	for (frame = 0; frame < frames; frame++)
@@ -103,7 +104,7 @@ void* MD_Resolve(KBmodule *mod, int id, int sub_id) {
 
 			KB_fclose(f);
 
-			SDL_Surface *surf = MD_LoadIMGROW(&buf[0], frames);
+			SDL_Surface *surf = MD_LoadIMGROW_BUF(&buf[0], frames);
 			return surf;		
 		}
 		break;

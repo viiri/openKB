@@ -22,6 +22,8 @@
 #include "kbfile.h"
 #include "kbdir.h"
 
+#include "kbres.h"
+
 #include "malloc.h"
 
 #define MAX_IMG_FILES	36
@@ -300,7 +302,7 @@ int KB_fcloseIMG( KB_File * stream )
  * SDL flavor.
  */
 #if HAVE_LIBSDL
-void SDL_add_DOS_palette(SDL_Surface *surf, int bpp) {
+void DOS_SetColors(SDL_Surface *surf, byte bpp) {
 
 	switch (bpp) {
 		case 1:
@@ -320,38 +322,30 @@ void SDL_add_DOS_palette(SDL_Surface *surf, int bpp) {
 
 }
 
-void SDL_blitRAWIMG(SDL_Surface *surf, SDL_Rect *destrect, char *buf, int bpp, word offset, word mask_pos) {
+void DOS_BlitRAWIMG(SDL_Surface *surf, SDL_Rect *destrect, const char *buf, byte bpp, word mask_pos) {
 
-	SDL_BlitXBPP(&buf[offset], surf, destrect, bpp);
-
+	SDL_BlitXBPP(buf, surf, destrect, bpp);
 	if (mask_pos) {
-		if (bpp != 8) 
-			SDL_BlitMASK(&buf[mask_pos], surf, destrect);
-		else
-			SDL_ReplaceIndex(surf, destrect, buf[mask_pos], 0xFF);
+		if (bpp != 8)	SDL_BlitMASK(&buf[mask_pos - 4], surf, destrect);
+		else			SDL_ReplaceIndex(surf, destrect, buf[mask_pos - 4], 0xFF);
 		SDL_SetColorKey(surf, SDL_SRCCOLORKEY, 0xFF);
 	}
 
 }
 
-SDL_Surface *SDL_loadRAWCH(char *buf, int len) 
+SDL_Surface *DOS_LoadRAWCH_BUF(char *buf, int len) 
 {
 	SDL_Surface *surf;
-	SDL_Rect dest;
+	SDL_Rect dest = { 0, 0, 8, 8 };
+
+	int i, off = 0;
 
 	word width = 8;
 	word height = len / width / 2;
 
-	surf = SDL_CreateRGBSurface(SDL_SWSURFACE, width * 16, height, 8, 0xFF, 0xFF, 0xFF, 0x00);
+	surf = SDL_CreatePALSurface(width * 16, height);
 	if (surf == NULL) return NULL;
 
-	dest.x = 0;
-	dest.y = 0;
-	dest.w = 8;
-	dest.h = 8;
-
-	int off = 0;
-	int i;
 	for (i = 0; i < 128; i++) {
 
 		SDL_BlitXBPP(&buf[off], surf, &dest, 1);
@@ -361,15 +355,15 @@ SDL_Surface *SDL_loadRAWCH(char *buf, int len)
 		if (dest.x >= surf->w) {
 			dest.x = 0;
 			dest.y += 8;
-		}	
+		}
 	}
 
-	SDL_add_DOS_palette(surf, 1);
+	DOS_SetColors(surf, 1);
 
 	return surf;
 }
 
-SDL_Surface *SDL_loadRAWIMG(char *buf, int len, int bpp) 
+SDL_Surface *DOS_LoadRAWIMG_BUF(char *buf, int len, byte bpp) 
 {
 	SDL_Surface *surf;
 	SDL_Rect dest;
@@ -379,7 +373,7 @@ SDL_Surface *SDL_loadRAWIMG(char *buf, int len, int bpp)
 
 	word mask_pos = 4 + (width * height) / (8 / bpp);
 
-	surf = SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, 8, 0xFF, 0xFF, 0xFF, 0x00);
+	surf = SDL_CreatePALSurface(width, height);
 	if (surf == NULL) return NULL;
 
 	dest.x = 0;
@@ -389,13 +383,13 @@ SDL_Surface *SDL_loadRAWIMG(char *buf, int len, int bpp)
 
 	if (mask_pos >= len) mask_pos = 0;
 
-	SDL_add_DOS_palette(surf, bpp);
-	SDL_blitRAWIMG(surf, &dest, &buf[0], bpp, 4, mask_pos);
+	DOS_SetColors(surf, bpp);
+	DOS_BlitRAWIMG(surf, &dest, &buf[4], bpp, mask_pos);
 
 	return surf;
 }
 
-SDL_Surface *SDL_loadROWIMG(KB_DIR *dirp, word first, word frames, byte bpp) 
+SDL_Surface *DOS_LoadIMGROW_DIR(KB_DIR *dirp, word first, word frames, byte bpp) 
 {
 	SDL_Surface *surf;
 	struct imgGroup *grp = (struct imgGroup *)dirp->d;
@@ -404,7 +398,7 @@ SDL_Surface *SDL_loadROWIMG(KB_DIR *dirp, word first, word frames, byte bpp)
 	word x = 0, y = 0;
 	word width = 0, height = 0;
 	word last = first + frames;
-	
+
 	/* Enforce frames, bpp */
 	if (first > grp->head.num_files - 1)
 		first = grp->head.num_files - 1; 
@@ -428,7 +422,7 @@ SDL_Surface *SDL_loadROWIMG(KB_DIR *dirp, word first, word frames, byte bpp)
 	}
 
 	/* Create new SDL surface */
-	surf = SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, 8, 0xFF, 0xFF, 0xFF, 0x00);
+	surf = SDL_CreatePALSurface(width, height);
 	if (surf == NULL) return NULL;
 
 	/* Blit the frames */
@@ -451,14 +445,10 @@ SDL_Surface *SDL_loadROWIMG(KB_DIR *dirp, word first, word frames, byte bpp)
 
 		if (mask_pos) mask_pos -= base_offset;
 
-		SDL_blitRAWIMG(surf, &dest, &buf[0], bpp, 4, mask_pos);
-		SDL_add_DOS_palette(surf, bpp);		
+		DOS_BlitRAWIMG(surf, &dest, &buf[4], bpp, mask_pos );
+		DOS_SetColors(surf, bpp);		
 
 		x += dest.w;
-		if (x >= 320) {
-			x = 0;
-			y += height;
-		}
 	}
 	return surf;
 }
@@ -476,7 +466,6 @@ SDL_Surface* DOS_LoadIMGROW_RW(SDL_RWops *file, word first, word frames, byte bp
 	int i, n;
 
 	if (!bpp) return NULL;
-
 	{
 		char buf[HEADER_SIZE_IMG];
 		struct imgHeader *head = &grp->head;
@@ -516,13 +505,12 @@ SDL_Surface* DOS_LoadIMGROW_RW(SDL_RWops *file, word first, word frames, byte bp
 	for (i = first; i < last; i++) 
 	{
 		char buf[4];
-		word w, h;
 		/* Seek to offset, read 4 bytes, seek to offset again */
 		SDL_RWseek(file, grp->head.files[i].offset, 0);
 		n = SDL_RWread(file, buf, 1, 4);
 
-		grp->cache.files[i].w = w = KB_UNPACK_WORD(buf[0],buf[1]);
-		grp->cache.files[i].h = h = KB_UNPACK_WORD(buf[2],buf[3]);
+		grp->cache.files[i].w = KB_UNPACK_WORD(buf[0],buf[1]);
+		grp->cache.files[i].h = KB_UNPACK_WORD(buf[2],buf[3]);
 
 		/* Max width / Max height */
 		width += grp->cache.files[i].w;
@@ -531,7 +519,7 @@ SDL_Surface* DOS_LoadIMGROW_RW(SDL_RWops *file, word first, word frames, byte bp
 	}
 
 	/* Create new SDL surface */
-	surf = SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, 8, 0xFF, 0xFF, 0xFF, 0x00);
+	surf = SDL_CreatePALSurface(width, height);
 	if (surf == NULL) return NULL;
 
 	/* Blit the frames */
@@ -554,8 +542,8 @@ SDL_Surface* DOS_LoadIMGROW_RW(SDL_RWops *file, word first, word frames, byte bp
 
 		if (mask_pos) mask_pos -= base_offset;
 
-		SDL_blitRAWIMG(surf, &dest, &buf[0], bpp, 4, mask_pos);
-		SDL_add_DOS_palette(surf, bpp);		
+		DOS_BlitRAWIMG(surf, &dest, &buf[4], bpp, mask_pos );
+		DOS_SetColors(surf, bpp);		
 
 		x += dest.w;
 	}

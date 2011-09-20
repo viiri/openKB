@@ -28,7 +28,6 @@
 
 #include "kbstd.h"
 #include "kbres.h"
-#include "kbauto.h"
 #include "kbfile.h" //:/
 #include "kbdir.h"
 
@@ -256,12 +255,8 @@ void add_module_aux(KBconfig *conf, const char *name, int family, int bpp, const
 }
 
 /*
- * Ideally, this function should take look at the files
- * presented in the directory and make intelligent guesses
- * about available modules.
- *
- * It does nothing of the sort...
- * TODO!!!
+ * This function takes a look at the files presented in the directory
+ *  and makes intelligent guesses about available modules.
  */ 
 void discover_modules(const char *path, KBconfig *conf) {
 
@@ -471,7 +466,6 @@ void discover_modules(const char *path, KBconfig *conf) {
     return;
 }
 
-
 KB_DIR *KB_opendir_with(const char *filename, KBmodule *mod) {
 	int i;
 	char buffer[PATH_MAX];
@@ -540,7 +534,6 @@ char *villain_names[] = {
     "mury","hack","ammi","baro","drea","cane","mora","barr","barg","rina",
     "ragf","mahk","auri","czar","magu","urth","arec",
 };
-
 
 void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 
@@ -624,9 +617,9 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 				middle_name = "tileseta";
 			}
 			suffix = bpp_names[mod->bpp];
-			static char buffl[8];
+			char buffl[8];
 			sprintf(buffl, "#%d", sub_id);
-			ident = &buffl;
+			ident = &buffl[0];
 		}
 		break;
 		case GR_TILESET:	/* subId - continent */
@@ -683,11 +676,11 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 					KB_fclose(f);
 
 					if (method == RAW_IMG) {
-						surf = SDL_loadRAWIMG(&buf[0], n, bpp);
-						if (mod->bpp == 1) SDL_add_DOS_palette(surf, 1);
+						surf = DOS_LoadRAWIMG_BUF(&buf[0], n, bpp);
+						if (mod->bpp == 1) DOS_SetColors(surf, 1);
 					}
 					else
-						surf = SDL_loadRAWCH (&buf[0], n);
+						surf = DOS_LoadRAWCH_BUF(&buf[0], n);
 				}
 				break;
 				case IMG_ROW:	
@@ -697,8 +690,8 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 
 					if (d == NULL) return NULL;				
 
-					surf = SDL_loadROWIMG(d, row_start, row_frames, bpp);
-					if (mod->bpp == 1) SDL_add_DOS_palette(surf, 1);	
+					surf = DOS_LoadIMGROW_DIR(d, row_start, row_frames, bpp);
+					if (mod->bpp == 1) DOS_SetColors(surf, 1);	
 				}
 				break;
 				default: break;

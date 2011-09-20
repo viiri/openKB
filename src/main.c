@@ -56,7 +56,7 @@ int main(int argc, char* argv[]) {
 		if (test_config(CMDconf.config_file, 0)) 
 		{
 			KB_errlog("[config] Unable to read config file '%s'\n", &CMDconf.config_file[0]); 
-			exit(1);
+			return 1;
 		}
 	}
 	/* Search for a config file */

@@ -71,19 +71,28 @@
 #define STRL_TROOPS	0xF1	/* troop names ; subId - undefined */
 #define STRL_MULTIS	0xF2	/* troops names ; subId - undefined */
 
+#ifdef HAVE_LIBSDL
+/* SDL flavor. */
 #include "SDL.h"
-
-/* From dos-img.c: */
-extern void SDL_add_DOS_palette(SDL_Surface *surf, int bpp);
-extern void SDL_blitRAWIMG(SDL_Surface *surf, SDL_Rect *destrect, char *buf, int bpp, word offset, word mask_pos);
-
-extern SDL_Surface* SDL_loadRAWCH(char *buf, int len);
-extern SDL_Surface* SDL_loadRAWIMG(char *buf, int len, int bpp);
-#include "kbdir.h"
-extern SDL_Surface* SDL_loadROWIMG(KB_DIR *dirp, word first, word frames, byte bpp); 
-
+#include "kbdir.h" // for KB_DIR
+/* Provide usefull functions to modules */
+inline SDL_Surface* SDL_CreatePALSurface(Uint32 width, Uint32 height);
+extern void SDL_BlitXBPP(const char *src, SDL_Surface *dest, SDL_Rect *dstrect, int bpp);
 extern void SDL_ReplaceIndex(SDL_Surface *dest, SDL_Rect *dstrect, byte search, byte replace);
 
-extern void SDL_BlitXBPP(char *src, SDL_Surface *dest, SDL_Rect *dstrect, int bpp);
+/* Provide useful functions to potential resource loader */
+/*
+ * DOS module
+ */
+extern void DOS_BlitRAWIMG(SDL_Surface *surf, SDL_Rect *destrect, const char *buf, byte bpp, word mask_pos);
+extern void DOS_SetColors(SDL_Surface *surf, byte bpp);
 
+extern SDL_Surface* DOS_LoadRAWCH_BUF(char *buf, int len);
+extern SDL_Surface* DOS_LoadRAWIMG_BUF(char *buf, int len, byte bpp);
+extern SDL_Surface* DOS_LoadIMGROW_RW(SDL_RWops *rw, word first, word frames, byte bpp); 
+
+extern SDL_Surface* DOS_LoadIMGROW_DIR(KB_DIR *d, word first, word frames, byte bpp);
+
+
+#endif
 #endif /* _OPENKB_LIBKB_RESOURCES */

@@ -219,3 +219,42 @@ int KB_fcloseF( KB_File * stream )
 	free(stream);
 	return 0;
 }
+
+#ifdef HAVE_LIBSDL
+#include "SDL.h"
+/* SDL_RWops interface */
+int KBRW_seek( SDL_RWops *ctx, int offset, int whence ) {
+	return KB_fseek( (KB_File*)ctx->hidden.unknown.data1, offset, whence );
+}
+
+int KBRW_read( SDL_RWops *ctx, void *ptr, int size, int maxnum) {
+	return KB_fread( ptr, size, maxnum, (KB_File*)ctx->hidden.unknown.data1 );
+}
+
+int KBRW_write( SDL_RWops *ctx, const void *ptr, int size, int num) {
+	return -1;
+}
+
+int KBRW_close( SDL_RWops *ctx) {
+	KB_File *file = (KB_File*)ctx->hidden.unknown.data1;
+	file->ref_count--;
+	return KB_fclose( file );
+}
+
+SDL_RWops* KBRW_open( KB_File *f ) {
+
+	SDL_RWops *rw = SDL_AllocRW();
+	
+	if (rw == NULL) return NULL;
+
+	rw->seek = &KBRW_seek;
+	rw->read = &KBRW_read;
+	rw->write = &KBRW_write;
+	rw->close = &KBRW_close;
+	
+	rw->hidden.unknown.data1 = f;
+	f->ref_count++;
+	
+	return rw;
+}
+#endif
