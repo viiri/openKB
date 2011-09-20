@@ -1013,6 +1013,7 @@ void display_title() {
 	}
 
 }
+#define TILE_W 48
 
 void display_debug() {
 
@@ -1024,7 +1025,7 @@ void display_debug() {
 
 	int troop_id = 0;
 	int troop_frame = 0;
-	SDL_Rect src = {0, 0, 48, 32};
+	SDL_Rect src = {0, 0, TILE_W, 0 };
 	
 	RESOURCE_DefaultConfig(sys->conf);
 
@@ -1041,7 +1042,7 @@ void display_debug() {
 		if (redraw) {
 
 			SDL_Rect pos;
-			SDL_Rect pos2 = { 48, 0, 48, 32 };
+			SDL_Rect pos2 = { TILE_W, 0, TILE_W, 0 };
 
 			SDL_Surface *title = SDL_LoadRESOURCE(GR_TROOP, troop_id, 0);
 			SDL_Surface *font = KB_LoadIMG8(GR_FONT, 0);
@@ -1049,6 +1050,9 @@ void display_debug() {
 			//sys->conf->module++;
 			SDL_Surface *peasant2 = SDL_LoadRESOURCE(GR_TROOP, troop_id, 1);
 			//sys->conf->module--;
+
+		src.h = peasant->h;
+		pos2.h = peasant2->h/2;
 
 			SDL_CenterRect(&pos, peasant2, screen);
 
@@ -1058,18 +1062,18 @@ void display_debug() {
 
 			//SDL_BlitSurface( font, NULL , screen, &pos );
 
-			SDL_Rect right = { 0, 0, peasant->w, peasant->h };
+			SDL_Rect right = { 0, 0, peasant->w, peasant2->h/2 };
 
-			src.x = troop_frame * 48;
-			src.h = peasant->h;
+			src.x = troop_frame * TILE_W;
+			src.h = peasant2->h/2;
 			troop_frame++;
 			if (troop_frame > 3) troop_frame = 0; 			
 			
 			SDL_BlitSurface( peasant, &src , screen, NULL );
 			
-			src.y += 34;
+			src.y += peasant2->h/2;
 			SDL_SBlitSurface( peasant2, &src , screen, &pos2 );
-			src.y -= 34;
+			src.y -= peasant2->h/2;
 
 	    	SDL_Flip( screen );
 
