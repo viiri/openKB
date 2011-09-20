@@ -12,7 +12,7 @@ ifneq ("$(MSYS_TEST)","")
 	CFLAGS+=-I/mingw/include/SDL -DUSE_WINAPI
 endif
 
-LIB_SOURCES=src/lib/kbauto.c src/lib/kbconf.c src/lib/kbres.c src/lib/kbfile.c src/lib/kbdir.c src/lib/dos-cc.c src/lib/dos-img.c src/lib/kbstd.c vendor/strlcat.c vendor/strlcpy.c 
+LIB_SOURCES=src/lib/kbauto.c src/lib/kbconf.c src/lib/kbres.c src/lib/kbfile.c src/lib/kbdir.c src/lib/dos-cc.c src/lib/dos-img.c src/lib/kbstd.c vendor/strlcat.c vendor/strlcpy.c src/lib/md-rom.c 
 LIB_BINARY=src/libkb.a
 
 VEND_SOURCES=vendor/scale2x.c vendor/inprint.c

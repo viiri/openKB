@@ -149,6 +149,7 @@ int read_file_config(struct KBconfig *conf, const char *path) {
 					"dos-ega\0"//5
 					"dos-cga\0"//6
 					"dos-mono\0" "dos-herc\0"//7, 8
+					"md\0" "sega\0"//9,10
 					"\0", buf2)) {
 					case 1://free
 					case 2://open
@@ -173,6 +174,10 @@ int read_file_config(struct KBconfig *conf, const char *path) {
 						conf->modules[mN].kb_family = KBFAMILY_DOS;
 						conf->modules[mN].bpp = 1; /* Hercules */					
 					break;
+					case 9://md
+						conf->modules[mN].kb_family = KBFAMILY_MD;
+						conf->modules[mN].bpp = 4; /* default? */
+					break;					
 					case 0:
 					default:
 						err = -1;					
