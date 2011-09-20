@@ -24,7 +24,7 @@
 #define SUBTILE_LEN ((SUBTILE_W * SUBTILE_H) / 2)
 #define TILE_LEN (SUBTILE_LEN * (SUBGROUP_W * SUBGROUP_H))
 
-SDL_Surface *MD_LoadIMGROW(const char *buf, int frames) {
+SDL_Surface *MD_LoadIMGROW_BUF(const char *buf, int frames) {
 
 	SDL_Rect dstrect = { 0, 0, SUBTILE_W, SUBTILE_H };
 
