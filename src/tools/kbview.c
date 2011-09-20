@@ -436,6 +436,8 @@ int main( int argc, char* args[] )
 
 		}
 
+		SDL_Delay(30);
+
 	}
 
 	SDL_Quit(); 
