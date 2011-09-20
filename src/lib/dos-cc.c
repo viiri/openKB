@@ -591,3 +591,274 @@ int KB_fcloseCC( KB_File * stream )
 	free(stream);
 	return 0;
 }
+
+#ifdef HAVE_LIBSDL
+
+/* SDL flavor. */
+int KB_funLZW_RW(char *result, SDL_RWops *f) {
+
+	int i, n, j;
+
+	unsigned long long res_pos = 0;
+
+	/*
+	 * The data is kept in BIT-positioned "blocks".
+	 * We use several variables to iterate it with some
+	 * level of sanity:
+	 */
+	int pos = 0;	/* Position in bits */
+
+	int byte_pos = 0; /* Position in bytes */
+	int bit_pos = 0; /* Extra shift in bits */
+
+	/*
+	 * Each "block" can take from 9 to 12 bits of data.
+	 * Last 8 bits are "the value" 
+	 * First N bits are "the key"
+	 */
+	int step = 9;	/* Bits per step */
+
+	/* Those masks help us get the relevant bits */ 
+	static word keyMask[4] = {
+		0x01FF, 	// 0001 1111 
+		0x03FF,		// 0011 1111
+		0x07FF,		// 0111 1111
+		0x0FFF,		// 1111 1111
+	};
+
+	/*
+	 * If the "the key" is unset (00), the value is read as-is.
+	 * Otherwise, the whole "block" (N+8 bytes) is treated
+	 * as a dictionary key, and the dictionary is queried.
+	 * The exceptions are the 0x0100 value, which means
+	 * the dictionary must be cleared, and the 0x0101 value,
+	 * which marks END OF FILE.
+	 */
+
+	/*
+	 * The dictionary.
+	 * Each entry consists of an index to a previous entry
+	 * and a value, forming a tree.
+	 */
+	word dict_key[768 * 16] = { 0 };
+	char dict_val[768 * 16];
+	word dict_index = 0x0102; /* Start populating dictionary from 0x0102 */
+	word dict_range = 0x0200; /* Allow that much entries before increasing step */
+
+	/* Since data stored this way is backwards, we need a small queue */
+	char queue[0xFF];
+	int queued = 0;
+
+	/* Read buffer */ 
+	char mbuffer[MBUFFER_SIZE];
+
+	/* Data */
+	word next_index = 0;	/* block of data we currently examine */
+
+	char last_char  = 0;	/* value from previous iteration */
+	word last_index = 0;	/* block from previous iteration */
+
+	sword big_index;	/* temp. variable to safely load and shift 3 bytes */
+	word keep_index;	/* temp. variable to keep "next_index" before making it "last_index" */
+	int reset_hack=0;	/* HACK -- delay dictionary reset to next iteration */ 
+
+	/* Read first chunk of data */
+	n = SDL_RWread(f, mbuffer, sizeof(char), MBUFFER_SIZE);
+
+	/* Decompress */
+	while (1)
+	{
+		/* We need a dictionary reset */
+		if (reset_hack) 
+		{
+			step = 9;
+			dict_range = 0x0200;
+			dict_index = 0x0102;
+		}
+
+		/* Since "pos" is in bits, we get position in bytes + small offset in bits */
+		byte_pos = pos / 8;
+		bit_pos = pos % 8;
+
+		pos += step;	/* And advance to the next chunk */
+
+		/* Edge of buffer, read more data from file */
+		if (byte_pos >= MBUFFER_EDGE)
+		{
+				int bytes_extra = MBUFFER_SIZE - byte_pos;//~= 3
+				int bytes_left = MBUFFER_SIZE - bytes_extra;//~= 1021
+
+				/* Copy leftovers */
+				for (j = 0; j < bytes_extra; j++) mbuffer[j] = mbuffer[bytes_left + j];
+
+				/* Read in the rest */				
+				n = SDL_RWread(f, &mbuffer[bytes_extra], sizeof(char), bytes_left);
+
+				/* Reset cursor */
+				pos = bit_pos + step;	/* Add all unused bits */
+				byte_pos = 0;
+				/* On dictionary reset, use byte offset as bit offset*/
+				if (reset_hack) bit_pos = bytes_extra;
+		}
+
+		/* Read index from position "byte_pos", bit offset "bit_pos" */
+		big_index = 
+			((mbuffer[byte_pos+2] & 0x00FF) << 16) | 
+			((mbuffer[byte_pos+1] & 0x00FF) << 8) | 
+			(mbuffer[byte_pos] & 0x00FF);
+
+		big_index >>= bit_pos;
+		big_index &= 0x0000FFFF;
+
+		next_index = big_index;
+		next_index &= keyMask[ (step - 9) ];
+
+		/* Apply the value as-is, continuing with dictionary reset, C) */
+		if (reset_hack) 
+		{
+			/* Save index */
+			last_index = next_index;
+			/* Output char value */
+			last_char = (next_index & 0x00FF);
+			result[res_pos++] = last_char;
+			/* We're done with the hack */
+			reset_hack = 0;
+			continue;
+		}
+
+		if (next_index == 0x0101)	/* End Of File */
+		{
+			/* DONE */
+			break;
+		}
+
+		if (next_index == 0x0100) 	/* Reset dictionary */
+		{
+			/* Postpone it into next iteration */
+			reset_hack = 1;
+			/* Note: this hack avoids code duplication, but	makes the algorithm
+			 * harder to follow. Basically, what happens, when the "reset" 
+			 * command is being hit, is that 
+			 * A) the dictionary is reset
+			 * B) one more value is being read (this is the code duplication bit)
+			 * C) the value is applied to output as-is
+			 * D) we continue as normal
+			 */
+			continue;
+		}
+
+		/* Remember *real* "next_index" */
+		keep_index = next_index;
+
+		/* No dictionary entry to query, step back */
+		if (next_index >= dict_index)
+		{
+			next_index = last_index;
+			/* Queue 1 char */
+			queue[queued++] = last_char;
+		}
+
+		/* Quering dictionary? */
+		while (next_index > 0x00ff)
+		{
+			/* Queue 1 char */
+			queue[queued++] = dict_val[next_index];
+			/* Next query: */
+			next_index = dict_key[next_index];
+		}
+
+		/* Queue 1 char */
+		last_char = (next_index & 0x00FF);
+		queue[queued++] = last_char;
+
+		/* Unqueue */
+		while (queued) 
+		{
+			result[res_pos++] = queue[--queued];
+		}
+
+		/* Save value to the dictionary */
+		dict_key[dict_index] = last_index; /* "goto prev entry" */
+		dict_val[dict_index] = last_char;  /* the value */
+		dict_index++;
+
+		/* Save *real* "next_index" */
+		last_index = keep_index;
+
+		/* Edge of dictionary, increase the bit-step, making range twice as large. */
+		if (dict_index >= dict_range && step < 12) 
+		{
+			step += 1;
+			dict_range *= 2;
+		}
+	}
+
+	return res_pos;
+}
+
+SDL_RWops * SDL_RWFromCCFile_RW(const char *filename, SDL_RWops *f) 
+{
+	SDL_RWops *rw;
+
+	char buf[HEADER_SIZE_CC], *p, *data;
+
+	word num_files, key, offset, cmpSize, fullSize;
+
+	int i, n, found = 0;
+
+	word hash = KB_ccHash(filename);
+
+	/* Read CC header (and set pointer for parsing) */
+	SDL_RWseek(f, 0, SEEK_SET);
+	n = SDL_RWread(f, buf, sizeof(char), HEADER_SIZE_CC);
+	if (n != HEADER_SIZE_CC) return NULL;
+	p = &buf[0];
+
+	/* Number of files */
+	num_files = READ_WORD(p);
+	if (num_files > MAX_CC_FILES) return NULL;
+
+	/* Files entries */
+	for (i = 0; i < num_files; i++ ) {
+		key = READ_WORD(p);
+		offset = READ_SWORD(p);
+		cmpSize = READ_SWORD(p);
+		if (key == hash) {
+			found = 1;
+			break;
+		}
+	}
+
+	if (!found) return NULL;
+
+	/* Move deeper into file */
+	SDL_RWseek(f, offset, SEEK_SET);
+
+	/* Read "uncompressed size" */
+	n = SDL_RWread(f, buf, sizeof(char), 4);
+	if (n != 4) return NULL;
+	p = &buf[0];
+	fullSize = READ_WORD(p);
+
+	/* Allocate that much bytes */
+	data = malloc(sizeof(char) * fullSize);
+	if (data == NULL) return NULL;
+
+	/* Unpack LZW data */
+	n = KB_funLZW_RW(data, f);
+	if (n != fullSize) return NULL;
+
+	/* Create SDL_RWops from resulting data */
+	rw = SDL_RWFromMem(data, fullSize);
+
+	return rw;
+}
+
+SDL_RWops * SDL_RWFromCCFile(const char *ccfile, const char *innerfile) {
+	SDL_RWops *f = SDL_RWFromFile(ccfile, "rw");
+	if (f == NULL) return NULL;
+	return SDL_RWFromCCFile_RW(innerfile, f);
+}
+
+#endif
+
