@@ -551,10 +551,12 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 	int row_start = 0;
 	int row_frames = 4;
 
-	int method = -1;
-	#define RAW_IMG	0
-	#define RAW_CH	1
-	#define ROW_IMG	2
+	enum {
+		UNKNOWN,
+		RAW_IMG,
+		RAW_CH,
+		IMG_ROW,
+	} method = UNKNOWN;
 
 	char *bpp_names[] = {
 		NULL, ".4", ".4",//0, 1, 2
@@ -605,7 +607,7 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 		case GR_TROOP:	/* subId - troop index */
 		{
 			/* A troop (with animation) */
-			method = ROW_IMG;
+			method = IMG_ROW;
 			middle_name = troop_names[sub_id];
 			suffix = bpp_names[mod->bpp];
 			ident = "";
@@ -635,7 +637,7 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 		case GR_VILLAIN:	/* subId - villain index */
 		{
 			/* A villain (with animation) */
-			method = ROW_IMG;
+			method = IMG_ROW;
 			middle_name = villain_names[sub_id];
 			suffix = bpp_names[mod->bpp];
 			ident = "";
@@ -651,7 +653,7 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 	}
 
 	switch (method) {
-		case ROW_IMG:
+		case IMG_ROW:
 		case RAW_IMG:
 		case RAW_CH:
 		{
@@ -688,11 +690,12 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 						surf = SDL_loadRAWCH (&buf[0], n);
 				}
 				break;
-				case ROW_IMG:	
+				case IMG_ROW:	
 				{
+					printf("? DOS IMG DIR: %s\n", realname);
 					KB_DIR *d = KB_opendir_with(realname, mod);
 
-					if (d == NULL) { printf("Having trouble with dir %s\n", realname); return NULL; }				
+					if (d == NULL) return NULL;				
 
 					surf = SDL_loadROWIMG(d, row_start, row_frames, bpp);
 					if (mod->bpp == 1) SDL_add_DOS_palette(surf, 1);	

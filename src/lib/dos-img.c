@@ -55,7 +55,7 @@ struct imgGroup {
 	
 	} cache;
 
-	KB_File *top;//top file
+	void *top;//top file
 	int i;		//iterator
 };
 
@@ -113,7 +113,8 @@ struct imgGroup* imgGroup_load(KB_File *f) {
 
 void imgGroup_unload(struct imgGroup* grp) {
 	/* Close FILE handler */
-	grp->top->ref_count--;
+	KB_File *top = grp->top;
+	top->ref_count--;
 	KB_fclose(grp->top);
 	free(grp);
 }
@@ -135,7 +136,6 @@ void imgGroup_read(struct imgGroup* grp, int first, int frames) {
 		else KB_errlog("Can't reliably find image filesize at this point :/\n");
 		grp->cache.files[i].len -= 4; */
 	}
-
 }
 
 byte imgGroup_filename_to_bpp(const char *filename) {
@@ -322,27 +322,13 @@ void SDL_add_DOS_palette(SDL_Surface *surf, int bpp) {
 
 void SDL_blitRAWIMG(SDL_Surface *surf, SDL_Rect *destrect, char *buf, int bpp, word offset, word mask_pos) {
 
-	switch (bpp) {
-		case 1:
-			SDL_Blit1BPP(&buf[offset], surf, destrect);
-			break;
-		case 2:
-			SDL_Blit2BPP(&buf[offset], surf, destrect);
-			break;
-		case 4:
-			SDL_Blit4BPP(&buf[offset], surf, destrect);
-			break;
-		case 8:
-		default:
-			SDL_Blit8BPP(&buf[offset], surf, destrect);
-			break;
-	}
+	SDL_BlitXBPP(&buf[offset], surf, destrect, bpp);
 
 	if (mask_pos) {
 		if (bpp != 8) 
 			SDL_BlitMASK(&buf[mask_pos], surf, destrect);
 		else
-			SDL_ReplaceIndex(surf, &destrect, buf[mask_pos], 0xFF);
+			SDL_ReplaceIndex(surf, destrect, buf[mask_pos], 0xFF);
 		SDL_SetColorKey(surf, SDL_SRCCOLORKEY, 0xFF);
 	}
 
@@ -368,7 +354,7 @@ SDL_Surface *SDL_loadRAWCH(char *buf, int len)
 	int i;
 	for (i = 0; i < 128; i++) {
 
-		SDL_Blit1BPP(&buf[off], surf, &dest);
+		SDL_BlitXBPP(&buf[off], surf, &dest, 1);
 		off += 8;
 
 		dest.x += 8;
@@ -476,4 +462,104 @@ SDL_Surface *SDL_loadROWIMG(KB_DIR *dirp, word first, word frames, byte bpp)
 	}
 	return surf;
 }
+
+/*
+ * SDL_RWops interace.
+ * //TODO: convert everything to RWops
+ */
+SDL_Surface* DOS_LoadIMGROW_RW(SDL_RWops *file, word first, word frames, byte bpp) 
+{
+	SDL_Surface *surf;
+	struct imgGroup group;
+	struct imgGroup *grp = &group;
+
+	int i, n;
+
+	if (!bpp) return NULL;
+
+	{
+		char buf[HEADER_SIZE_IMG];
+		struct imgHeader *head = &grp->head;
+
+		SDL_RWseek(file, 0, 0);
+
+		n = SDL_RWread(file, buf, sizeof(char), HEADER_SIZE_IMG);
+		if (n < HEADER_SIZE_IMG) return NULL;
+
+		/* Parse data */
+		char *p = &buf[0];	
+
+		/* Number of files */
+		head->num_files = READ_WORD(p);
+		if (head->num_files > MAX_IMG_FILES) return NULL;
+
+		/* Files entries */
+		for (i = 0; i < head->num_files; i++ ) {
+			head->files[i].offset = READ_WORD(p);
+			head->files[i].mask_offset = READ_WORD(p);
+		}
+	}
+
+	word x = 0, y = 0;
+	word width = 0, height = 0;
+	word last = first + frames;
+
+	/* Enforce frames, bpp */
+	if (first > grp->head.num_files - 1)
+		first = grp->head.num_files - 1;
+
+	if (last > grp->head.num_files) 
+		last = grp->head.num_files;
+
+	/* Enforce metadata to be present */
+	/* Read some frames */
+	for (i = first; i < last; i++) 
+	{
+		char buf[4];
+		word w, h;
+		/* Seek to offset, read 4 bytes, seek to offset again */
+		SDL_RWseek(file, grp->head.files[i].offset, 0);
+		n = SDL_RWread(file, buf, 1, 4);
+
+		grp->cache.files[i].w = w = KB_UNPACK_WORD(buf[0],buf[1]);
+		grp->cache.files[i].h = h = KB_UNPACK_WORD(buf[2],buf[3]);
+
+		/* Max width / Max height */
+		width += grp->cache.files[i].w;
+		if (height < grp->cache.files[i].w) 
+			height = grp->cache.files[i].h;
+	}
+
+	/* Create new SDL surface */
+	surf = SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, 8, 0xFF, 0xFF, 0xFF, 0x00);
+	if (surf == NULL) return NULL;
+
+	/* Blit the frames */
+	for (i = first; i < last; i++) {
+		int n;
+		char buf[0xFA00];
+
+		SDL_Rect dest;
+
+		word base_offset = grp->head.files[i].offset;
+		word mask_pos = grp->head.files[i].mask_offset;
+
+		dest.x = x;
+		dest.y = y;
+		dest.w = grp->cache.files[i].w;
+		dest.h = grp->cache.files[i].h;
+
+		SDL_RWseek(file, base_offset, 0);
+		n = SDL_RWread(file, buf, sizeof(char), 0xFA00);
+
+		if (mask_pos) mask_pos -= base_offset;
+
+		SDL_blitRAWIMG(surf, &dest, &buf[0], bpp, 4, mask_pos);
+		SDL_add_DOS_palette(surf, bpp);		
+
+		x += dest.w;
+	}
+	return surf;
+}
+
 #endif

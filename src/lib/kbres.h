@@ -82,4 +82,8 @@ extern SDL_Surface* SDL_loadRAWIMG(char *buf, int len, int bpp);
 #include "kbdir.h"
 extern SDL_Surface* SDL_loadROWIMG(KB_DIR *dirp, word first, word frames, byte bpp); 
 
+extern void SDL_ReplaceIndex(SDL_Surface *dest, SDL_Rect *dstrect, byte search, byte replace);
+
+extern void SDL_BlitXBPP(char *src, SDL_Surface *dest, SDL_Rect *dstrect, int bpp);
+
 #endif /* _OPENKB_LIBKB_RESOURCES */
