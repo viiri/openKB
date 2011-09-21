@@ -41,6 +41,9 @@ typedef struct KBenv {
 
 } KBenv;
 
+/* Global/main environment */
+extern KBenv *sys;
+
 /*
  * At some point (realtime / scale2x / etc), we'll need to 
  * abstract screen blits into separate "window" blits.

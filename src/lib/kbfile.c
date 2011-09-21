@@ -48,6 +48,8 @@ KB_FileDriver KB_FS[MAX_KBDTYPE] = {
 
 KB_DIR * KB_follow_path( const char * filename, int *n, int *e, KB_DIR *top )
 {
+	char buf[PATH_LEN];
+
 	int i = 0;
 	int ext = 0;
 	int rem = 0;
@@ -63,23 +65,27 @@ KB_DIR * KB_follow_path( const char * filename, int *n, int *e, KB_DIR *top )
 			break;
 		}
 	}
-	if (i != l) {
-		*n = i;
-
-		char buf[1024];
-		strcpy(buf, filename);
-		buf[i] = '\0';
-
-		KB_DIR *d = KB_opendir_in( buf , top );
-
-		d->prev = top;
-		if (top) top->ref_count++;
-
-		return d;
-	}
-
+	/* Return extension position */
 	*e = ext;
-	return NULL;
+
+	/* Separator wasn't found */
+	if (i == l) return NULL;
+
+	/* Return separator position */
+	*n = i;
+
+	/* Copy left part of path (everything upto separtor) */ 
+	KB_strcpy(buf, filename);
+	buf[i] = '\0';
+
+	/* Follow path! */
+	KB_DIR *d = KB_opendir_in( buf , top );
+	if (d == NULL) return NULL;
+
+	d->prev = top;
+	if (top) top->ref_count++;
+
+	return d;
 }
 
 KB_File* KB_fopen_in( const char * filename, const char * mode, KB_DIR *top )
@@ -98,6 +104,8 @@ KB_File* KB_fopen_in( const char * filename, const char * mode, KB_DIR *top )
 	if (top != NULL) type = top->type;
 
 	KB_File *f = (KB_FS[type].fopen_in)(filename, mode, top);
+
+	if (f == NULL) return NULL;
 
 	/* Public view: */
 	f->type = type;
@@ -211,3 +219,42 @@ int KB_fcloseF( KB_File * stream )
 	free(stream);
 	return 0;
 }
+
+#ifdef HAVE_LIBSDL
+#include "SDL.h"
+/* SDL_RWops interface */
+int KBRW_seek( SDL_RWops *ctx, int offset, int whence ) {
+	return KB_fseek( (KB_File*)ctx->hidden.unknown.data1, offset, whence );
+}
+
+int KBRW_read( SDL_RWops *ctx, void *ptr, int size, int maxnum) {
+	return KB_fread( ptr, size, maxnum, (KB_File*)ctx->hidden.unknown.data1 );
+}
+
+int KBRW_write( SDL_RWops *ctx, const void *ptr, int size, int num) {
+	return -1;
+}
+
+int KBRW_close( SDL_RWops *ctx) {
+	KB_File *file = (KB_File*)ctx->hidden.unknown.data1;
+	file->ref_count--;
+	return KB_fclose( file );
+}
+
+SDL_RWops* KBRW_open( KB_File *f ) {
+
+	SDL_RWops *rw = SDL_AllocRW();
+	
+	if (rw == NULL) return NULL;
+
+	rw->seek = &KBRW_seek;
+	rw->read = &KBRW_read;
+	rw->write = &KBRW_write;
+	rw->close = &KBRW_close;
+	
+	rw->hidden.unknown.data1 = f;
+	f->ref_count++;
+	
+	return rw;
+}
+#endif

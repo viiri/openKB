@@ -20,32 +20,25 @@
 #ifndef _OPENKB_LIBKB_AUTO
 #define _OPENKB_LIBKB_AUTO
 
-#define MAX_MODULES	16
-#define MAX_SLOTS	4
-
-#include "kbsys.h"
+#include "kbconf.h"
+#include "kbfile.h"
 #include "kbdir.h"
 
-#define KBFAMILY_GNU	0x0F
-#define KBFAMILY_DOS	0x0D
-#define KBFAMILY_MD 	0x02
+extern void discover_modules(const char *path, KBconfig *conf);
 
-typedef struct KBmodule {
+extern void init_module(KBmodule *mod);
+extern void init_modules(KBconfig *conf);
+extern void stop_module(KBmodule *mod);
+extern void stop_modules(KBconfig *conf);
 
-	char name[255];
+extern void wipe_module(KBmodule *mod);
 
-	char slotA_name[1024];
-	char slotB_name[1024];
-	char slotC_name[1024];
+extern void register_module(KBconfig *conf, KBmodule *mod);
 
-	KB_DIR *slotA;
-	KB_DIR *slotB;
-	KB_DIR *slotC;
+//KBstd material?
+extern void name_split(const char *name, char *base, char *ext);
 
-	int bpp;
-	
-	int kb_family;
-
-} KBmodule;
+KB_DIR  * KB_opendir_with(const char *filename, KBmodule *mod);
+KB_File * KB_fopen_with(const char *filename, char *mode, KBmodule *mod);
 
 #endif /* _OPENKB_LIBKB_AUTO */

@@ -28,7 +28,6 @@
 
 #include "kbstd.h"
 #include "kbres.h"
-#include "kbauto.h"
 #include "kbfile.h" //:/
 #include "kbdir.h"
 
@@ -39,6 +38,8 @@
 #define KBTYPE_DSK  	0x01
 #define KBTYPE_GROUP	0x02
 #define KBTYPE_CMP  	0x03
+#define KBTYPE_DIR  	0x07
+#define KBTYPE_EXE  	0x08
 #define KBTYPE_RAW_4	0x04
 #define KBTYPE_RAW_16	0x05
 #define KBTYPE_RAW_256	0x06
@@ -70,17 +71,29 @@ struct KBfileid {
 
 struct KBfileid fingerprints[] = {
 	{ 
+		"free", "\0", 0,//TODO: make some file (COPYING?) inside the dir be the sign
+		"\0", 0, 0,
+		-1,
+		KBFAMILY_GNU, KBTYPE_DIR,
+	},
+	{ 
 		"416", "CC", 0,//340961, 
 		"\0", 0, 0,
-		0,
+		1,
 		KBFAMILY_DOS, KBTYPE_GROUP,
 	},
 	{ 
 		"256", "CC", 0,//281550, 
 		"\0", 0, 0, 
-		-1,
+		0,
 		KBFAMILY_DOS, KBTYPE_GROUP,
 	},
+	{
+		"KB", "EXE", 0,//113718
+		"Copyright (C) 1990-95 New World Computing, Inc", 46, 0x15EA5,
+		2,
+		KBFAMILY_DOS, KBTYPE_EXE,
+	},	
 	{
 		"\0", "BIN", 0, 
 		"SEGA", 4, 0x100, 
@@ -118,8 +131,7 @@ void name_split(const char *name, char *base, char *ext) {
 
 int verify_file(const char *name, const char *path) {
 
-//	printf("Must test: %s\n", path);
-	int ok=-1;
+	int id = -1;
 	int j;
 	for (j = 0; j < fingerprints_num; j++) 
 	{
@@ -136,6 +148,9 @@ int verify_file(const char *name, const char *path) {
 			if (fp->file_ext[0] != '\0' && strcasecmp(fp->file_ext, ext)) continue;
 
 		}
+		if (fp->kb_type == KBTYPE_DIR) { /* "is a directory" test */
+			if (test_directory(path,0)) continue;
+		}
 		if (fp->filesize != 0) { /* exact size test */
 			if (FileSize(name) != fp->filesize) continue;
 		}
@@ -149,16 +164,15 @@ int verify_file(const char *name, const char *path) {
 			n = fread(buf, sizeof(char), fp->sign_len, f);
 			fclose(f);
 			if (n != fp->sign_len) continue;
-
 			for (n = 0; n < fp->sign_len; n++) {
-				if (fp->sign[n] != buf[n]) { ok = 0; break; }
+				if (fp->sign[n] != buf[n]) { ok = 0; break;	}
 			}
 			if (!ok) continue;
 		}
-		printf("-%s-\n", name);
-		ok = j;		
+		printf("-%s- [%d]\n", name, j);
+		id = j;
 	}
-	return ok;
+	return id;
 }
 
 void init_module(KBmodule *mod) {
@@ -185,6 +199,11 @@ void wipe_module(KBmodule *mod) {
 }
 
 void register_module(KBconfig *conf, KBmodule *mod) {
+
+	if (conf->num_modules >= MAX_MODULES) {
+		KB_stdlog("Unable to add module '%s' %s , limit of %d reached\n", mod->name, mod->slotA, conf->num_modules);
+		return;
+	}
 	
 	memcpy(&conf->modules[conf->num_modules++], mod, sizeof(KBmodule)); 
 
@@ -192,75 +211,177 @@ void register_module(KBconfig *conf, KBmodule *mod) {
 
 void register_modules(KBconfig *conf) {
 
-	
+}
+
+void add_module_aux(KBconfig *conf, const char *name, int family, int bpp, const char *path, const char *slotA, const char *slotB, const char *slotC) {
+
+	int i = conf->num_modules;
+
+	if (i >= MAX_MODULES) {
+		KB_stdlog("Unable to add module '%s' %s , limit of %d reached\n", name, slotA, i);
+		return;
+	}
+
+	wipe_module(&conf->modules[i]);
+	KB_strcpy(conf->modules[i].name, name);
+
+	KB_dircpy(conf->modules[i].slotA_name, path);
+	KB_dirsep(conf->modules[i].slotA_name);
+	KB_strcat(conf->modules[i].slotA_name, slotA);
+	if (slotB) {
+		KB_dircpy(conf->modules[i].slotB_name, path);
+		KB_dirsep(conf->modules[i].slotB_name);
+		KB_strcat(conf->modules[i].slotB_name, slotB);
+	}
+	if (slotC) {
+		KB_dircpy(conf->modules[i].slotC_name, path);
+		KB_dirsep(conf->modules[i].slotC_name);
+		KB_strcat(conf->modules[i].slotC_name, slotC);
+	}
+	conf->modules[i].slotA = NULL;
+	conf->modules[i].slotB = NULL;
+	conf->modules[i].slotC = NULL;
+
+	conf->modules[i].kb_family = family;
+	conf->modules[i].bpp = bpp;
+	conf->num_modules++;
+
+		KB_debuglog(1, "Module: %s\n", conf->modules[i].name);
+		KB_debuglog(1, "SlotA: %s\n", conf->modules[i].slotA_name);
+		KB_debuglog(0, "SlotB: %s\n", conf->modules[i].slotB_name);
+		KB_debuglog(0, "SlotC: %s\n", conf->modules[i].slotC_name);
+		KB_debuglog(-2, NULL, NULL);
 
 }
 
 /*
- * Ideally, this function should take look at the files
- * presented in the directory and make intelligent guesses
- * about available modules.
- *
- * It does nothing of the sort...
- * TODO!!!
+ * This function takes a look at the files presented in the directory
+ *  and makes intelligent guesses about available modules.
  */ 
 void discover_modules(const char *path, KBconfig *conf) {
 
-	struct KBfileid result[255]; 
+	#define MAX_RFILES 255
+
+	struct KBfileid result[MAX_RFILES]; 
 	int	n_result = 0;
 
-	printf("Performing module auto-discovery on path: %s\n", path);
+    KB_DIR *dir;
+    KB_Entry *entry;
 
-    DIR             *dip;
-    struct dirent   *dit;
- 
-    int             i = 0;
+    int i = 0;
 
-    /* DIR *opendir(const char *name);
-     *
-     * Open a directory stream to argv[1] and make sure
-     * it's a readable and valid (directory) */
-    if ((dip = opendir(path)) == NULL)
-    {
-            perror("opendir");
-            return;
-    }
- 
-    printf("Directory stream is now open\n");
- 
-    /*  struct dirent *readdir(DIR *dir);
-     *
-     * Read in the files from argv[1] and print */
-    while ((dit = readdir(dip)) != NULL)
-    {
-            i++;
-            char full_path[PATH_MAX];
-            //printf("\n%s", dit->d_name);
-            if (dit->d_name[0] == '.') continue;
-            
-            strcpy(full_path, path);
-            strcat(full_path, dit->d_name);
-            int ok = verify_file(dit->d_name, full_path);
-            if (ok >= 0) {
-            	strcpy(result[n_result].filename, dit->d_name);
-            	n_result++;
-            }
+	KB_stdlog("Performing module auto-discovery on path: %s\n", path);
+
+    if ((dir = KB_opendir(path)) == NULL) {
+    	KB_errlog("[auto] Can't access path '%s'\n", path);
+    	return;
     }
 
-    printf("\n\nreaddir() found a total of %i files\n", i);
+    while ((entry = KB_readdir(dir)) != NULL) {
+		int ok;
+        char full_path[PATH_LEN];    
 
-    /* int closedir(DIR *dir);
-     *
-     * Close the stream to argv[1]. And check for errors. */
-    if (closedir(dip) == -1)
-    {
-            perror("closedir");
-            return;
+		i++;
+
+		if (entry->d_name[0] == '.') continue; /* Ignore hidden files and . .. */
+
+		KB_dircpy(full_path, path);
+		KB_dirsep(full_path);
+		KB_strcat(full_path, entry->d_name);
+
+		ok = verify_file(entry->d_name, full_path);
+
+		if (ok >= 0) {
+			KB_strcpy(result[n_result].filename, entry->d_name);
+			if (fingerprints[ok].kb_type == KBTYPE_GROUP) KB_strcat(result[n_result].filename, "#");
+			result[n_result].kb_family = fingerprints[ok].kb_family;
+			result[n_result].kb_type = fingerprints[ok].kb_type;
+			result[n_result].companion = fingerprints[ok].companion;
+			n_result++;
+			if (n_result >= MAX_RFILES) {
+				KB_stdlog("Found over %d files, ignoring the rest :(\n", n_result);
+				break;
+			}
+		}
     }
-    printf("\nDirectory stream is now closed\n");
+	KB_closedir(dir);
+
+	if (!n_result) {
+		KB_stdlog("Found NO interesting files (out of %d), are you sure that is the correct directory?\n", i);
+		return;
+	}
+
+    if (n_result)
+		KB_stdlog("Found %d interesting file(s), going to analyze them in more detail.\n", n_result);
+
+	int had_modules = conf->num_modules;
+
+	/* "auto" discover Free modules */
+	for (i = 0; i < n_result; i++) {
+		struct KBfileid *id = &result[i];
+		/* 'i'll take it' */
+		if (id->kb_family == KBFAMILY_GNU) {
+			add_module_aux(conf, "Free", KBFAMILY_GNU, 0, path, result[i].filename, NULL, NULL);
+		}
+	}
+
+	/* "auto" discover Dos modules */
+	/* traverse files noting those inbetween */
+	int dosGRP1 = -1;
+	int dosGRP2 = -1;
+	int dosEXE = -1;
+	for (i = 0; i < n_result; i++) {
+		struct KBfileid *id = &result[i];
+		if (id->kb_family == KBFAMILY_DOS) {
+		
+			if (id->companion == 0) dosGRP1 = i;
+			if (id->companion == 1) dosGRP2 = i;
+			if (id->companion == 2) dosEXE = i;
+
+			/* As soon as 2 are assembled, register as module */
+			if (dosGRP2 != -1 && dosEXE != -1) {
+
+				/* Better to have 3 */
+				if (dosGRP1 != -1)	{		
+					add_module_aux(conf, "DOS (VGA)", KBFAMILY_DOS, 8, path, 
+						result[dosGRP1].filename, result[dosGRP2].filename, result[dosEXE].filename);
+				}
+
+				/* But 2 are good enougth for a module too */ 
+				add_module_aux(conf, "DOS (Hercules)", KBFAMILY_DOS, 1, path, result[dosGRP2].filename, NULL, NULL);
+				add_module_aux(conf, "DOS (CGA)", KBFAMILY_DOS, 2, path, result[dosGRP2].filename, NULL, NULL);
+				add_module_aux(conf, "DOS (EGA)", KBFAMILY_DOS, 4, path, result[dosGRP2].filename, NULL, NULL);
+				
+				if (dosGRP1 != -1) {
+					/* Reset groups */
+					dosGRP1 = -1;
+					dosGRP2 = -1;
+				}
+			}
+			
+		}
+	}
+
+	/* "auto" discover Sega modules */
+	for (i = 0; i < n_result; i++) {
+		struct KBfileid *id = &result[i];
+		/* 'i'll take it' */
+		if (id->kb_family == KBFAMILY_MD) {
+			add_module_aux(conf, "MegaDrive", KBFAMILY_MD, 0, path, result[i].filename, NULL, NULL);
+		}
+	}
 
 
-	/* Ignore everything we found and just dump those: */
+	/* Say something after all this. */
+	if (conf->num_modules - had_modules > 0) {
+		KB_stdlog("Discovered %d modules. Some might be incorrect.\n", conf->num_modules - had_modules);
+	} else {
+		KB_stdlog("Discovered NO modules out of %d interesting files :(\n", n_result);
+	}
+
+	return;
+
+	/* Phew... Delete thos very very soon */
 
 	/* GNU */
 	wipe_module(&conf->modules[0]);
@@ -333,12 +454,10 @@ void discover_modules(const char *path, KBconfig *conf) {
 	strcpy(conf->modules[10].slotA_name, ".BIN#");
 	conf->num_modules++;
 
-
 	/* List modules */
 	for (i = 0; i < conf->num_modules;i++) {
 		printf("Module %d: %s\n", i, conf->modules[i].name);
 	}
-
 
 	for (i = 0; i < n_result;i++) {
 		printf("File %d: %s\n", i, result[i].filename);
@@ -346,7 +465,6 @@ void discover_modules(const char *path, KBconfig *conf) {
 
     return;
 }
-
 
 KB_DIR *KB_opendir_with(const char *filename, KBmodule *mod) {
 	int i;
@@ -417,7 +535,6 @@ char *villain_names[] = {
     "ragf","mahk","auri","czar","magu","urth","arec",
 };
 
-
 void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 
 	char *middle_name;
@@ -427,13 +544,15 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 	int row_start = 0;
 	int row_frames = 4;
 
-	int method = -1;
-	#define RAW_IMG	0
-	#define RAW_CH	1
-	#define ROW_IMG	2
+	enum {
+		UNKNOWN,
+		RAW_IMG,
+		RAW_CH,
+		IMG_ROW,
+	} method = UNKNOWN;
 
 	char *bpp_names[] = {
-		NULL, ".CH", ".4",//0, 1, 2
+		NULL, ".4", ".4",//0, 1, 2
 		NULL, ".16",	//3, 4
 		NULL, NULL, 	//5,6
 		NULL, ".256",	//7, 8
@@ -474,14 +593,14 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 			/* KB font */
 			method = RAW_CH;
 			middle_name = "KB";
-			suffix = bpp_names[1];
+			suffix = ".CH";
 			ident = "";
 		}
 		break;
 		case GR_TROOP:	/* subId - troop index */
 		{
 			/* A troop (with animation) */
-			method = ROW_IMG;
+			method = IMG_ROW;
 			middle_name = troop_names[sub_id];
 			suffix = bpp_names[mod->bpp];
 			ident = "";
@@ -498,9 +617,9 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 				middle_name = "tileseta";
 			}
 			suffix = bpp_names[mod->bpp];
-			static char buffl[8];
+			char buffl[8];
 			sprintf(buffl, "#%d", sub_id);
-			ident = &buffl; 
+			ident = &buffl[0];
 		}
 		break;
 		case GR_TILESET:	/* subId - continent */
@@ -511,7 +630,7 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 		case GR_VILLAIN:	/* subId - villain index */
 		{
 			/* A villain (with animation) */
-			method = ROW_IMG;
+			method = IMG_ROW;
 			middle_name = villain_names[sub_id];
 			suffix = bpp_names[mod->bpp];
 			ident = "";
@@ -527,7 +646,7 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 	}
 
 	switch (method) {
-		case ROW_IMG:
+		case IMG_ROW:
 		case RAW_IMG:
 		case RAW_CH:
 		{
@@ -536,6 +655,10 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 			char realname[1024];
 			char buf[0xFA00];
 			int n;
+			
+			int bpp = mod->bpp;
+			
+			if (bpp == 1) bpp = 2;
 
 			realname[0] = '\0';
 			KB_strcat(realname, middle_name);
@@ -552,19 +675,23 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 					n = KB_fread(&buf[0], sizeof(char), 0xFA00, f);
 					KB_fclose(f);
 
-					if (method == RAW_IMG)
-						surf = SDL_loadRAWIMG(&buf[0], n, mod->bpp);
+					if (method == RAW_IMG) {
+						surf = DOS_LoadRAWIMG_BUF(&buf[0], n, bpp);
+						if (mod->bpp == 1) DOS_SetColors(surf, 1);
+					}
 					else
-						surf = SDL_loadRAWCH (&buf[0], n);
+						surf = DOS_LoadRAWCH_BUF(&buf[0], n);
 				}
 				break;
-				case ROW_IMG:	
+				case IMG_ROW:	
 				{
+					printf("? DOS IMG DIR: %s\n", realname);
 					KB_DIR *d = KB_opendir_with(realname, mod);
 
-					if (d == NULL) { printf("Having trouble with dir %s\n", realname); return NULL; }				
+					if (d == NULL) return NULL;				
 
-					surf = SDL_loadROWIMG(d, row_start, row_frames, mod->bpp);	
+					surf = DOS_LoadIMGROW_DIR(d, row_start, row_frames, bpp);
+					if (mod->bpp == 1) DOS_SetColors(surf, 1);	
 				}
 				break;
 				default: break;

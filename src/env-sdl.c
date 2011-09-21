@@ -234,14 +234,15 @@ void RESOURCE_DefaultConfig(KBconfig* _conf) { conf = _conf; }
 void* KB_Resolve(int id, int sub_id) {
 	int i, l;
 	void *ret = NULL;
-	l = (conf->num_modules-1) * conf->fallback + 1;
 	i = conf->module;
+	l = (conf->num_modules * conf->fallback) + ((i+1) * (1-conf->fallback));
 	for (; i < l; i++) {
-		KBmodule *mod = &conf->modules[i];	
+		KBmodule *mod = &conf->modules[i];
 		/* This could be a callback... */
 		switch (mod->kb_family) {
 			case KBFAMILY_GNU: ret = GNU_Resolve(mod, id, sub_id); break;
 			case KBFAMILY_DOS: ret = DOS_Resolve(mod, id, sub_id); break;
+			case KBFAMILY_MD:  ret = MD_Resolve(mod, id, sub_id); break;
 			default: break;
 		}
 		if (ret != NULL) break;

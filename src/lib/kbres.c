@@ -24,98 +24,38 @@
 
 #include "SDL.h"
 
-void SDL_Blit1BPP(char *src, SDL_Surface *dest, SDL_Rect *dstrect)
+inline SDL_Surface* SDL_CreatePALSurface(Uint32 width, Uint32 height)
 {
-	/* 8 bits contain 8 pixels o_O */
-	dword j;
+	return SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, 8, 0xFF, 0xFF, 0xFF, 0x00);
+}
+
+void SDL_BlitXBPP(const char *src, SDL_Surface *dest, SDL_Rect *dstrect, int bpp)
+{
+	byte base_mask = 0;	
+
+	int j;
 	dword x = 0, y = 0;
+	
+	for (j = 0; j < bpp; j++) base_mask |= (0x01 << j);
 
-	while (y < dstrect->h) {
+	while (y < dstrect->h)	{
 		char test = *src++;
-		char c[8];
+#if 1 /* MSB */		
+		for (j = 8 / bpp - 1; j > -1 ; j--) {
+#else /* LSB */
+		for (j = 0; j < 8 / bpp; j++) {
+#endif
+			Uint8 *p = 
 
-		c[0] = ((test & 0x80) >> 7);// bin:10000000
-		c[1] = ((test & 0x40) >> 6);// bin:01000000
-		c[2] = ((test & 0x20) >> 5);// bin:00100000
-		c[3] = ((test & 0x10) >> 4);// bin:00010000
-		c[4] = ((test & 0x08) >> 3);// bin:00001000
-		c[5] = ((test & 0x04) >> 2);// bin:00000100
-		c[6] = ((test & 0x02) >> 1);// bin:00000010
-		c[7] = ((test & 0x01) >> 0);// bin:00000001
+			(Uint8*) dest->pixels + (y + dstrect->y) * dest->w + (x + dstrect->x);
 
-		for (j = 0; j < 8; j++) {
-			Uint8 *p;
-
-			p = (Uint8*) dest->pixels + (y + dstrect->y) * dest->w + (x + dstrect->x);
-			*p = c[j];
+			*p = ((test & (base_mask << (j * bpp))) >> (j * bpp));
 
 			if (++x >= dstrect->w) { x = 0; y++; }
 		}
-	}
+	}	
 }
-void SDL_Blit2BPP(char *src, SDL_Surface *dest, SDL_Rect *dstrect)
-{
-	/* 8 bits contain 4 pixels */
-	dword j;
-	dword x = 0, y = 0;
 
-	while (y < dstrect->h) {
-
-		char test = *src++;
-		char c[4];
-
-		c[0] = ((test & 0xC0) >> 6);// bin:11000000
-		c[1] = ((test & 0x30) >> 4);// bin:00110000
-		c[2] = ((test & 0x0C) >> 2);// bin:00001100 
-		c[3] = ((test & 0x03) >> 0);// bin:00000011
-
-		for (j = 0; j < 4; j++) {
-			Uint8 *p;
-
-			p = (Uint8*) dest->pixels + (y + dstrect->y) * dest->w + (x + dstrect->x);
-			*p = c[j];
-
-			if (++x >= dstrect->w) { x = 0; y++; }
-		}
-	}
-}
-void SDL_Blit4BPP(char *src, SDL_Surface *dest, SDL_Rect *dstrect)
-{
-	/* 8 bits contain 2 pixels */
-	dword j;
-	dword x = 0, y = 0;
-
-	while (y < dstrect->h) {
-
-		char test = *src++;
-		char c[2];
-
-		c[0] = ((test & 0xF0) >> 4);// bin:11110000
-		c[1] = ((test & 0x0F) >> 0);// bin:00001111
-
-		for (j = 0; j < 2; j++) {
-			Uint8 *p;
-
-			p = (Uint8*) dest->pixels + (y + dstrect->y) * dest->w + (x + dstrect->x);
-			*p = c[j];
-
-			if (++x >= dstrect->w) { x = 0; y++; }
-		}
-	}
-}
-void SDL_Blit8BPP(char *src, SDL_Surface *dest, SDL_Rect *dstrect)
-{
-	/* 8 bits contain 1 pixel */
-	dword x = 0, y = 0;
-	while (y < dstrect->h) {
-		Uint8 *p;
-
-		p = (Uint8*) dest->pixels + (y + dstrect->y) * dest->w + (x + dstrect->x);
-		*p = *src++;
-
-		if (++x >= dstrect->w) { x = 0; y++; }
-	}
-}
 void SDL_BlitMASK(char *src, SDL_Surface *dest, SDL_Rect *dstrect)
 {
 	/* 8 bits contain 8 pixels o_O */
@@ -158,10 +98,10 @@ void SDL_ReplaceIndex(SDL_Surface *dest, SDL_Rect *dstrect, byte search, byte re
 
 Uint8 herc_pallete_ega[16] =
 {
-	0, // 00 // black // bin:00
-	15, // 01 // cyan // bin:01
-	15, // 02 // magenta // bin:10
-	15, // 03 // white // bin:11
+	0, // 00 
+	15, // 01
+	15, // 02
+	15, // 03
 };
 
 Uint8 cga_pallete_ega[16] =
