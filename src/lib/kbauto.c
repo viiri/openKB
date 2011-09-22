@@ -636,6 +636,15 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 			ident = "";
 		}
 		break;
+		case GR_COMTILES:	/* subId - undefined */
+		{
+			/* Combat tileset */
+			method = IMG_ROW;
+			middle_name = "comtiles";
+			suffix = bpp_names[mod->bpp];
+			ident = "";	
+		}
+		break;
 		case GR_LOCATION:	/* subId - 0 home 1 town 2 - 6 dwelling */
 
 		break;		
@@ -747,6 +756,13 @@ void* GNU_Resolve(KBmodule *mod, int id, int sub_id) {
 			image_name = troop_names[sub_id];
 			image_suffix = ".png";
 		}
+		case GR_COMTILES:
+		{
+			image_name = "comtiles";
+			image_suffix = ".png";
+			is_transparent = 0;
+		}
+		break;
 		default: break;
 	}
 

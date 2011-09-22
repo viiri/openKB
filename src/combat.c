@@ -72,6 +72,7 @@ SDLNet_SocketSet set;
 #define FMT_SINT "i"
 #define FMT_STR "s"
 
+#define LEVEL_H 5
 #define LEVEL_W 8
 
 typedef struct KBpacket {
@@ -820,6 +821,8 @@ int run_match(KBconfig *conf) {
 	reset_match();
 	base.unit_id = next_unit(base.side, -1);
 
+	SDL_Surface *comtiles = SDL_LoadRESOURCE(GR_COMTILES, 0, 0);
+
 	Uint32 last = 0;
 	while (!done) {
 	
@@ -844,8 +847,18 @@ int run_match(KBconfig *conf) {
 		}
 
 		SDL_FillRect(screen, NULL, (MyRole == Server ? 0x000000 : 0xFF0000 ));
-
+		
 		int i, j;
+
+		for (j = 0; j < LEVEL_H; j++)		
+		for (i = 0; i < LEVEL_W; i++) {
+
+			SDL_Rect src = { base.omap[j][i] * 48, 0, 48, 34 };
+			SDL_Rect dst = { i * 48, j * 34, 48, 34 };
+
+			SDL_BlitSurface(comtiles, &src, screen, &dst);
+		}
+
 		for (j = 0; j < 2; j++) {
 			for (i = 0; i < 5; i++) {
 			
@@ -897,6 +910,8 @@ int run_match(KBconfig *conf) {
 		SDL_Delay(10);	
 	}
 	
+	SDL_FreeSurface(comtiles);
+
 	free_troops();
 
 
@@ -1279,7 +1294,7 @@ void show_usage(const char *binary_name) {
 int main(int argc, char* argv[]) {
 
 	int playing = 1;	/* Play 1 game of KB */
-	
+
 	/* Lots of very boring things must happen for a proper initialisation... */
 	KB_stdlog("openKB COMBAT EMULATOR version " PACKAGE_VERSION "\n");
 	KB_stdlog("=====================================================\n");
