@@ -1316,6 +1316,8 @@ int main(int argc, char* argv[]) {
 	/* Read default config file */
 	wipe_config(&KBconf);
 	read_env_config(&KBconf);
+	//temp hack to always read local file
+	KB_strcpy(KBconf.config_file, "./openkb.ini");
 	if ( read_file_config(&KBconf, KBconf.config_file) )
 	{
 		KB_errlog("[config] Unable to read config file '%s'\n", KBconf.config_file); 
