@@ -756,6 +756,7 @@ void* GNU_Resolve(KBmodule *mod, int id, int sub_id) {
 			image_name = troop_names[sub_id];
 			image_suffix = ".png";
 		}
+		break;
 		case GR_COMTILES:
 		{
 			image_name = "comtiles";
