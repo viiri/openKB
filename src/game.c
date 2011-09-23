@@ -1064,6 +1064,23 @@ void display_debug() {
 
 			SDL_FillRect( screen , NULL, 0x4664B4);
 
+			{
+				SDL_Surface *grass = SDL_LoadRESOURCE(GR_COMTILES, 0, 0);
+				int gw = grass->w / 15;
+				SDL_Rect gsrc = { 0, 0, gw, grass->h };
+				SDL_Rect gdst = { 0, 0, gw, grass->h };
+				int gi, gj;
+				for (gj = 0; gj < 10; gj++) {
+				for (gi = 0; gi < 10; gi++) {
+				
+					gdst.x = gw * gi;
+					gdst.y = grass->h * gj;
+					SDL_BlitSurface(grass, &gsrc, screen, &gdst);
+				} }
+				SDL_FreeSurface(grass);
+			}
+
+
 			SDL_BlitSurface( peasant2, NULL , screen, &pos );
 
 			//SDL_BlitSurface( font, NULL , screen, &pos );
@@ -1074,7 +1091,7 @@ void display_debug() {
 			src.h = peasant2->h/2;
 			troop_frame++;
 			if (troop_frame > 3) troop_frame = 0; 			
-			
+
 			SDL_BlitSurface( peasant, &src , screen, NULL );
 			
 			src.y += peasant2->h/2;
