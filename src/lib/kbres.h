@@ -80,6 +80,14 @@ inline SDL_Surface* SDL_CreatePALSurface(Uint32 width, Uint32 height);
 extern void SDL_BlitXBPP(const char *src, SDL_Surface *dest, SDL_Rect *dstrect, int bpp);
 extern void SDL_ReplaceIndex(SDL_Surface *dest, SDL_Rect *dstrect, byte search, byte replace);
 
+/* Simple palette manipulation */
+extern void put_mono_pal(SDL_Surface *dest);
+extern void put_cga_pal(SDL_Surface *dest);
+extern void put_ega_pal(SDL_Surface *dest);
+extern void put_vga_pal(SDL_Surface *dest);
+extern void put_color_pal(SDL_Surface *dest, Uint32 fore, Uint32 back);
+
+
 /* Provide useful functions to potential resource loader */
 /*
  * DOS module
