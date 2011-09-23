@@ -75,12 +75,6 @@ SDLNet_SocketSet set;
 #define FMT_SINT "i"
 #define FMT_STR "s"
 
-#define CLEVEL_H 5
-#define CLEVEL_W 8
-
-#define MAX_SIDES 2
-#define MAX_UNITS 5
-
 typedef struct KBpacket {
 	
 	int id;
@@ -141,37 +135,6 @@ enum {
 	Client,
 
 } MyRole = Undefined;
-
-typedef struct KBunit {
-	
-	int troop_id;
-	int count;
-
-	int frame;
-
-	int health;
-	int acted;
-
-	int y;
-	int x;
-} KBunit;
-
-typedef struct KBcombat {
-
-	int e_army[5];
-	int e_nums[5];
-
-	KBunit units[2][5];
-
-	byte omap[CLEVEL_H + 1][CLEVEL_W + 1];
-	byte umap[CLEVEL_H + 1][CLEVEL_W + 1];
-	
-	int your_turn;
-
-	int side;//indexes into
-	int unit_id;//units array
-
-} KBcombat;
 
 KBcombat base = { 0};
 
@@ -1010,28 +973,27 @@ int army_callback(const char *data) {
 
 	int i;
 	char *p = data;
+
 	for (i = 0; i < 5; i++)
 	{
-		base.e_army[i] = data[i];
+		base.units[1][i].troop_id = data[i];
 	}
 
 	voidl(data, 10);
 
-	for (i = 0; i < 5; i++) {
-		base.e_nums[i] 	= SDLNet_Read16(&data[5 + i * 2]);
+	for (i = 0; i < 5; i++)
+	{
+		base.units[1][i].count 	= SDLNet_Read16(&data[5 + i * 2]);
 	}
 	
 	for (i = 0; i < 5; i++)
 	{
-		base.units[1][i].troop_id = base.e_army[i];
-		base.units[1][i].count = base.e_nums[i];
 		base.units[1][i].y = i;
 		base.units[1][i].x = CLEVEL_W - 1;
 	}
-	
+
 	if (MyRole == Server) /* Verify and accept army */
 		send_data(PKT_READY, 1);
-
 
 	return 0;
 }

@@ -203,6 +203,37 @@ typedef struct KBclass {
 	byte knows_magic;
 } KBclass;
 
+#define CLEVEL_H 5
+#define CLEVEL_W 8
+
+#define MAX_SIDES 2
+#define MAX_UNITS 5
+
+typedef struct KBunit {
+	byte troop_id;
+	word count;
+
+	byte frame;
+
+	word health;
+	byte acted;
+
+	byte y;
+	byte x;
+} KBunit;
+
+typedef struct KBcombat {
+	KBunit units[MAX_SIDES][MAX_UNITS];
+
+	byte omap[CLEVEL_H + 1][CLEVEL_W + 1];
+	byte umap[CLEVEL_H + 1][CLEVEL_W + 1];
+
+	int your_turn;//TODO: replace with a macro
+
+	byte side;		/* Indexes into units array */
+	byte unit_id;	/* units[side][unit_id], obviously */
+} KBcombat;
+
 /* Data provided by bounty.c */
 extern KBtroop troops[MAX_TROOPS];
 extern byte morale_chart[5][5];
