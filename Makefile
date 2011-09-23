@@ -1,7 +1,7 @@
-GROFF=nroff -man
 CC=gcc
 
 INSTALL=install
+GROFF=nroff -man
 
 prefix=/usr
 exec_prefix=$(prefix)
@@ -21,6 +21,9 @@ ifneq ("$(MSYS_TEST)","")
 	CFLAGS+=-I/mingw/include/SDL -DUSE_WINAPI
 endif
 
+CONFIG_SOURCE=src/config.h.in
+CONFIG_HEADER=src/config.h
+
 LIB_SOURCES=src/lib/kbauto.c src/lib/kbconf.c src/lib/kbres.c src/lib/kbfile.c src/lib/kbdir.c src/lib/dos-cc.c src/lib/dos-img.c src/lib/kbstd.c vendor/strlcat.c vendor/strlcpy.c src/lib/md-rom.c 
 LIB_BINARY=src/libkb.a
 
@@ -29,7 +32,7 @@ VEND_SOURCES=vendor/scale2x.c vendor/inprint.c
 GAME_SOURCES=src/main.c src/save.c src/game.c src/bounty.c src/env-sdl.c
 GAME_BINARY=openkb
 
-GAME_DIST=$(GAME_BINARY)-$(VERSION)
+GAME_DIST=$(DESTDIR)$(GAME_BINARY)-$(VERSION)
 
 GAME2_SOURCES=src/combat.c src/bounty.c src/env-sdl.c
 GAME2_BINARY=netkb
@@ -38,31 +41,28 @@ MAN_SOURCES=docs/openkb.man docs/netkb.man
 MAN_PAGES=$(MAN_SOURCES:.man=.6)
 
 LIB_OBJECTS=$(LIB_SOURCES:.c=.o)
-VEND_OBJECTS=$(VEND_SOURCES:.c=.vo)
+VEND_OBJECTS=$(VEND_SOURCES:.c=.o)
 GAME_OBJECTS=$(GAME_SOURCES:.c=.o)
 GAME2_OBJECTS=$(GAME2_SOURCES:.c=.o)
 
-.SUFFIXES: .vo .6 .man
+.SUFFIXES: .6 .man
 
 all: $(GAME_BINARY)
 
-$(LIB_BINARY): $(LIB_OBJECTS)
+$(LIB_BINARY): $(CONFIG_HEADER) $(LIB_OBJECTS)
 	ar rcs $(LIB_BINARY) $(LIB_OBJECTS)
 
-.c.vo: vendor
-	$(CC) -c $(CFLAGS) $< -o $@
-
-$(GAME_BINARY): $(GAME_OBJECTS) $(LIB_BINARY) $(VEND_OBJECTS)
+$(GAME_BINARY): $(CONFIG_HEADER) $(GAME_OBJECTS) $(LIB_BINARY) $(VEND_OBJECTS)
 	$(CC) $(GAME_OBJECTS) $(VEND_OBJECTS) $(LIB_BINARY) $(LDFLAGS) -o $@
 
-$(GAME2_BINARY): $(GAME2_OBJECTS) $(LIB_BINARY) $(VEND_OBJECTS)
+$(GAME2_BINARY): $(CONFIG_HEADER) $(GAME2_OBJECTS) $(LIB_BINARY) $(VEND_OBJECTS)
 	$(CC) $(GAME2_OBJECTS) $(VEND_OBJECTS) $(LIB_BINARY) $(LDFLAGS) -lSDL_net -o $@
 
 .c.o:
 	$(CC) -c $(CFLAGS) $< -o $@
 
 clean:
-	rm -rf vendor/*.o vendor/*.vo src/*.o src/lib/*.o *.o *.a $(GAME_BINARY) $(LIB_BINARY)
+	rm -rf vendor/*.o src/*.o src/lib/*.o *.o *.a $(GAME_BINARY) $(LIB_BINARY)
 
 .man.6:
 	$(GROFF) $< > $@
@@ -70,22 +70,26 @@ clean:
 mans: $(MAN_PAGES)
 	@true
 
-.phony:
-	@true
-
-vendor-clean:
-	rm vendor/*.c
-
-vendor: .phony
+$(VEND_SOURCES):
 	vendor/drop.sh vendor/
 
-config: .phony
+vendor-clean:
+	rm $(VEND_SOURCES)
+
+vendor: $(VEND_SOURCES)
+	@true
+
+$(CONFIG_SOURCE):
 	echo "Making config"
 	autoheader
 	autoconf
+
+$(CONFIG_HEADER): $(CONFIG_SOURCE)
 	./configure
 
-dist: vendor clean config
+config: $(CONFIG_HEADER) $(CONFIG_SOURCE)
+
+dist: vendor clean config $(MAN_PAGES)
 	echo "Making dist"
 	mkdir -p $(GAME_DIST)
 	cp Makefile $(GAME_DIST)
