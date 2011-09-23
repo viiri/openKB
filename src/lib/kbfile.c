@@ -82,9 +82,6 @@ KB_DIR * KB_follow_path( const char * filename, int *n, int *e, KB_DIR *top )
 	KB_DIR *d = KB_opendir_in( buf , top );
 	if (d == NULL) return NULL;
 
-	d->prev = top;
-	if (top) top->ref_count++;
-
 	return d;
 }
 

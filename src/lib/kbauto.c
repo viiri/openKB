@@ -678,7 +678,7 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 				case RAW_IMG:
 				case RAW_CH:
 				{
-					printf("? DOS IMG FILE: %s\n", realname);
+					KB_debuglog(0,"? DOS IMG FILE: %s\n", realname);
 					f = KB_fopen_with(realname, "rb", mod);
 					if (f == NULL) return NULL;
 					n = KB_fread(&buf[0], sizeof(char), 0xFA00, f);
@@ -694,13 +694,15 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 				break;
 				case IMG_ROW:	
 				{
-					printf("? DOS IMG DIR: %s\n", realname);
+					KB_debuglog(0,"? DOS IMG DIR: %s\n", realname);
 					KB_DIR *d = KB_opendir_with(realname, mod);
 
 					if (d == NULL) return NULL;				
 
 					surf = DOS_LoadIMGROW_DIR(d, row_start, row_frames, bpp);
 					if (mod->bpp == 1) DOS_SetColors(surf, 1);	
+					
+					KB_closedir(d);
 				}
 				break;
 				default: break;
@@ -778,11 +780,11 @@ void* GNU_Resolve(KBmodule *mod, int id, int sub_id) {
 		KB_strcat(realname, image_subid);
 		KB_strcat(realname, image_suffix);
 
-		printf("? FREE IMG FILE: %s\n", realname);
+		KB_debuglog(0, "? FREE IMG FILE: %s\n", realname);
 
 		SDL_Surface *surf = IMG_Load(realname);
 
-		if (surf == NULL) printf("> FAILED TO OPEN, %s\n", IMG_GetError());
+		if (surf == NULL) KB_debuglog(0, "> FAILED TO OPEN, %s\n", IMG_GetError());
 
 		if (surf && is_transparent)
 			SDL_SetColorKey(surf, SDL_SRCCOLORKEY, 0xFF);
