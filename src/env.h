@@ -65,6 +65,9 @@ typedef struct KBwin {
 
 } KBwin;
 
+extern KBenv *KB_startENV(KBconfig *conf);
+extern void KB_stopENV(KBenv *env);
+
 extern void SDL_SBlitSurface(SDL_Surface *src, SDL_Rect *srcrect, SDL_Surface *dst, SDL_Rect *dstrect);
 
 extern void RESOURCE_DefaultConfig(KBconfig* _conf);

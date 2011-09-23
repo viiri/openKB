@@ -214,38 +214,6 @@ inline void SDL_CenterRectTxt(SDL_Rect *rect, int rows, int cols, SDL_Surface *h
 	RECT_Center(rect, host); 
 }
 
-KBenv *KB_startENV(KBconfig *conf) {
-
-	KBenv *nsys = malloc(sizeof(KBenv));
-
-	if (!nsys) return NULL; 
-
-    SDL_Init( SDL_INIT_VIDEO );
-
-    nsys->screen = SDL_SetVideoMode( 320, 200, 32, SDL_SWSURFACE );
-
-    nsys->conf = conf;
-
-	nsys->font = NULL;
-
-	RESOURCE_DefaultConfig(conf);
-
-	prepare_inline_font();	// <-- inline font
-
-	return nsys;
-}
-
-void KB_stopENV(KBenv *env) {
-
-	if (env->font) SDL_FreeSurface(env->font);
-
-	kill_inline_font();
-
-	free(env);
-
-	SDL_Quit();
-}
-
 int KB_reset(KBgamestate *state) {
 
 	SDL_Event event;

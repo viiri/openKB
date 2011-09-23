@@ -25,8 +25,63 @@
 #include "../vendor/vendor.h"
 #include "env.h"
 
-KBconfig *conf = NULL;	/* Ensure nice segfaults */
+/*
+ * Default config.
+ * Yeah, a local global variable :/
+ * NULL by default, to ensure clean segfaults if no default was provided.
+ */
+KBconfig *conf = NULL;
 
+/*
+ * Start/Stop the "environment"
+ */
+KBenv *KB_startENV(KBconfig *conf) {
+
+	Uint32 width, height;
+
+	KBenv *nsys = malloc(sizeof(KBenv));
+
+	if (!nsys) return NULL; 
+
+    SDL_Init( SDL_INIT_VIDEO );
+
+	width = 320;
+	height = 200;
+
+	if (conf->filter) {
+		width = 640;
+		height = 480;
+	}
+
+    nsys->screen = SDL_SetVideoMode( width, height, 32, SDL_SWSURFACE );
+
+    nsys->conf = conf;
+
+	nsys->font = NULL;
+
+	RESOURCE_DefaultConfig(conf);
+
+	prepare_inline_font();	// <-- inline font
+
+	return nsys;
+}
+
+void KB_stopENV(KBenv *env) {
+
+	if (env->font) SDL_FreeSurface(env->font);
+
+	kill_inline_font();
+
+	free(env);
+
+	SDL_Quit();
+}
+
+/*
+ * SDL Operations.
+ * Any SDL resource handler should have those or similar! :)
+ * Warning: might not work for non-paletted surfaces, use with caution.
+ */
 #define SDL_CloneSurfaceX(SURFACE, SIZE) SDL_CreateRGBSurface(SURFACE->flags, SURFACE->w * SIZE, SURFACE->h * SIZE, SURFACE->format->BitsPerPixel, \
 		SURFACE->format->Rmask, SURFACE->format->Gmask,	SURFACE->format->Bmask,	SURFACE->format->Amask)
 #define SDL_CloneSurfaceHW(SURFACE, H, W) SDL_CreateRGBSurface(SURFACE->flags, W, H, SURFACE->format->BitsPerPixel, \
@@ -149,6 +204,15 @@ void SDL_SBlitSurface(SDL_Surface *src, SDL_Rect *srcrect, SDL_Surface *dst, SDL
 	SDL_BlitSurface(src, &nsrcrect, dst, &ndstrect);
 }
 
+
+/* 
+ * Set the the default config.
+ * Must be set before any calls to *RESOURCE functions.
+ * This is done to avoid passing the same config over and over
+ * again in tight loops.
+ */ 
+void RESOURCE_DefaultConfig(KBconfig* _conf) { conf = _conf; }
+
 /*
  * Load a graphical KB resource using config 'conf' (must be provided
  *  via the 'RESOURCE_DefaultConfig' function beforehand)
@@ -228,8 +292,6 @@ SDL_Surface* KB_LoadIMG8(int id, int sub_id) {
 	SDL_Surface *surf = (SDL_Surface *)KB_Resolve(id, sub_id);
 	return surf;
 }
-
-void RESOURCE_DefaultConfig(KBconfig* _conf) { conf = _conf; }
 
 void* KB_Resolve(int id, int sub_id) {
 	int i, l;
