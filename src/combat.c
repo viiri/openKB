@@ -17,6 +17,40 @@
  *  You should have received a copy of the GNU General Public License
  *  along with openkb.  If not, see <http://www.gnu.org/licenses/>.
  */
+/* 
+ * Random notes:
+ * 
+ * Complete gamestate is never transmitted nor even exists,
+ * both players' in-memory representation has "your" army 
+ * on the left side of the screen and "opponent's" army on the
+ * right side (and the X coordinate is often flipped in the
+ * packet-receiving functions).
+ * 
+ * Thus, it's very easy to get out of sync. *VERY* EASY. 
+ * 
+ * The authority over the game is shared, altho server has more power.
+ * Both client and server check each other for errors and disconnect
+ * if something is wrong. Nothing should ever be wrong, because
+ * the rules of the game are extremly simple. Imagine playing a chess
+ * match and seeing your opponent's pawn moving like a queen, naturally
+ * your reasonable response would be is slapping him in the face.
+ * If something gets out of sync it means either party is cheating
+ * or there's a bug in this software. Which should be easy to resolve
+ * given the rules are very simple.
+ *
+ * Neither client nor server wait for confirmations when doing their thing,
+ * but sometimes client has to wait for server's decision.
+ * 
+ * TODO:
+ * What would be neat to add is some crypto routine and an RNG, so after
+ * the match is over, client would be able to verify all the dice rolls.
+ * That would pretty much nullify all possibility of cheating, while
+ * keeping the model as simple as it is now.
+ *
+ * As of now, server can cheat to it's heart's content with the dice rolls,
+ * any other tampering would be directly evident to the client. Client
+ * has no ability to cheat at all.
+ */
 #include "config.h"
 #ifndef HAVE_LIBSDL
 	#error "Sorry, there's no reason to compile without HAVE_LIBSDL define..."
@@ -31,9 +65,6 @@
 #include "lib/kbconf.h"
 #include "lib/kbstd.h"
 
-#include <stdio.h> 
-#include <stdlib.h> 
-#include <string.h> 
 #include "SDL.h"
 #include "SDL_net.h" 
 
@@ -41,8 +72,10 @@ struct KBconfig KBconf;
 struct KBenv *sys;
 TCPsocket sd, rsd; /* Socket descriptor, remote socket descriptor */ 
 IPaddress ip, *remoteIP; 
-
 SDLNet_SocketSet set;
+
+KBcombat base = { 0 };
+int max_gold = 0;
 
 #define PKT_HELLO 0
 #define PKT_CHAT 1
@@ -65,7 +98,6 @@ SDLNet_SocketSet set;
 
 #define PKT_CLEAN 16
 #define PKT_GRID 17
-
 
 #define FMT_CHAR "c"
 #define FMT_BYTE "b"
@@ -125,7 +157,6 @@ KBpacket packets[] = {
 	{ PKT_GRID, 3, FMT_BYTE FMT_BYTE FMT_BYTE, &grid_callback },
 
 };
-
 int num_packets = sizeof(packets) / sizeof(KBpacket);
 
 enum {
@@ -136,7 +167,7 @@ enum {
 
 } MyRole = Undefined;
 
-KBcombat base = { 0};
+#define MAX_MESSAGES 20
 
 typedef struct KBconsole {
 
@@ -147,7 +178,7 @@ typedef struct KBconsole {
 		int delay;
 		char text[80];	
 
-	} message[20];
+	} message[MAX_MESSAGES];
 
 	char your[80];
 	int pos;
@@ -157,74 +188,210 @@ typedef struct KBconsole {
 
 KBconsole console;
 
-int send_data(int id, ...);
+#if 1
+void printx(const char *data, int max) {
+	int i;
+	for (i = 0; i < max; i++)
+		printf("[%02x] ", data[i]);
+	printf("\n");
+}
+#endif
 
+/*
+ * NETWORK Receive/Send functions.
+ *
+ * The protocol / algorithm is the simplest ever.
+ *
+ */
+int read_data(const char *buffer) {
+	byte id = READ_BYTE(buffer);
+
+	KBpacket *pkt = &packets[id];
+
+	int res = (pkt->callback)(buffer);
+	
+	return res;
+}
+
+int receive_data() {
+
+	static char old_buffer[1024] = { 0 };
+	static int have_bytes = 0;
+
+	char tmp_buffer[1024];	/* for shifting left */
+	char buffer[512];
+	
+	int n, res = 0;
+
+	/* Ensure socket is ready */
+	if (SDLNet_CheckSockets(set, 1) == -1) return -1;
+	if (!SDLNet_SocketReady(rsd)) return 0;
+
+	/* Read data */
+	n = SDLNet_TCP_Recv(rsd, buffer, 512);
+
+	/* Fatal error */
+	if (n <= 0) return -1;
+	if (n + have_bytes > 1023) { KB_errlog("Input buffer overflow! (%d bytes)\n", n + have_bytes); return -1;}
+
+	/* Append new bytes */
+	memcpy(&old_buffer[have_bytes], buffer, n);
+	have_bytes += n;
+
+	/* Minimum for a packet is 3 bytes */
+	while (have_bytes > 2) {
+		/* Because 2 contain 'packet length'. */
+		word len = SDLNet_Read16(old_buffer);
+
+		/* We read it out and compare to number of bytes we have. */
+		if (have_bytes >= len - 2) {
+			res = read_data(&old_buffer[2]);
+			if (res) break;
+		}
+		else break;
+
+		/* Shift leftovers to the left */
+		/* By copying everything to a tmp buffer */
+		memcpy(tmp_buffer, old_buffer, have_bytes);
+		/* And then copying back only the relevant portion */
+		memcpy(old_buffer, &tmp_buffer[len + 2], have_bytes - len - 2);
+
+		/* We have that much bytes left: */
+
+		have_bytes -= len;	/* Packet Body */ 
+		have_bytes -= 2;	/* Packet Header */
+	}
+
+	return res;
+}
+int send_data(int id, ...) {
+	va_list argptr;
+
+	int i, j, l;
+	int val; char *str_val;
+
+	char buffer[1024] = { 0 };
+	int len = 2;
+	/* We leave 2 bytes to insert 'packet length' later */
+
+	KBpacket *pkt = &packets[id];
+
+	/* Then, 1 byte packet-id */
+	buffer[len] = (char)id;
+	len++;
+
+	va_start(argptr, id);
+
+	/* And then the actual arguments, in varying formats */
+	for (i = 0; i < pkt->num_args; i++) {
+		switch (pkt->format[i]) {
+			case 'c':
+				val = va_arg(argptr, int);
+				buffer[len] = (char) val;
+				len += 1;
+			break;
+			case 'b':
+				val = va_arg(argptr, int);
+				buffer[len] = (unsigned char) val;
+				len += 1;
+			break;
+			case 'w':
+				val = va_arg(argptr, int);
+				SDLNet_Write16(val, &buffer[len]);
+				len += 2;				
+			break;
+			case 's':
+				str_val = va_arg(argptr, char*);
+				l = strlen(str_val);
+				if (l > 80) l = 80; /* all strings are always 80 char long */
+				for (j = 0; j < l; j++) 
+					buffer[len++] = str_val[j];
+				for (; j < 80; j++) /* pad the rest with spaces */
+					buffer[len++] = ' ';
+			break;
+			default: 
+			printf("Superbad '%c' | %s / %d / %d\n", pkt->format[i], pkt->format, i, id);
+			exit(-2);
+			break;
+		}
+	}
+
+	va_end(argptr);
+
+//	printf("(%d) Sending data <%s>:\n", len, pkt->format);
+//	printx(buffer, len);
+
+	/* Insert calculated packet length into beginning of the packet */
+	SDLNet_Write16((len - 2), &buffer[0]);
+
+	/* SEND! */
+	if (SDLNet_TCP_Send(rsd, (void *)buffer, len) < len) {
+		SDL_Event event;
+		event.type = SDL_USEREVENT;
+		event.user.code = 0xFF;
+		event.user.data1 = 0;
+		event.user.data2 = 0;
+		SDL_PushEvent(&event); 
+		KB_errlog("SDLNet_TCP_Send: %s\n", SDLNet_GetError()); 
+		return -1; 
+	} 
+
+	return len;
+}
+
+/*
+ * KBconsole "interface"
+ */
 void reset_console() {
 
 	console.num_messages = 0;
-	
+
 	console.your[0] = '\0';
 	console.pos = 0;
-	
-	console.chatting = 0;
 
+	console.chatting = 0;
 }
 
-
 void add_message(const char *msg) {
-
 	int i;
-	
-	for (i = 0; i < 19; i++) {
+
+	for (i = 0; i < MAX_MESSAGES - 1; i++) {
 
 		KB_strcpy(console.message[i].text, console.message[i+1].text);	
 
 	}
-	
-	strcpy(console.message[19].text, msg);
-	
-	if (console.num_messages < 20) console.num_messages++;
 
+	KB_strcpy(console.message[MAX_MESSAGES - 1].text, msg);
+
+	if (console.num_messages < MAX_MESSAGES) console.num_messages++;
 }
-
 
 void KB_iprint(char *fmt, ...) 
 { 
-	char x[1024];
+	char buf[256];
 	va_list argptr;
 	va_start(argptr, fmt);
-	vfprintf(stdout, fmt, argptr);
-	vsprintf(x, fmt, argptr);
-	add_message(x);
+	vsnprintf(buf, 255, fmt, argptr);
+	vfprintf(stdout, buf, NULL);
+	add_message(buf);
 	va_end(argptr);
 }
 
 void draw_console() {
-
 	int i;
 	SDL_Surface *screen = sys->screen;
-	
-	int y = screen->h - 21 * 8;
-	
+
+	int y = screen->h - (MAX_MESSAGES+1) * 8;
+
 	incolor(0x000000, 0xFFFFFF);
-
-
-	for (i = 0; i < 20; i++) {
-
-	 inprint(screen, console.message[i].text, 0, y + i * 8);	
-
-	}
-
+	for (i = 0; i < MAX_MESSAGES; i++)
+		inprint(screen, console.message[i].text, 0, y + i * 8);	
 
 	if (console.chatting) {
-	
-	incolor(0xFFFFFF, 0x000000);
-
-	inprint(screen, console.your, 0, y + i * 8);
-	inprint(screen, "|", console.pos * 8, y + i * 8);
-	
+		incolor(0xFFFFFF, 0x000000);
+		inprint(screen, console.your, 0, y + i * 8);
+		inprint(screen, "|", console.pos * 8, y + i * 8);
 	}
-	
 }
 
 
@@ -281,6 +448,7 @@ int KB_event() {
 	while (SDL_PollEvent(&event)) {
 
 		if (event.type == SDL_QUIT) eve = 0xFF;
+		if (event.type == SDL_USEREVENT) eve = event.user.code;
 
 		if (event.type == SDL_KEYDOWN) {
 			SDL_keysym *kbd = &event.key.keysym;
@@ -339,7 +507,7 @@ int ready_callback(const char *data) {
 	return 0;
 }
 
-int prepare_for_combat() {
+KBcombat* prepare_for_combat() {
 
 	int done = 0;
 	
@@ -347,7 +515,7 @@ int prepare_for_combat() {
 
 	SDL_Surface *screen = sys->screen;	
 	SDL_Surface *troop = troop_cache[0];
-	
+
 	SDL_Surface *dwell[5];
 		dwell[0] = SDL_LoadRESOURCE(GR_TILE, 10, 0);
 		dwell[1] = SDL_LoadRESOURCE(GR_TILE, 12, 0);
@@ -370,15 +538,18 @@ int prepare_for_combat() {
 	
 	int last_ret;
 
+	KBcombat *war = &base;
+	
 	while (!done) {
 
 		int key = 0;
-
+#if 1
 		if (receive_data() < 0) {
 			KB_errlog("Connection error\n");
+			war = NULL;
 			done = 1;
 		}
-
+#endif
 		SDL_FillRect(screen, NULL, 0x4664B4);
 		
 		draw_console();
@@ -433,7 +604,8 @@ inprint(screen, "T - to chat    F1 - when ready to play    ESC - quit game", 10,
 		
 		incolor(0xFFFFFF,0x000000); 
 
-inprint(screen, (opponent_ready ? "Your opponent IS REaDY" : "Your opponent is not ready"), 10, 280);
+inprint(screen, (opponent_ready ? "Your opponent IS READY" : "Your opponent is not ready"), 10, 280);
+inprint(screen, (youare_ready ? "You are READY" : "You are not ready! Press F1!"), 10, 290);
 				
 		
 		src.y = 0;
@@ -467,7 +639,7 @@ inprint(screen, (opponent_ready ? "Your opponent IS REaDY" : "Your opponent is n
 
 		key = KB_event();
 
-		if (key == 0xFF) done = 1;
+		if (key == 0xFF) { war = NULL; done = 1; }
 
 		if (key == SDLK_BACKSPACE) dwmap[dwelling_id][dwelling_slot]--;
 		if (key == SDLK_SPACE) dwmap[dwelling_id][dwelling_slot]++;
@@ -555,7 +727,7 @@ inprint(screen, (opponent_ready ? "Your opponent IS REaDY" : "Your opponent is n
 		/* Really ready */
 		if (opponent_ready && youare_ready == 2) done = 2;
 	}
-	
+
 	/* Both are ready */
 	if (done == 2) {
 		if (MyRole == Server) {
@@ -574,8 +746,15 @@ inprint(screen, (opponent_ready ? "Your opponent IS REaDY" : "Your opponent is n
 		base.units[0][i].x = 0;
 	}
 
-	
-//	printf("LAST DWELL: %d\n", dwmap[dwelling_id][dwelling_slot]);
+	SDL_FreeSurface(dwell[0]);
+	SDL_FreeSurface(dwell[1]);
+	SDL_FreeSurface(dwell[2]);
+	SDL_FreeSurface(dwell[3]);
+	SDL_FreeSurface(dwell[4]);
+
+	if (war == NULL) free_troops();
+
+	return war;
 }
 
 
@@ -635,6 +814,7 @@ int move_callback(const char *data) {
 		actually_move_unit(whos, id, ox, oy);
 	
 	}
+	return 0;
 }
 void move_unit(int id, int ox, int oy) {
 	KBunit *u = &base.units[0][id];
@@ -676,7 +856,7 @@ int next_unit(int whos, int id) {
 	return -1;
 }
 
-void combat_wait(int *troop_id) {
+void combat_wait() {
 
 }
 
@@ -691,7 +871,6 @@ void reset_turn() {
 
 int turn_callback(const char *data) {
 
-
 	if (MyRole == Client) {
 	
 		base.your_turn = 1 - base.your_turn;
@@ -702,15 +881,15 @@ int turn_callback(const char *data) {
 		base.unit_id = next_unit(base.side, -1);
 	
 	}
+	return 0;
 }
 
 int wait_callback(const char *data) {
-
 	if (MyRole == Client) {
 	
 	
 	}
-
+	return 0;
 }
 
 /* Opponent says a unit passes it's turn. */
@@ -743,7 +922,7 @@ int pass_callback(const char *data) {
 
 
 	}
-
+	return 0;
 }
 
 void combat_pass(int troop_id) {
@@ -816,7 +995,7 @@ void reset_match() {
 	reset_turn();
 }
 
-int run_match(KBconfig *conf) {
+int run_match(KBcombat *war) {
 
 	SDL_Surface *screen = sys->screen;
 	int done = 0;
@@ -837,9 +1016,7 @@ int run_match(KBconfig *conf) {
 			tick = 1;	
 		}
 
-		if (tick)
-		base.units[base.side][base.unit_id].frame++;
-		if (base.units[base.side][base.unit_id].frame > 3)
+		if (tick && ++base.units[base.side][base.unit_id].frame > 3)
 			base.units[base.side][base.unit_id].frame = 0;
 
 		int key = 0;
@@ -900,30 +1077,21 @@ int run_match(KBconfig *conf) {
 				move_unit(base.unit_id, 0, -1);
 			}
 			if (key == SDLK_w) {
-				combat_wait(&base.unit_id);
+				combat_wait(base.unit_id);
 			}
 			if (key == SDLK_SPACE) {
 				combat_pass(base.unit_id);
 			}
 		}
 
-
 		SDL_Flip(screen);
-		
+
 		SDL_Delay(10);	
 	}
-	
+
 	SDL_FreeSurface(comtiles);
 
 	free_troops();
-
-
-	return 0;
-}
-
-int hello_callback(const char *data) {
-
-	printf("Hello there! <%c %c %c %c> [%02x] [%02x] [%02x] [%02x]\n",data[0],data[1],data[2],data[3], data[0],data[1],data[2],data[3]);
 
 	return 0;
 }
@@ -938,18 +1106,13 @@ int chat_callback(const char *data) {
 }
 
 int gold_callback(const char *data) {
-
-	printf("Hello there! <%c %c %c %c> [%02x] [%02x] [%02x] [%02x]\n",data[0],data[1],data[2],data[3], data[0],data[1],data[2],data[3]);
+	word gold = SDLNet_Read16(data);
+	
+	max_gold = gold;
+	youare_ready = 0;
+	opponent_ready = 0;
 
 	return 0;
-}
-
-int voidl(const char *data, int max) {
-int i;
-for (i = 0; i < max; i++) {
-	printf("[%02x] ", data[i]);
-}
-printf("\n");
 }
 
 int clean_callback(const char *data) {
@@ -972,14 +1135,13 @@ int grid_callback(const char *data) {
 int army_callback(const char *data) {
 
 	int i;
-	char *p = data;
 
 	for (i = 0; i < 5; i++)
 	{
 		base.units[1][i].troop_id = data[i];
 	}
 
-	voidl(data, 10);
+	printx(data, 10);
 
 	for (i = 0; i < 5; i++)
 	{
@@ -998,154 +1160,15 @@ int army_callback(const char *data) {
 	return 0;
 }
 
+int hello_callback(const char *data) {
 
-
-
-
-/*
- * The protocol / algorithm is the simplest ever.
- *
- */
-int read_data(const char *buffer) {
-
-	byte id = READ_BYTE(buffer);
-
-	KBpacket *pkt = &packets[id];
-	
-	int res = (pkt->callback)(buffer);
-
-	return res;
-}
-
-int receive_data() {
-
-	static char old_buffer[1024] = { 0 };
-	static int have_bytes = 0;
-
-	char buffer[512];
-	
-	int n;
-
-	/* Ensure socket is ready */
-	if (SDLNet_CheckSockets(set, 1) == -1) return -1;
-    if (!SDLNet_SocketReady(rsd)) return 0;
-
-	/* Read data */
-	n = SDLNet_TCP_Recv(rsd, buffer, 512);
-
-	/* Fatal error */
-	if (n <= 0) return -1;
-
-	/* Append new bytes */
-	memcpy(&old_buffer[have_bytes], buffer, n);
-	have_bytes += n;
-
-	/* Parse packets */
-	char *p = &old_buffer[0];
-	
-	/* Minimum for a packet is 3 bytes */
-	while (have_bytes > 2) {
-		word len = SDLNet_Read16(old_buffer);
-
-		/* Yep, have a packet right there */
-		if (have_bytes >= len - 2) {
-			read_data(&old_buffer[2]);
-		} else break;
-		//printf("Shift it!\n");
-		char tmp[1024];//ok... this clearly sucks 
-		memcpy(tmp, old_buffer, have_bytes);
-		
-		/* Shift buffer left */
-		memcpy(old_buffer, &tmp[len + 2], have_bytes - len - 2);
-		have_bytes -= len;
-		have_bytes -= 2;
-	}
+	printf("Hello there! <%c %c %c %c> [%02x] [%02x] [%02x] [%02x]\n",data[0],data[1],data[2],data[3], data[0],data[1],data[2],data[3]);
 
 	return 0;
 }
-int send_data(int id, ...) {
-	va_list argptr;
-	
-	va_start(argptr, id);
-	
-	KBpacket *pkt = &packets[id];
-
-	int i;
-	
-	char buffer[1024] = { 0 };
-	int len = 2;
-	
-	buffer[len] = (char)id;
-	len++;
-
-	for (i = 0; i < pkt->num_args; i++) {
-	
-		int fmt = pkt->format[i];
-		
-		switch (fmt) {
-			case 'c':
-			{
-				int val = va_arg(argptr, int);
-				buffer[len] = (char) val;
-				len += 1;
-			}
-			break;
-			case 'b':
-			{
-				int val = va_arg(argptr, int);
-				buffer[len] = (unsigned char) val;
-				len += 1;
-			}
-			break;
-			case 'w':
-			{
-				int val = va_arg(argptr, int);
-				SDLNet_Write16(val, &buffer[len]);
-				len += 2;				
-			}
-			break;
-			case 's':
-			{
-				char *val = va_arg(argptr, char*);
-				int i, l = strlen(val);
-				if (l > 80) l = 80;
-				for (i = 0; i < l; i++) {
-					buffer[len] = val[i];
-					len++;	
-				}
-				for (; i < 80; i++) {
-					buffer[len] = ' ';
-					len++;
-				}
-			}
-			break;
-			default: 
-			printf("Superbad '%c' | %s / %d / %d\n", fmt, pkt->format, i, id);
-			exit(-2);
-			break;
-		}
-
-	}
-
-	va_end(argptr);
-
-	//printf("(%d) Sending data <%s>:\n", len, pkt->format);
-	//voidl(buffer, len);
-
-	SDLNet_Write16((len - 2), &buffer[0]);
-
-	if (SDLNet_TCP_Send(rsd, (void *)buffer, len) < len) { 
-		KB_errlog("SDLNet_TCP_Send: %s\n", SDLNet_GetError()); 
-		return -1; 
-	} 
-
-	return len;
-}
 
 int wait_for_connection(int port) {
-
 	int done = 0;
-	char buffer[512];
 
 	/* Resolving the host using NULL make network interface to listen */
 	if (SDLNet_ResolveHost(&ip, NULL, port) < 0) {
@@ -1181,10 +1204,9 @@ int wait_for_connection(int port) {
 }
 
 int connect_to_host(const char *remote_host, int remote_port) {
-	int quit, len; char buffer[512]; 
 
 	/* Resolve the host we are connecting to */
-	if (SDLNet_ResolveHost(&ip, remote_host, remote_port) < 0) { //argv[1], atoi(argv[2])) < 0) {
+	if (SDLNet_ResolveHost(&ip, remote_host, remote_port) < 0) {
  		KB_errlog("SDLNet_ResolveHost: %s\n", SDLNet_GetError());
  		return -1;
  	}
@@ -1196,41 +1218,44 @@ int connect_to_host(const char *remote_host, int remote_port) {
  		KB_errlog("SDLNet_TCP_Open: %s\n", SDLNet_GetError());
  		return -1;
  	}
- 	
+
  	KB_iprint("Connected!\n");
 
-	send_data(PKT_HELLO, "Hello", '!');
+	send_data(PKT_HELLO, "Hello", PACKAGE_VERSION);
+	return 0;
 }
 
 int main_loop(KBconfig *conf, const char *host, int port) {
 
 	int playing = 0;
 
-	/* Init SDLNet */
+	/*
+	 * Start networking 
+	 */
 	if (SDLNet_Init() < 0) { 
 		KB_errlog("SDLNet_Init: %s\n", SDLNet_GetError()); 
 		return -1; 
 	} 
-
 	if (MyRole == Server)	
 	 	playing = wait_for_connection(port);
 	 else
 	 	playing = connect_to_host(host, port);	
-
 	if (playing < 0) {
-		SDLNet_Quit(); 
+		SDLNet_Quit();
 		return -1;
 	}
-
-
+	/* To use non-blocking sockets in SDL, a set must be created: */
 	set = SDLNet_AllocSocketSet(1);
 	if (!set) {
 	    KB_errlog("SDLNet_AllocSocketSet: %s\n", SDLNet_GetError());
+	    SDLNet_Quit();
 	    return -1;
 	}
+	SDLNet_TCP_AddSocket(set, rsd); /* And we put our lonely socket there */
 
-//	int
-	 SDLNet_TCP_AddSocket(set, rsd);
+	/*
+	 * Start the regular stuff
+	 */
 
 	/* Hack? Pretend to use normal2x */
 	conf->filter = 1;
@@ -1270,7 +1295,8 @@ int main_loop(KBconfig *conf, const char *host, int port) {
 
 	/* --- X X X --- */
 	KBcombat *battle = prepare_for_combat();
-	playing = run_match(battle);
+	if (battle)
+		run_match(battle);
 
 	/* Stop environment */
 	SDLNet_Quit(); 
