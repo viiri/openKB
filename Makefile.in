@@ -1,22 +1,22 @@
-CC=gcc
+CC=@CC@
 
 GROFF=nroff -man
 
-INSTALL=/usr/bin/install -c
-INSTALL_DATA=${INSTALL} -m 644
+INSTALL=@INSTALL@
+INSTALL_DATA=@INSTALL_DATA@
 
-prefix=/usr/local
-exec_prefix=${prefix}
-datarootdir=${prefix}/share
-mandir=${datarootdir}/man
-bindir=${exec_prefix}/bin
-datadir=${datarootdir}
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+datarootdir=@datarootdir@
+mandir=@mandir@
+bindir=@bindir@
+datadir=@datadir@
 
 
 CFLAGS=-g `sdl-config --cflags` -DHAVE_LIBSDL
 LDFLAGS=`sdl-config --libs` -lSDL_image
 
-VERSION=0.0.1
+VERSION=@PACKAGE_VERSION@
 
 MSYS_TEST=$(shell uname -so | grep -i msys | grep -i mingw32)
 ifneq ("$(MSYS_TEST)","")
