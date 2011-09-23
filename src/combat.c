@@ -72,8 +72,8 @@ SDLNet_SocketSet set;
 #define FMT_SINT "i"
 #define FMT_STR "s"
 
-#define LEVEL_H 5
-#define LEVEL_W 8
+#define CLEVEL_H 5
+#define CLEVEL_W 8
 
 typedef struct KBpacket {
 	
@@ -95,7 +95,6 @@ int turn_callback(const char *data);
 int wait_callback(const char *data);
 int pass_callback(const char *data);
 int move_callback(const char *data);
-
 
 KBpacket packets[] = {
 
@@ -656,7 +655,7 @@ int move_callback(const char *data) {
 void move_unit(int id, int ox, int oy) {
 	KBunit *u = &base.units[0][id];
 
-	if (u->x + ox < 0 || u->x + ox > LEVEL_W - 1
+	if (u->x + ox < 0 || u->x + ox > CLEVEL_W - 1
 	|| u->y + oy < 0 || u->y + oy > 4) return;//screen border
 
 	if (base.omap[u->y + oy][u->x + ox]) return;//obstacle
@@ -800,6 +799,15 @@ void reset_match() {
 		base.umap[u->y][u->x] = (j * 5) + i + 1;
 	}
 
+	for (j = 0; j < CLEVEL_H; j++) { 
+	for (i = 0; i < CLEVEL_W; i++)
+	{ 
+		printf("%02d ", base.umap[j][i]);
+		base.omap[j][i] = rand()%4;
+	}	
+		printf("\n");
+	}
+	
 	base.your_turn = 0;
 	base.side = 1;
 	base.unit_id = 0;
@@ -850,8 +858,8 @@ int run_match(KBconfig *conf) {
 		
 		int i, j;
 
-		for (j = 0; j < LEVEL_H; j++)		
-		for (i = 0; i < LEVEL_W; i++) {
+		for (j = 0; j < CLEVEL_H; j++)		
+		for (i = 0; i < CLEVEL_W; i++) {
 
 			SDL_Rect src = { base.omap[j][i] * 48, 0, 48, 34 };
 			SDL_Rect dst = { i * 48, j * 34, 48, 34 };
@@ -969,7 +977,7 @@ int army_callback(const char *data) {
 		base.units[1][i].troop_id = base.e_army[i];
 		base.units[1][i].count = base.e_nums[i];
 		base.units[1][i].y = i;
-		base.units[1][i].x = LEVEL_W - 1;
+		base.units[1][i].x = CLEVEL_W - 1;
 	}
 	
 	if (MyRole == Server) /* Verify and accept army */
@@ -1181,38 +1189,6 @@ int connect_to_host(const char *remote_host, int remote_port) {
  	KB_iprint("Connected!\n");
 
 	send_data(PKT_HELLO, "Hello", '!');
-}
-
-KBenv *KB_startENV(KBconfig *conf) {
-
-	KBenv *nsys = malloc(sizeof(KBenv));
-
-	if (!nsys) return NULL; 
-
-    SDL_Init( SDL_INIT_VIDEO );
-
-    nsys->screen = SDL_SetVideoMode( 640, 480, 32, SDL_HWSURFACE );
-
-    nsys->conf = conf;
-
-	nsys->font = NULL;
-
-	RESOURCE_DefaultConfig(conf);
-
-	prepare_inline_font();	// <-- inline font
-
-	return nsys;
-}
-
-void KB_stopENV(KBenv *env) {
-
-	if (env->font) SDL_FreeSurface(env->font);
-
-	kill_inline_font();
-
-	free(env);
-
-	SDL_Quit();
 }
 
 int main_loop(KBconfig *conf, const char *host, int port) {
