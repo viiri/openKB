@@ -293,6 +293,10 @@ SDL_Surface* KB_LoadIMG8(int id, int sub_id) {
 	return surf;
 }
 
+void* GNU_Resolve(KBmodule *mod, int id, int sub_id);
+void* DOS_Resolve(KBmodule *mod, int id, int sub_id);
+void* MD_Resolve(KBmodule *mod, int id, int sub_id);
+
 void* KB_Resolve(int id, int sub_id) {
 	int i, l;
 	void *ret = NULL;
