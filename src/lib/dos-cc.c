@@ -318,7 +318,7 @@ int KB_funLZW(char *result, KB_File *f) {
 				if (reset_hack) bit_pos = bytes_extra;
 		}
 #ifdef DEBUG
-printf("%04d\t0x%04X:%01X\t", pos, byte_pos, bit_pos);
+KB_debuglog(0, "%04d\t0x%04X:%01X\t", pos, byte_pos, bit_pos);
 #endif
 		/* Read index from position "byte_pos", bit offset "bit_pos" */
 		big_index = 
@@ -524,8 +524,8 @@ KB_File * KB_fopenCC_by(int i, KB_DIR *dirp)
 	/* Save pointer */
 	stream->d = (void*)data;
 	stream->pos = 0;
-#if 1
-printf("[%02x][%02x][%02x][%02x]\n", data[0], data[1], data[2], data[3]);
+#if 0
+KB_debuglog(0, "[%02x][%02x][%02x][%02x]\n", data[0], data[1], data[2], data[3]);
 #endif
 	return stream;
 }
@@ -534,7 +534,7 @@ printf("[%02x][%02x][%02x][%02x]\n", data[0], data[1], data[2], data[3]);
 KB_File * KB_fopenCC_in( const char * filename, const char * mode, KB_DIR *dirp )
 {
 	if (dirp == NULL || dirp->type != KBDTYPE_GRPCC) {
-		fprintf(stderr, "Error! Unable to read CC file, incorrect CC directory %p.\n", filename, dirp);
+		KB_errlog("Error! Unable to read CC file, incorrect CC directory %p.\n", filename, dirp);
 		return NULL;
 	}
 	struct ccGroup *grp = (struct ccGroup *)dirp->d;
