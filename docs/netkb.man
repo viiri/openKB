@@ -1,0 +1,21 @@
+.TH NETKB 6 "SEP 2011" 0.0.1 "Games"
+.SH NAME
+netkb \- A networked emulator of combat from the game King's Bounty
+.SH SYNOPSYS
+.B netkb --host
+.R [
+.IR PORT
+]
+.br
+.B netkb --join HOST
+[
+.IR PORT
+]
+.SH DESCRIPTION
+netkb reimplements the combat engine and allows two players to
+relive the experience over a TCP/IP session.
+
+netkb is part of openkb distribution and as such heavily relies
+on it's data and config files. For configuring openkb, see \fBopenkb (6)\fR.
+.SH "SEE ALSO"
+.BR openkb (6)

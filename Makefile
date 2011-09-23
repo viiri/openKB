@@ -1,6 +1,15 @@
+GROFF=nroff -man
 CC=gcc
 
 INSTALL=install
+
+prefix=/usr
+exec_prefix=$(prefix)
+datarootdir=$(prefix)/share
+mandir=$(datarootdir)/man
+bindir=$(exec_prefix)/bin
+#datadir=$(datarootdir)
+datadir=/var/games/openkb
 
 CFLAGS=-g `sdl-config --cflags` -DHAVE_LIBSDL
 LDFLAGS=`sdl-config --libs` -lSDL_image
@@ -23,15 +32,17 @@ GAME_BINARY=openkb
 GAME_DIST=$(GAME_BINARY)-$(VERSION)
 
 GAME2_SOURCES=src/combat.c src/bounty.c src/env-sdl.c
-GAME2_BINARY=kbcombat
+GAME2_BINARY=netkb
 
+MAN_SOURCES=docs/openkb.man docs/netkb.man
+MAN_PAGES=$(MAN_SOURCES:.man=.6)
 
 LIB_OBJECTS=$(LIB_SOURCES:.c=.o)
 VEND_OBJECTS=$(VEND_SOURCES:.c=.vo)
 GAME_OBJECTS=$(GAME_SOURCES:.c=.o)
 GAME2_OBJECTS=$(GAME2_SOURCES:.c=.o)
 
-.SUFFIXES: .vo
+.SUFFIXES: .vo .6 .man
 
 all: $(GAME_BINARY)
 
@@ -52,6 +63,12 @@ $(GAME2_BINARY): $(GAME2_OBJECTS) $(LIB_BINARY) $(VEND_OBJECTS)
 
 clean:
 	rm -rf vendor/*.o vendor/*.vo src/*.o src/lib/*.o *.o *.a $(GAME_BINARY) $(LIB_BINARY)
+
+.man.6:
+	$(GROFF) $< > $@
+
+mans: $(MAN_PAGES)
+	@true
 
 .phony:
 	@true
@@ -78,10 +95,13 @@ dist: vendor clean config
 	cp vendor/*.c vendor/*.h $(GAME_DIST)/vendor/
 	cp configure $(GAME_DIST)/.
 	cp configure.ac $(GAME_DIST)/.
+	mkdir $(GAME_DIST)/man
+	cp docs/*.6 $(GAME_DIST)/man/
 	tar -cvzf $(GAME_DIST).tar.gz $(GAME_DIST)
 	rm -rf $(GAME_DIST)/
 
 install: all
 	echo "Making install into $(DESTDIR)"
-	$(INSTALL) openkb $(DESTDIR)/usr/bin/openkb
-	$(INSTALL) -d data $(DESTDIR)/var/games/openkb
+	$(INSTALL) openkb $(DESTDIR)$(bindir)/openkb
+	$(INSTALL) -d data $(DESTDIR)$(datadir)/openkb-data
+	$(INSTALL) docs/openkb.6 $(DESTDIR)$(mandir)/man6/openkb.6

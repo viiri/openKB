@@ -1,0 +1,90 @@
+.TH OPENKB 6 "SEP 2011" 0.0.1 "Games"
+.SH NAME
+openkb \- An open source clone of the game King's Bounty
+.SH SYNOPSYS
+openkb [-c
+.IR CONFIG-FILE ]
+.SH DESCRIPTION
+openkb reimplements the game engine and provides a free data
+pack to play the game.
+
+To use the original graphics/maps/sounds from the real game,
+you should have them somewhere you can point openkb to. By
+default, \fI/var/games/openkb-data\fR is used, but you can
+fine-tune the location of each file and directory with a
+command line argument or from config file.
+.SH OPTIONS
+.TP
+.BI \-c " CONFIG-FILE"
+Point to specific configuration file instead of searching 
+all over the place in \fI$HOME\fR and \fI$CWD\fR.
+.SH "CONFIGURATION FILE"
+Few words about the file in general.
+.TP
+.BR datadir =\fIPATH\fR
+.TP
+.BR savedir =\fIPATH\fR
+.TP
+.BR autodiscover =(0|1)
+Attempt to automaticly find suitable game files in the \fBdatadir\fR directory.
+Turning this off requires each and every module be explicitly specified in the 
+config file. See below.
+.TP
+.BR fullscreen =(0|1)
+.TP
+.BR fallback =(0|1)
+Try every module in list when searching for a resource.
+.TP
+.BR filter =(none|normal2x|scale2x)
+Zoom filter.
+.TP
+.BR [module]
+Start a new module definition. You can have multiple \fB[module]\fR sections in your file.
+Valid parameters are:
+.TP
+.BR name =\fINAME\f
+Arbitary name of the module.
+.TP
+.BR type =(free|dos|md|...)
+Module type. Used to resolve various game resources. For example 'dos' might
+search for original game binary, while 'free' would simply look for .PNG files, etc.
+.TP
+.PD 0
+.BR path =\fIPATH\f
+.TP
+.BR path =\fIPATH\f
+.TP
+.BR path =\fIPATH\f
+.PD 1
+You can provide up to 3 paths with resource locations. A valid location is
+a directory or an archive file/disk image file. Exact data extraction strategy
+depends on the \fBtype\fR setting.
+.SH FILES
+.PD 0
+.TP
+.I $HOME/.openkb/openkb.ini
+.TP
+.I $CWD/openkb.ini
+.RS
+Default config file location.
+.RE
+.PD 1
+.SH BUGS
+Too many to list. The project is in very early development
+stage. Feel free to contribute over https://openkb.sourceforge.net/
+.SH COPYING
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+.SH "SEE ALSO"
+.BR netkb (6),
+.BR fheroes (6)
