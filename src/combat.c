@@ -63,6 +63,9 @@ SDLNet_SocketSet set;
 #define PKT_DEATH 14
 #define PKT_HEAL 15
 
+#define PKT_CLEAN 16
+#define PKT_GRID 17
+
 
 #define FMT_CHAR "c"
 #define FMT_BYTE "b"
@@ -74,6 +77,9 @@ SDLNet_SocketSet set;
 
 #define CLEVEL_H 5
 #define CLEVEL_W 8
+
+#define MAX_SIDES 2
+#define MAX_UNITS 5
 
 typedef struct KBpacket {
 	
@@ -91,6 +97,9 @@ int gold_callback(const char *data);
 int army_callback(const char *data);
 int ready_callback(const char *data);
 
+int clean_callback(const char *data);
+int grid_callback(const char *data);
+
 int turn_callback(const char *data);
 int wait_callback(const char *data);
 int pass_callback(const char *data);
@@ -105,10 +114,22 @@ KBpacket packets[] = {
 	FMT_BYTE FMT_BYTE FMT_BYTE FMT_BYTE FMT_BYTE
 	FMT_WORD FMT_WORD FMT_WORD FMT_WORD FMT_WORD, &army_callback },
 	{ PKT_READY, 1, FMT_BYTE, &ready_callback },
+
 	{ PKT_TURN, 1, FMT_BYTE, &turn_callback },
 	{ PKT_WAIT, 1, FMT_BYTE, &wait_callback },
 	{ PKT_PASS, 1, FMT_BYTE, &pass_callback },
 	{ PKT_MOVE, 3, FMT_BYTE FMT_BYTE FMT_BYTE, &move_callback }, 
+	{ 0 },
+	{ 0 },
+	{ 0 },
+
+	{ 0 },
+	{ 0 },
+	{ 0 },
+	{ 0 },
+	{ PKT_CLEAN, 1, FMT_BYTE, &clean_callback },
+	{ PKT_GRID, 3, FMT_BYTE FMT_BYTE FMT_BYTE, &grid_callback },
+
 };
 
 int num_packets = sizeof(packets) / sizeof(KBpacket);
@@ -142,8 +163,8 @@ typedef struct KBcombat {
 
 	KBunit units[2][5];
 
-	int omap[20][20];
-	int umap[20][20];
+	byte omap[CLEVEL_H + 1][CLEVEL_W + 1];
+	byte umap[CLEVEL_H + 1][CLEVEL_W + 1];
 	
 	int your_turn;
 
@@ -791,21 +812,26 @@ void reset_match() {
 
 	int j;
 	int i;
-	for (j = 0; j < 2; j++) 
-	for (i = 0; i < 2; i++)
+	for (j = 0; j < MAX_SIDES; j++) 
+	for (i = 0; i < MAX_UNITS; i++)
 	{ 
 		KBunit *u = &base.units[j][i];
 		if (!u->count) continue;
+		printf("Unit: %d, %d, ID: %d\n", u->x, u->y, (j * 5) + i + 1);
 		base.umap[u->y][u->x] = (j * 5) + i + 1;
 	}
 
-	for (j = 0; j < CLEVEL_H; j++) { 
-	for (i = 0; i < CLEVEL_W; i++)
-	{ 
-		printf("%02d ", base.umap[j][i]);
-		base.omap[j][i] = rand()%4;
-	}	
-		printf("\n");
+	if (MyRole == Server)
+	{
+		/* Each tile has a 1 in 20 chance of having an obstacle in it
+		 * A) That IS NOT how it was done in original KB
+		 * B) That has a FAIR CHANCE of flooding whole level
+		 * //TODO: Fixit ofcourse.
+		 */
+		for (j = 0; j < CLEVEL_H; j++)
+		for (i = 1; i < CLEVEL_W - 2; i++)
+			if (!(rand()%10))
+				base.omap[j][i] = rand()%3 + 1;
 	}
 	
 	base.your_turn = 0;
@@ -816,6 +842,12 @@ void reset_match() {
 	{
 		base.side = 0;
 		base.your_turn = 1;
+
+		send_data(PKT_CLEAN, 0);
+		for (j = 0; j < CLEVEL_H; j++)
+		for (i = 1; i < CLEVEL_W - 2; i++)
+			if (base.omap[j][i])
+				send_data(PKT_GRID, j, i, base.omap[j][i]);
 	}
 	
 	reset_turn();
@@ -955,6 +987,23 @@ for (i = 0; i < max; i++) {
 	printf("[%02x] ", data[i]);
 }
 printf("\n");
+}
+
+int clean_callback(const char *data) {
+	int i, j;
+	for (j = 0; j < CLEVEL_H; j++)		
+	for (i = 0; i < CLEVEL_W; i++)
+		base.omap[j][i] = 0;
+
+	return 0;	
+}
+int grid_callback(const char *data) {
+	Uint8 y = data[0];
+	Uint8 x = data[1];
+	Uint8 o = data[2];
+
+	base.omap[y][x] = o;
+	return 0;
 }
 
 int army_callback(const char *data) {
@@ -1109,7 +1158,7 @@ int send_data(int id, ...) {
 			}
 			break;
 			default: 
-			printf("Superbad\n");
+			printf("Superbad '%c' | %s / %d / %d\n", fmt, pkt->format, i, id);
 			exit(-2);
 			break;
 		}
@@ -1221,8 +1270,14 @@ int main_loop(KBconfig *conf, const char *host, int port) {
 //	int
 	 SDLNet_TCP_AddSocket(set, rsd);
 
+	/* Hack? Pretend to use normal2x */
+	conf->filter = 1;
+
 	/* Start new environment (game window) */
 	sys = KB_startENV(conf);
+
+	/* That's clearly wrong: */
+	conf->filter = 0;
 
 	reset_console();
 
