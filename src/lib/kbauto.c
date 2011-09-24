@@ -45,14 +45,6 @@
 #define KBTYPE_RAW_256	0x06
 
 
-int FileSize( const char * szFileName ) 
-{ 
-  struct stat fileStat; 
-  int err = stat( szFileName, &fileStat ); 
-  if (0 != err) return 0; 
-  return fileStat.st_size; 
-}
-
 struct KBfileid {
 
 	char filename[128];
@@ -152,7 +144,7 @@ int verify_file(const char *name, const char *path) {
 			if (test_directory(path,0)) continue;
 		}
 		if (fp->filesize != 0) { /* exact size test */
-			if (FileSize(name) != fp->filesize) continue;
+			if (file_size(name) != fp->filesize) continue;
 		}
 		if (fp->sign_len != 0) { /* signature test */
 			char buf[1024];

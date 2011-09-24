@@ -21,6 +21,11 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <errno.h>
+
+#include <sys/types.h>  // For stat().
+#include <sys/stat.h>   // For stat().
+
 #ifdef USE_WINAPI
 #include <windows.h>
 #endif
@@ -130,4 +135,25 @@ void KB_dirncpy(char *dst, const char *src, unsigned int n) {
 	dst[0] = '\0';
 	k = strlcpy(dst, src, n);
 	if (l && src[l - 1] == PATH_SEP_SYM) dst[k - 1] = '\0';
+}
+
+int file_size(const char *filename) { 
+	struct stat status; 
+	if (stat(filename, &status)) return 0; 
+	return status.st_size; 
+}
+
+int test_directory(const char *path, int make) {
+	struct stat status;
+	if (!stat(path, &status))
+	{
+		if (status.st_mode & S_IFDIR) return 0;
+	}
+	if (!make) return 1;
+	if (mkdir(path, 0755))
+	{
+		KB_errlog("Unable to create directory '%s'%s\n", path, (errno == EACCES) ? ", permission denied" : "");
+		return -1;
+	}
+	return 0;
 }

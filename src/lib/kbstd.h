@@ -90,4 +90,8 @@ extern void KB_dirncpy(char *dst, const char *src, unsigned int n);
 #define KB_dirsep(DST) KB_dirnsep(DST, sizeof(DST))
 #define KB_dircpy(DST, SRC) KB_dirncpy(DST, SRC, sizeof(DST))
 
+
+extern int file_size(const char *filename);
+extern int test_directory(const char *path, int make); 
+
 #endif /* _OPENKB_LIBKB_STD */

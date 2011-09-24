@@ -20,11 +20,8 @@
 #include "kbconf.h"
 #include "kbstd.h"
 
-#include <errno.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/types.h>  // For stat().
-#include <sys/stat.h>   // For stat().
 
 #define DEFAULT_DATA_DIR "/usr/local/games/openkb-data/"
 #define DEFAULT_SAVE_DIR "/var/games/openkb-saves/"
@@ -238,24 +235,6 @@ int test_config(const char *path, int make) {
 		return -1;
 	}
 	return 0; 
-}
-
-int test_directory(const char *path, int make) {
-	struct stat status;
-	if (!stat(path, &status))
-	{
-    	if (status.st_mode & S_IFDIR)
-	    {
-			return 0;
-    	}
-	}
-	if (!make) return 1;
-	if (mkdir(path, 0755))
-	{
-		KB_errlog("Unable to create directory '%s'%s\n", path, (errno == EACCES) ? ", permission denied" : "");
-		return -1;
-	}
-	return 0;
 }
 
 int read_cmd_config(struct KBconfig *conf, int argc, char *args[]) {
