@@ -37,7 +37,7 @@ KBconfig *conf = NULL;
  */
 KBenv *KB_startENV(KBconfig *conf) {
 
-	Uint32 width, height;
+	Uint32 width, height, flags;
 
 	KBenv *nsys = malloc(sizeof(KBenv));
 
@@ -47,13 +47,17 @@ KBenv *KB_startENV(KBconfig *conf) {
 
 	width = 320;
 	height = 200;
+	flags = SDL_SWSURFACE;
 
 	if (conf->filter) {
 		width = 640;
 		height = 480;
 	}
+	if (conf->fullscreen) {
+		flags |= SDL_FULLSCREEN;	
+	}
 
-    nsys->screen = SDL_SetVideoMode( width, height, 32, SDL_SWSURFACE );
+    nsys->screen = SDL_SetVideoMode( width, height, 32, flags );
 
     nsys->conf = conf;
 
