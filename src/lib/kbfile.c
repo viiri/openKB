@@ -181,6 +181,8 @@ KB_File * KB_fopenF_in( const char * filename, const char * mode, KB_DIR *wth )
 
 	/* Save FILE handler */
 	stream->d = (void*)f;
+	stream->prev = NULL;
+	stream->ref_count = 0;
 
 	/* Yuck, better use stat */
 	fseek(f, 0, SEEK_END);
@@ -194,7 +196,7 @@ KB_File * KB_fopenF_in( const char * filename, const char * mode, KB_DIR *wth )
 
 int KB_fseekF(KB_File * stream, long int offset, int origin)
 {
-	if (stream->pos == offset) return 0; 
+	if (origin != SEEK_END && stream->pos == offset) return 0; 
 	if (fseek(stream->d, offset, origin)) return 1;
 	stream->pos = ftell(stream->d);
 	return 0;
@@ -207,7 +209,9 @@ long int KB_ftellF(KB_File * stream)
 
 int KB_freadF ( void * ptr, int size, int count, KB_File * stream )
 {
-	return fread(ptr, size, count, stream->d);
+	int rcount = fread(ptr, size, count, stream->d);
+	if (rcount >= 0) stream->pos += rcount;
+	return rcount;
 }
 
 int KB_fcloseF( KB_File * stream )
@@ -221,7 +225,9 @@ int KB_fcloseF( KB_File * stream )
 #include "SDL.h"
 /* SDL_RWops interface */
 int KBRW_seek( SDL_RWops *ctx, int offset, int whence ) {
-	return KB_fseek( (KB_File*)ctx->hidden.unknown.data1, offset, whence );
+	int r = KB_fseek( (KB_File*)ctx->hidden.unknown.data1, offset, whence );
+	if (!r) return KB_ftell( (KB_File*)ctx->hidden.unknown.data1 ) ;
+	return -1;
 }
 
 int KBRW_read( SDL_RWops *ctx, void *ptr, int size, int maxnum) {
