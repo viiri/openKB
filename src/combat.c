@@ -1322,8 +1322,8 @@ int main(int argc, char* argv[]) {
 	char host[1024] = { 0 };
 
 	if (argc >= 2) {
-		if (!strcasecmp(argv[1], "--host")) MyRole = Server;
-		if (!strcasecmp(argv[1], "--join")) MyRole = Client;
+		if (!strcasecmp(argv[1], "--host") || !strcasecmp(argv[1], "-h")) MyRole = Server;
+		if (!strcasecmp(argv[1], "--join") || !strcasecmp(argv[1], "-j")) MyRole = Client;
 	}
 	if (MyRole == Client && argc >= 3) {
 		KB_strcpy(host, argv[2]);
