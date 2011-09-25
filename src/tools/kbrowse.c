@@ -10,6 +10,7 @@
  * This code inherits the copyright and GPLv3 from the openkb library.
  */
 #include "../lib/kbdir.h"
+#include "../lib/kbstd.h"
 
 #include "SDL.h"
 
@@ -41,6 +42,7 @@ void examine_directory(const char *path) {
 	int done = 0;
 	int redraw = 1;
 	int reread = 1;
+	int miniread = 0;
 
 	int selected_file = 0;
 	
@@ -51,6 +53,10 @@ void examine_directory(const char *path) {
 	
 	int known_maximum = 0;
 
+	SDL_Surface *draw = NULL;
+
+	char buffer[4096];
+
 	KB_DIR *dirp = KB_opendir(path);
 
 	if (!dirp) {
@@ -58,6 +64,7 @@ void examine_directory(const char *path) {
 		return;
 	}
 
+	buffer[0] = '\0';
 	while (!done) {
 
 		int key = get_sdl_event();
@@ -73,6 +80,7 @@ void examine_directory(const char *path) {
 				reading_offset += 1;
 				reread = 1;
 			}
+			miniread = 1;
 		}
 		if (key == SDLK_UP) {
 			if (selected_file > 0) {
@@ -83,6 +91,7 @@ void examine_directory(const char *path) {
 				reading_offset -= 1;
 				reread = 1;
 			}
+			miniread = 1;
 		}
 
 		if (reread) {
@@ -113,45 +122,32 @@ void examine_directory(const char *path) {
 			redraw = 1;
 			reread = 0;
 		}
-#if 0
-		if (key == SDLK_g) {
+		if (miniread == 1) {
+			int i = selected_file - reading_offset;
+			KB_dircpy(buffer, path);
+			KB_dirsep(buffer);
+			KB_strcat(buffer, list[i].d_name);
 
-			char buffer[4096];
-			strcpy(buffer, path);
-			if (buffer[strlen(buffer)-1] != '#') 
-				strcat(buffer, "#");
-			strcat(buffer, "ammi.4");
+			miniread = 0;
+			key = SDLK_SPACE;
+		}
 
-			examine_directory(buffer);
+		if (key == SDLK_SPACE) {
 
+			if (draw) SDL_FreeSurface(draw);
+			draw = KB_LoadIMG(buffer);
+			
 			redraw = 1;
 		}
-		if (key == SDLK_h) {
-
-			char buffer[4096];
-			strcpy(buffer, path);
-			if (buffer[strlen(buffer)-1] != '/') 
-				strcat(buffer, "/");
-			strcat(buffer, "416.CC");
-
-			examine_directory(buffer);
-
-			redraw = 1;
-		}
-#endif
 		if (key == SDLK_RETURN) {
+			int re_selected_file = selected_file - reading_offset;
 
-			if (!strcasecmp(list[selected_file].d_name, "..")) { done = 1; continue; }		
+			if (!strcasecmp(list[re_selected_file].d_name, "..")) { done = 1; continue; }		
 
-			if (!strcasecmp(list[selected_file].d_name, ".")) continue;
+			if (!strcasecmp(list[re_selected_file].d_name, ".")) continue;
 
-			char buffer[4096];
-			strcpy(buffer, path);
-			if (buffer[strlen(buffer)-1] != '/') 
-				strcat(buffer, "/");
-			strcat(buffer, list[selected_file].d_name);
-
-			examine_directory(buffer);
+			if (buffer[0] != '\0')
+				examine_directory(buffer);
 
 			redraw = 1;
 		}
@@ -174,11 +170,18 @@ void examine_directory(const char *path) {
 				inprint(screen, list[i].d_name, 10, 10 + i * 8);
 			}
 
+			if (draw) {
+				SDL_Rect dst = { screen->w - draw->w - 10, 10, draw->w, draw->h };
+				SDL_BlitSurface(draw, NULL, screen, &dst);
+			}
+
 			SDL_Flip(screen);
 
 			redraw = 0;		
 		}
 	}
+
+	if (draw) SDL_FreeSurface(draw);
 
 	KB_closedir(dirp);
 }
