@@ -164,10 +164,10 @@ void put_ega_pal(SDL_Surface *dest)
 
 void put_vga_pal(SDL_Surface *dest)
 {
-	int i;
+	int i, j = 0;
 	SDL_Color pal[256];
 	for (i = 0; i < 256; i++) {
-		Uint32 color = ega_pallete_rgb[i];
+		Uint32 color = ega_pallete_rgb[i % 16];
 		pal[i].r = (Uint8)((color & 0x00FF0000) >> 16); 
 		pal[i].g = (Uint8)((color & 0x0000FF00) >> 8);
 		pal[i].b = (Uint8)((color & 0x000000FF));
@@ -185,4 +185,21 @@ void put_color_pal(SDL_Surface *dest, Uint32 fore, Uint32 back)
 	pal[1].g = (Uint8)((fore & 0x0000FF00) >> 8);
 	pal[1].b = (Uint8)((fore & 0x000000FF));
 	SDL_SetColors(dest, pal, 0, 2);
+}
+
+SDL_Surface* KB_LoadIMG(const char *filename) {
+	SDL_RWops *rw;
+	SDL_Surface *surf = NULL;
+	KB_File *f;
+
+//	byte magic = KB_MagicType(filename);
+
+	f = KB_fopen(filename, "rb");
+	if (f == NULL) return NULL;
+	rw = KBRW_open(f);
+	surf = DOS_LoadIMGROW_RW(rw, 0, 255);
+	if (surf == NULL)
+		surf = IMG_Load_RW(rw, 0);
+	SDL_RWclose(rw);
+	return surf;
 }
