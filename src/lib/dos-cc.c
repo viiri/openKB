@@ -212,11 +212,11 @@ int ccGroup_append_list(struct ccGroup *grp, const char *filename) {
 /*
  * Returns Number of bytes read, 0 on error 
  */
-int KB_funLZW(char *result, KB_File *f) {
+int KB_funLZW(char *result, unsigned int max, KB_File *f) {
 
 	int i, n, j;
 
-	unsigned long long res_pos = 0;
+	unsigned int res_pos = 0;
 
 	/*
 	 * The data is kept in BIT-positioned "blocks".
@@ -390,6 +390,9 @@ KB_debuglog(0, "%04d\t0x%04X:%01X\t", pos, byte_pos, bit_pos);
 		last_char = (next_index & 0x00FF);
 		queue[queued++] = last_char;
 
+		/* Ensure buffer overflow wouldn't happen */
+		if (res_pos + queued > max) break;
+
 		/* Unqueue */
 		while (queued) 
 		{
@@ -501,6 +504,7 @@ KB_File * KB_fopenCC_by(int i, KB_DIR *dirp)
 
 	KB_File *stream;
 	char *data;
+	int n;
 
 	if (grp->top == NULL) return NULL;
 
@@ -518,8 +522,13 @@ KB_File * KB_fopenCC_by(int i, KB_DIR *dirp)
 	if (data == NULL) { free(stream); return NULL; }
 
 	/* Unpack LZw data */
-	KB_fseek(grp->top, grp->head.files[i].offset, 0);
-	KB_funLZW(data, grp->top);
+	KB_fseek(grp->top, grp->head.files[i].offset + 4, 0);
+	n = KB_funLZW(data, stream->len, grp->top);
+
+	if (n < stream->len) {
+		KB_errlog("Expected %d bytes, unlzw'ed %d\n", stream->len, n); 
+		free(data); free(stream); return NULL; 
+	}
 
 	/* Save pointer */
 	stream->d = (void*)data;
@@ -552,11 +561,23 @@ KB_File * KB_fopenCC_in( const char * filename, const char * mode, KB_DIR *dirp 
 
 int KB_fseekCC(KB_File * stream, long int offset, int origin)
 {
+	int err = 0;
+	long int roffset = offset;
+	if (origin == SEEK_END) roffset = stream->len - offset;
+	if (origin == SEEK_CUR) roffset = stream->pos + offset;
+	if (roffset < 0) {
+		roffset = 0;
+		err = 1;
+	}
+	if (roffset > stream->len) {
+		roffset = stream->len;
+		err = 1;
+	}
 #if 0
-	printf("Seeking inside stream into %ld\n", offset);
+	printf("Seeking inside stream: %ld, asked %ld, error %d\n", roffset, offset, err);
 #endif
-	stream->pos = offset;
-	return 0;
+	stream->pos = roffset;
+	return err;
 }
 
 long int KB_ftellCC(KB_File * stream)
