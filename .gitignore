@@ -1,5 +1,6 @@
 openkb.ini
 openkb
+netkb
 *.o
 *.a
 *.exe
@@ -11,3 +12,4 @@ src/tools/kbrowse
 vendor/*/
 *.vo
 *.6
+autoscan*.log
