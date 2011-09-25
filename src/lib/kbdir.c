@@ -57,7 +57,9 @@ KB_DIR * KB_opendir_in(const char *filename, KB_DIR *top)
 
 	if (middle != NULL) 
 	{
-		return KB_opendir_in(&filename[n + 1], middle);
+		KB_DIR *mid = KB_opendir_in(&filename[n + 1], middle);
+		if (mid == NULL) KB_closedir(middle);
+		return mid;
 	}
 
 	const char *ext = &filename[e + 1];

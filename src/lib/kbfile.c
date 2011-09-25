@@ -93,9 +93,10 @@ KB_File* KB_fopen_in( const char * filename, const char * mode, KB_DIR *top )
 
 	KB_DIR *middle = KB_follow_path(filename, &n, &e, top);
 
-
 	if (middle != NULL) {
-		return KB_fopen_in(&filename[n + 1], mode, middle);
+		KB_File *f = KB_fopen_in(&filename[n + 1], mode, middle);
+		if (f == NULL) KB_closedir(middle);
+		return f;
 	}
 
 	if (top != NULL) type = top->type;
@@ -196,7 +197,7 @@ KB_File * KB_fopenF_in( const char * filename, const char * mode, KB_DIR *wth )
 
 int KB_fseekF(KB_File * stream, long int offset, int origin)
 {
-	if (origin != SEEK_END && stream->pos == offset) return 0; 
+	if (origin == SEEK_SET && stream->pos == offset) return 0; 
 	if (fseek(stream->d, offset, origin)) return 1;
 	stream->pos = ftell(stream->d);
 	return 0;
