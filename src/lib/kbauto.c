@@ -691,7 +691,7 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 
 					if (d == NULL) return NULL;				
 
-					surf = DOS_LoadIMGROW_DIR(d, row_start, row_frames, bpp);
+					surf = DOS_LoadIMGROW_DIR(d, row_start, row_frames);
 					if (mod->bpp == 1) DOS_SetColors(surf, 1);	
 					
 					KB_closedir(d);

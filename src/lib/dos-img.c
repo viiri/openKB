@@ -140,17 +140,44 @@ void imgGroup_read(struct imgGroup* grp, int first, int frames) {
 	}
 }
 
+byte imgGroup_detect_bpp(struct imgGroup* grp) {
+	KB_File *file = grp->top;
+
+	word mask_pos = grp->head.files[0].mask_offset; 
+	word pixel_area = grp->cache.files[0].w * grp->cache.files[0].h;
+	word next_offset = 0;
+
+	if (grp->cache.bpp != 0) return grp->cache.bpp;
+
+	if (grp->head.num_files > 1)
+		next_offset = grp->head.files[1].offset - 4;
+	else {
+		KB_fseek(file, 0, SEEK_END);
+		next_offset = KB_ftell(file);
+	}
+
+	if (mask_pos &&	(next_offset - pixel_area / 8 == mask_pos)) 
+		next_offset = mask_pos;
+
+	/* BPP = 8 / (AREA / LEN) */
+	grp->cache.bpp = 8 / (pixel_area /	(next_offset - grp->head.files[0].offset - 4));
+
+	return grp->cache.bpp;
+}
+
 byte imgGroup_filename_to_bpp(const char *filename) {
 
 	char buf[256];
 	char ext[4];
 
-	int bpp = 2;
+	byte bpp = 0;
 
 	name_split(filename, &buf, &ext);
 
 	if (!strcasecmp(ext, "256")) bpp = 8;
 	if (!strcasecmp(ext, "16")) bpp = 4;
+	if (!strcasecmp(ext, "4")) bpp = 2;
+	if (!strcasecmp(ext, "CH")) bpp = 1;
 
 	return bpp;
 }
@@ -389,29 +416,31 @@ SDL_Surface *DOS_LoadRAWIMG_BUF(char *buf, int len, byte bpp)
 	return surf;
 }
 
-SDL_Surface *DOS_LoadIMGROW_DIR(KB_DIR *dirp, word first, word frames, byte bpp) 
+SDL_Surface *DOS_LoadIMGROW_DIR(KB_DIR *dirp, word first, word frames) 
 {
 	SDL_Surface *surf;
 	struct imgGroup *grp = (struct imgGroup *)dirp->d;
 
 	int i;
+	byte bpp;
 	word x = 0, y = 0;
 	word width = 0, height = 0;
 	word last = first + frames;
 
-	/* Enforce frames, bpp */
+	/* Ensure requested frames are in bounds */
 	if (first > grp->head.num_files - 1)
 		first = grp->head.num_files - 1; 
 
 	if (last > grp->head.num_files) 
 		last = grp->head.num_files; 
 
-	if (!grp->cache.bpp) grp->cache.bpp = bpp;
-
-	if (!bpp) return NULL;
-
 	/* Enforce metadata to be present */
 	imgGroup_read(grp, first, last - first);
+
+	/* Find bpp */
+	bpp = imgGroup_detect_bpp(grp);
+
+	if (!bpp) return NULL;
 
 	/* Find maximum size */
 	for (i = first; i < last; i++) {
@@ -457,15 +486,15 @@ SDL_Surface *DOS_LoadIMGROW_DIR(KB_DIR *dirp, word first, word frames, byte bpp)
  * SDL_RWops interace.
  * //TODO: convert everything to RWops
  */
-SDL_Surface* DOS_LoadIMGROW_RW(SDL_RWops *file, word first, word frames, byte bpp) 
+SDL_Surface* DOS_LoadIMGROW_RW(SDL_RWops *file, word first, word frames) 
 {
 	SDL_Surface *surf;
 	struct imgGroup group;
 	struct imgGroup *grp = &group;
 
 	int i, n;
+	byte bpp = 0;
 
-	if (!bpp) return NULL;
 	{
 		char buf[HEADER_SIZE_IMG];
 		struct imgHeader *head = &grp->head;
@@ -493,7 +522,7 @@ SDL_Surface* DOS_LoadIMGROW_RW(SDL_RWops *file, word first, word frames, byte bp
 	word width = 0, height = 0;
 	word last = first + frames;
 
-	/* Enforce frames, bpp */
+	/* Enforce frames */
 	if (first > grp->head.num_files - 1)
 		first = grp->head.num_files - 1;
 
@@ -505,7 +534,7 @@ SDL_Surface* DOS_LoadIMGROW_RW(SDL_RWops *file, word first, word frames, byte bp
 	for (i = first; i < last; i++) 
 	{
 		char buf[4];
-		/* Seek to offset, read 4 bytes, seek to offset again */
+		/* Seek to offset, read 4 bytes */
 		SDL_RWseek(file, grp->head.files[i].offset, 0);
 		n = SDL_RWread(file, buf, 1, 4);
 
@@ -517,6 +546,27 @@ SDL_Surface* DOS_LoadIMGROW_RW(SDL_RWops *file, word first, word frames, byte bp
 		if (height < grp->cache.files[i].w) 
 			height = grp->cache.files[i].h;
 	}
+
+	/* Auto-detect bpp */
+	{
+		word mask_pos = grp->head.files[first].mask_offset; 
+		word pixel_area = grp->cache.files[first].w * grp->cache.files[first].h;
+		word next_offset = 0;
+
+		if (first + 1 < grp->head.num_files)
+			next_offset = grp->head.files[first+1].offset - 4;
+		else {
+			SDL_RWseek(file, 0, SEEK_END);
+			next_offset = SDL_RWtell(file);
+		}
+
+		if (mask_pos &&	(next_offset - pixel_area / 8 == mask_pos)) 
+			next_offset = mask_pos;
+		/* BPP = 8 / (AREA / LEN) */
+		bpp = 8 / (pixel_area /	(next_offset - grp->head.files[first].offset - 4));
+	}
+
+	if (bpp != 2 && bpp != 4 && bpp != 8) return NULL;
 
 	/* Create new SDL surface */
 	surf = SDL_CreatePALSurface(width, height);
@@ -543,7 +593,7 @@ SDL_Surface* DOS_LoadIMGROW_RW(SDL_RWops *file, word first, word frames, byte bp
 		if (mask_pos) mask_pos -= base_offset;
 
 		DOS_BlitRAWIMG(surf, &dest, &buf[4], bpp, mask_pos );
-		DOS_SetColors(surf, bpp);		
+		DOS_SetColors(surf, bpp);
 
 		x += dest.w;
 	}
