@@ -105,7 +105,16 @@ KB_FILE_IF_NAME_ADD(CC);
 KB_FILE_IF_NAME_ADD(IMG);
 #undef KB_FILE_IF_NAME_ADD
 
+#ifdef HAVE_LIBSDL
+#include "SDL.h"
 
+/* RWops interface to file */
+extern SDL_RWops* KBRW_open( KB_File *f );
+extern int KBRW_seek( SDL_RWops *ctx, int offset, int whence );
+extern int KBRW_read( SDL_RWops *ctx, void *ptr, int size, int maxnum);
+extern int KBRW_write( SDL_RWops *ctx, const void *ptr, int size, int num);
+extern int KBRW_close( SDL_RWops *ctx);
+#endif
 
 
 #endif	/* _OPENKB_LIBKB_FILE */
