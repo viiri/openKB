@@ -81,16 +81,11 @@ vendor-clean:
 vendor: $(VEND_SOURCES)
 	@true
 
-$(CONFIG_SOURCE):
+config:
 	echo "Making config"
 	autoheader
 	autoconf
 	automake -a -c >/dev/null || echo "Ignoring any errors"
-
-$(CONFIG_HEADER): $(CONFIG_SOURCE)
-	./configure
-
-config: $(CONFIG_HEADER) $(CONFIG_SOURCE)
 
 dist: vendor clean config $(MAN_PAGES)
 	echo "Making dist"
