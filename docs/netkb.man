@@ -17,5 +17,12 @@ relive the experience over a TCP/IP session.
 
 netkb is part of openkb distribution and as such heavily relies
 on it's data and config files. For configuring openkb, see \fBopenkb (6)\fR.
+.SH OPTIONS
+.TP
+.BI -h,--host
+Start a gaming session
+.TP
+.BI -j,--join
+Join a gaming session
 .SH "SEE ALSO"
 .BR openkb (6)
