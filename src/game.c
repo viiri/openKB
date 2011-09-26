@@ -76,6 +76,9 @@ typedef struct KBgamestate {
 #define KFLAG_RETKEY	0x02
 
 #define KFLAG_TIMER 	0x10
+#define KFLAG_TIMEKEY	0x20
+
+#define KFLAG_SOFTKEY 	(KFLAG_TIMER | KFLAG_TIMEKEY)
 
 #define SDLK_SYN 0x16
 
@@ -113,7 +116,7 @@ KBgamestate difficulty_selection = {
 
 KBgamestate enter_string = {
 	{
-		{	_NON, SDLK_BACKSPACE, 0, KFLAG_RETKEY },	
+		{	_TIME(100), SDLK_BACKSPACE, 0, KFLAG_RETKEY | KFLAG_SOFTKEY },	
 		{	_NON, 0xFF, 0, KFLAG_ANYKEY | KFLAG_RETKEY },
 		{	_TIME(60), SDLK_SYN, 0, KFLAG_TIMER | KFLAG_RETKEY },
 		0,
@@ -244,6 +247,8 @@ int KB_event(KBgamestate *state) {
 
 	int i;
 
+	static char kbd_state[256] = { 0 };
+
 	Uint32 passed, now;
 
 	/* If we don't know max number of hotspots, let's find out,
@@ -270,6 +275,10 @@ int KB_event(KBgamestate *state) {
 
 		if (sp->passed >= sp->resolution) {
 			sp->passed -= sp->passed;
+
+			/* For "timed keys", also ensure the key is being pressed */
+			if (sp->flag & KFLAG_TIMEKEY && !kbd_state[sp->hot_key]) continue;
+
 			eve = i + 1; /* !!! */
 			if (sp->flag & KFLAG_RETKEY) eve = sp->hot_key;
 			break;
@@ -292,8 +301,14 @@ int KB_event(KBgamestate *state) {
 		 		break;
 			}
 
+		if (event.type == SDL_KEYUP) {
+			SDL_keysym *kbd = &event.key.keysym;
+			kbd_state[(char)kbd->sym] = 0;
+		}
+
 		if (event.type == SDL_KEYDOWN) {
 			SDL_keysym *kbd = &event.key.keysym;
+			kbd_state[(char)kbd->sym] = 1;
 			for (i = 0; i < state->max_spots; i++) {
 				KBhotspot *sp = &state->spots[i];
 				if ((sp->flag & KFLAG_ANYKEY) || 
