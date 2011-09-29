@@ -36,6 +36,14 @@ typedef struct KBenv {
 	Uint32 bg_color;
 	Uint32 ui_color;
 
+	word cursor_x;	/* Text position */
+	word cursor_y;
+	word base_x;	/* Pixel offset */
+	word base_y;
+	
+	SDL_Rect font_size;
+
+	Uint32 pan;
 	int width;
 	int height;
 	int bpp;
@@ -72,6 +80,14 @@ typedef struct KBwin {
 extern KBenv *KB_startENV(KBconfig *conf);
 extern void KB_stopENV(KBenv *env);
 
+extern void KB_printf(KBenv *env, const char *fmt, ...);
+extern SDL_Rect *KB_fontsize(KBenv *env);
+extern void KB_setfont(KBenv *env, SDL_Surface *surf);
+extern void KB_setcolor(KBenv *env, Uint32* colors); /* Colors must be in 0x00RRGGBB format ! */
+inline void KB_loc(KBenv *env, word base_x, word base_y);
+inline void KB_curs(KBenv *env, word cursor_x, word cursor_y);
+
+
 extern void SDL_SBlitSurface(SDL_Surface *src, SDL_Rect *srcrect, SDL_Surface *dst, SDL_Rect *dstrect);
 
 extern void RESOURCE_DefaultConfig(KBconfig* _conf);
@@ -81,5 +97,7 @@ extern void* KB_Resolve(int id, int sub_id);
 extern SDL_Surface* KB_LoadIMG8(int id, int sub_id);
 
 extern SDL_Surface *SDL_LoadRESOURCE(int id, int sub_id, int flip);
+
+extern SDL_Rect* RECT_LoadRESOURCE(int id, int sub_id);
 
 #endif /* _OPENKB_ENV */

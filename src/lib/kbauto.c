@@ -690,6 +690,47 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 			return &colors; 
 		}	
 		break;
+		case RECT_MAP:
+		{
+			static SDL_Rect map = {	16, 14 + 7, 48 * 5, 34 * 5	};
+			return &map;
+		}
+		break;
+		case RECT_UI:
+			switch (sub_id) {
+			case 0:		/* Top */
+			{
+				static SDL_Rect ui = {	0, 0, 320, 8 	};
+				return &ui;
+			}
+			break;
+			case 1:		/* Left */
+			{
+				static SDL_Rect ui = {	0, 0, 16, 200	};
+				return &ui;
+			}
+			break;
+			case 2:		/* Right */
+			{
+				static SDL_Rect ui = {	300, 0, 16, 200	};
+				return &ui;
+			}
+			break;
+			case 3:		/* Bottom */
+			{
+				static SDL_Rect ui = {	0, 0, 320, 8	};
+				return &ui;
+			}
+			break;
+			case 4:		/* Bar */
+			{
+				static SDL_Rect ui = {	0, 17, 280, 5	};
+				return &ui;
+			}
+			break;
+			default: break;
+			}
+		break;		
 		default: break;
 	}
 

@@ -69,6 +69,9 @@
 #define DAT_WORLD	0x90	/* complete world map ; subId - undefined */
 #define DAT_LAND	0x91	/* map for specific continent ; subId - continent index */
 
+#define RECT_MAP	0xA0	/* SDL_Rect describing map area */
+#define RECT_UI 	0xA1	/* SDL_Rect describing ui border area; subId - element index */
+
 #define STR_SIGN	0xE0	/* signpost text ; subId - signpost index */
 #define STR_TROOP	0xE1	/* troop name ; subId - troop index */
 #define STR_MULTI	0xE2	/* troops name ; subId - troop index */

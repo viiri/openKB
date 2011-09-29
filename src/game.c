@@ -184,6 +184,14 @@ void render_game(KBenv *env, KBgame *game, KBgamestate *state, KBconfig *conf) {
 
 }
 
+/* Usefull shortcuts */
+#define KB_ifont(ARGS...) KB_setfont(sys, ## ARGS)
+#define KB_icolor(ARGS...) KB_setcolor(sys, ## ARGS)
+#define KB_iloc(ARGS...) KB_loc(sys, ## ARGS)
+#define KB_icurs(ARGS...) KB_curs(sys, ## ARGS)
+#define KB_iprint(ARGS...) KB_print(sys, ## ARGS)
+#define KB_iprintf(ARGS...) KB_printf(sys, ## ARGS)
+
 /*
  * "inline" functions to adjust SDL_Rect around HOST.
  *
@@ -224,7 +232,9 @@ inline void SDL_CenterRect(SDL_Rect *rect, SDL_Surface *img, SDL_Surface *host)
 
 inline void SDL_CenterRectTxt(SDL_Rect *rect, int rows, int cols, SDL_Surface *host)
 {
-	RECT_Text(rect, rows, cols);
+	SDL_Rect *size = KB_fontsize(sys);
+	rect->w = cols * size->w;
+	rect->h = rows * size->h;
 	RECT_Center(rect, host); 
 }
 
@@ -386,17 +396,19 @@ void SDL_TextRect(SDL_Surface *dest, SDL_Rect *r, Uint32 fore, Uint32 back) {
 
 	int i, j;
 
+	SDL_Rect *fs = KB_fontsize(sys);
+
 	/* Choose colors, Fill Rect */
 	SDL_FillRect(dest, r, back);	
 	incolor(fore, back);
 
 	/* Top and bottom (horizontal fill) */
-	for (i = r->x + 8; i < r->x + r->w - 8; i += 8) {
+	for (i = r->x + fs->w; i < r->x + r->w - fs->w; i += 8) {
 		inprint(dest, "\x0E", i, r->y);
 		inprint(dest, "\x0F", i, r->y + r->h);
 	}
 	/* Left and right (vertical fill) */
-	for (j = r->y + 8; j < r->y + r->h; j += 8) {
+	for (j = r->y + fs->h; j < r->y + r->h; j += 8) {
 		inprint(dest, "\x14", r->x, j);
 		inprint(dest, "\x15", i, j);
 	}
@@ -417,6 +429,7 @@ char *enter_name(int x, int y) {
 	int redraw = 1;
 
 	SDL_Rect menu;
+	SDL_Rect *fs = KB_fontsize(sys);
 
 	entered_name[0] = '\0';
 	int curs = 0;
@@ -463,7 +476,7 @@ char *enter_name(int x, int y) {
 
 			inprint(screen, entered_name, x, y);
 			char buf[2]; sprintf(buf, "%c", twirl[twirl_pos]); 
-			inprint(screen, buf, x + curs * 8, y);
+			inprint(screen, buf, x + curs * fs->w, y);
 
 	    	SDL_Flip( screen );
 
@@ -498,6 +511,8 @@ SDL_Rect* KB_MessageBox(const char *str, int wait) {
 	Uint32 fg = sys->fg_color;
 	Uint32 ui = sys->ui_color;
 
+	SDL_Rect *fs = KB_fontsize(sys);
+
 	int i, max_w = 28;
 
 	static SDL_Rect rect;
@@ -519,22 +534,22 @@ SDL_Rect* KB_MessageBox(const char *str, int wait) {
 	} while (str[i - 1] != '\0');
 
 	/* Keep in rect */
-	rect.w = max_w * 8;
-	rect.h = (h-1) * 8;//h!
+	rect.w = max_w * fs->w;
+	rect.h = (h-1) * fs->h;//h!
 
 	/* To the center of the screen */
 	rect.x = (screen->w - rect.w) / 2;
 	rect.y = (screen->h - rect.h) / 2;
 
 	/* A little bit up */
-	rect.y -= 8;//16
+	rect.y -= fs->h;//*2 !!
 
 	/* A nice frame */
-	rect.x -= 8;rect.y -= 8;rect.w += 16;rect.h += (8*2);
+	rect.x -= fs->w;rect.y -= fs->h;rect.w += fs->w*2;rect.h += (fs->h*2);
 	SDL_TextRect(screen, &rect, ui, bg);
-	rect.x += 8;rect.y += 8;rect.w -= 16;rect.h -= (8*2);
+	rect.x += fs->w;rect.y += fs->h;rect.w -= fs->w*2;rect.h -= (fs->h*2);
 	SDL_FillRect(screen, &rect, 0xFF0000);
-	
+
 	/* Restore color */
 	incolor(fg, bg);
 
@@ -546,7 +561,7 @@ SDL_Rect* KB_MessageBox(const char *str, int wait) {
 		if (str[i] == '\n' || str[i] == '\0' || (str[i] == ' ' && w > max_w - 3)) {
 			buffer[w] = '\0';
 			buffer[w-1] = '\0';
-			inprint(screen, buffer, rect.x, rect.y + h * 8);
+			inprint(screen, buffer, rect.x, rect.y + h * fs->h);
 			w = 0;
 			buffer[0] = '\0';
 			h++;
@@ -594,8 +609,10 @@ KBgame *create_game(int pclass) {
 	int cols = 30;//w
 	int rows = 11;//h
 
+	SDL_Rect *fs = KB_fontsize(sys);
+
 	SDL_CenterRectTxt(&menu, rows, cols, screen);
-	
+
 	int has_name = 0;
 	char *name;
 
@@ -627,39 +644,42 @@ KBgame *create_game(int pclass) {
 		if (redraw) {
 
 			SDL_TextRect(screen, &menu, 0xFFFFFF, 0x000000);
-	
-	inprint(screen, " Knight    Name:", menu.x+8, menu.y+8);
-	inprint(screen, classes[pclass][0].title, menu.x+8 + 8*1, menu.y+8);
-	if (has_name) inprint(screen, name, menu.x+16 + 16*8, menu.y+8);
-	
-	inprint(screen, "   Difficulty   Days  Score", menu.x+8, menu.y+8 + 8*2);
 
-	inprint(screen, "   Easy         900    x.5 ", menu.x+8, menu.y+8 + 8*4);	
-	inprint(screen, "   Normal       600     x1 ", menu.x+8, menu.y+8 + 8*5);
-	inprint(screen, "   Hard         400     x2 ", menu.x+8, menu.y+8 + 8*6);
-	inprint(screen, "   Impossible?  200     x4 ", menu.x+8, menu.y+8 + 8*7);
-	
-		if (has_name) {
-	inprint(screen, "\x18\x19 to select   Ent to Accept", menu.x+8, menu.y+8 + 8*9);		
+			KB_iloc(menu.x + fs->w, menu.y + fs->h);	
+			KB_iprintf(" %-9s Name: ", classes[pclass][0].title);
 
-			int i;
-			for (i = 0; i < 4; i++) 
-				inprint(screen, (sel == i ? ">" : " "), menu.x+16, menu.y+8 + 8*4 + i*8);
+			if (has_name) KB_iprint(name);
 
-		}
+			KB_iloc(menu.x + fs->w, menu.y + fs->h * 3);
+			KB_iprint("   Difficulty   Days  Score\n");
+			KB_iprint("\n");
+			KB_iprint("   Easy         900    x.5 \n");
+			KB_iprint("   Normal       600     x1 \n");
+			KB_iprint("   Hard         400     x2 \n");
+			KB_iprint("   Impossible?  200     x4 \n");
+
+			if (has_name) {
+				KB_iloc(menu.x + fs->w, menu.y + fs->h * 10);
+				KB_iprint("\x18\x19 to select   Ent to Accept");		
+
+				int i;
+				KB_iloc(menu.x + fs->w, menu.y + fs->h * 5);
+				for (i = 0; i < 4; i++) 
+					KB_iprint((sel == i ? ">\n" : " \n"));
+			}
 
 	    	SDL_Flip( screen );
 
 			redraw = 0;
 		}
-		
+
 		if (!has_name) {
-			name = enter_name(menu.x + 16 + 16*8, menu.y + 8);
+			name = enter_name(menu.x + fs->w * 18, menu.y + fs->h);
 			if (name[0] == '\0') done = 1;
 			else has_name = 1;
 			redraw = 1;
 		}
-		
+
 	}
 
 	return game;
@@ -686,6 +706,11 @@ KBgame *load_game() {
 	byte rank[10];
 	byte pclass[10];
 	int num_files = 0;
+
+	SDL_Rect *fs = KB_fontsize(sys);
+	
+	SDL_Rect *top_frame = RECT_LoadRESOURCE(RECT_UI, 0);
+	SDL_Rect *left_frame = RECT_LoadRESOURCE(RECT_UI, 1);
 
 	KB_DIR *d = KB_opendir(conf->save_dir);
 	KB_Entry *e;
@@ -719,22 +744,22 @@ KBgame *load_game() {
 	l = 14;
 
 	/* Size */
-	menu.w = l * 8 + 16;
-	menu.h = num_files * 8 + 8 * 5;
+	menu.w = l * fs->w + fs->w * 2;
+	menu.h = num_files * fs->h + fs->h * 5;
 
 	/* To the center of the screen */
 	menu.x = (screen->w - menu.w) / 2;
 	//menu.y = (screen->h - menu.h) / 2;
 
 	/* A little bit up */
-	menu.y = 8 + 4 * 8;
+	menu.y = fs->h + 4 * fs->h;
 
 	/* Update mouse hot-spots */
 	for (i = 0; i < num_files; i++) {
-		savegame_selection.spots[i + 3].coords.x = menu.x + 16;
-		savegame_selection.spots[i + 3].coords.y = menu.y + 32 + i * 8;
-		savegame_selection.spots[i + 3].coords.w = menu.w - 8;
-		savegame_selection.spots[i + 3].coords.h = 8;
+		savegame_selection.spots[i + 3].coords.x = menu.x + fs->w * 2;
+		savegame_selection.spots[i + 3].coords.y = menu.y + fs->h * 4 + i * fs->h;
+		savegame_selection.spots[i + 3].coords.w = menu.w - fs->w;
+		savegame_selection.spots[i + 3].coords.h = fs->h;
 	}
 
 	while (!done) {
@@ -749,7 +774,7 @@ KBgame *load_game() {
 
 		if (key == 1) { sel--; redraw = 1; }
 		if (key == 2) { sel++; redraw = 1; }
-		if (key >= 3) {
+		if (key >= 3 && key != 0xFF) {
 			char buffer[PATH_LEN];
 			KB_dircpy(buffer, conf->save_dir);
 			KB_dirsep(buffer);
@@ -773,22 +798,21 @@ KBgame *load_game() {
 			SDL_TextRect(screen, &menu, 0xFFFFFF, 0x000000);
 
 			incolor(0xFFFFFF, 0x000000);
-			inprint(screen, " Select game:", menu.x + 8, menu.y + 8 - 4);
-			inprint(screen, "   Overlord   ", menu.x + 8, menu.y + 16);
-			inprint(screen, "             ", menu.x + 8, menu.y + 32 - 4);
+			inprint(screen, " Select game:", menu.x + fs->w, menu.y + fs->w - fs->w/2);
+			inprint(screen, "   Overlord  ", menu.x + fs->w, menu.y + fs->w*2);
+			inprint(screen, "             ", menu.x + fs->w, menu.y + fs->w*4 - fs->w/2);
 
 			for (i = 0; i < num_files; i++) {
-
 				incolor(0xFFFFFF, 0x000000);
 				char buf[4];sprintf(buf, "%d.", i + 1);
-				inprint(screen, buf, menu.x + 16, 8 * i + menu.y + 32);
+				inprint(screen, buf, menu.x + fs->w*2, fs->h * i + menu.y + fs->h*4);
 
 				if (i == sel) incolor(0x000000, 0xFFFFFF);
-				inprint(screen, filename[i], menu.x + 40, 8 * i + menu.y + 32);
+				inprint(screen, filename[i], menu.x + fs->w * 5, fs->h * i + menu.y + fs->h*4);
 			}
 
 	incolor(0xFFFFFF, 0x000000);
-	inprint(screen, " 'ESC' to exit \x18\x19 Return to Select  ", 8 + 8, 8);
+	inprint(screen, " 'ESC' to exit \x18\x19 Return to Select  ", left_frame->w, top_frame->h);
 
 	    	SDL_Flip( screen );
 
@@ -802,14 +826,15 @@ KBgame *load_game() {
 
 void show_credits() {
 
-	SDL_Surface *userpic = KB_LoadIMG8(GR_SELECT, 2);
-	
+	SDL_Surface *userpic = SDL_LoadRESOURCE(GR_SELECT, 2, 0);
+	SDL_Rect *fs = KB_fontsize(sys);
+
 	SDL_Rect *max;
 
 	KB_MessageColor(0x0000AA, 0xFFFFFF, 0xFFFF55);
 
 	max = KB_MessageBox(
-		"King's Bounty Designed By:    \n"
+		"King's Bounty Designed By:    "
 		"  Jon Van Caneghem\n"
 		"\n"
 		"Programmed By:\n"
@@ -831,7 +856,7 @@ void show_credits() {
 	RECT_Right((&pos), max);
 	RECT_AddPos((&pos), max);	
 
-	pos.y += (8 * 2);
+	pos.y += (fs->h * 2);
 
 	SDL_BlitSurface(userpic, NULL, sys->screen, &pos);
 
@@ -854,11 +879,40 @@ KBgame *select_game(KBconfig *conf) {
 
 	KBgame *game = NULL;
 	
+	SDL_Rect *top_frame = RECT_LoadRESOURCE(RECT_UI, 0);
+	SDL_Rect *left_frame = RECT_LoadRESOURCE(RECT_UI, 1);
 	Uint32 *colors = KB_Resolve(COL_TEXT, 0);
-	
+
+	SDL_Surface *title = SDL_LoadRESOURCE(GR_SELECT, 0, 0);
+
 	while (!done) {
 
 		key = KB_event(&character_selection);
+
+		if (redraw) {
+
+			SDL_Rect pos;
+
+			SDL_CenterRect(&pos, title, screen);
+
+			SDL_BlitSurface( title, NULL , screen, &pos );
+
+			if (!credits) {
+				KB_iloc(left_frame->w, top_frame->h);
+				KB_icolor(colors);
+				KB_iprint("Select Char A-D or L-Load saved game");
+			}
+
+	    	SDL_Flip( screen );
+
+			redraw = 0;
+		}
+
+		if (credits) {
+			show_credits();
+			credits = 0;
+			redraw = 1;
+		}
 
 		/* New game (class 1-4) */
 		if (key > 0 && key < 5) 
@@ -875,41 +929,14 @@ KBgame *select_game(KBconfig *conf) {
 			redraw = 1;
 		}
 
+		/* Escape */
 		if (key == 0xFF) done = 1;
-
-		if (redraw) {
-
-			SDL_Rect pos;
-
-			SDL_Surface *title = KB_LoadIMG8(GR_SELECT, 0);
-			
-			if (title == NULL) {
-				KB_errlog("Can't find 'SELECT'!\n");
-				return NULL;
-			}
-
-			SDL_CenterRect(&pos, title, screen);
-
-			SDL_BlitSurface( title, NULL , screen, &pos );
-	if (!credits)
-		incolor(colors[0], colors[1]),
-	inprint(screen, "Select Char A-D or L-Load saved game", 8 + 8, 8);
-
-	    	SDL_Flip( screen );
-
-			SDL_FreeSurface(title);
-
-			redraw = 0;
-		}
-
-		if (credits) {
-			show_credits();
-			credits = 0;
-			redraw = 1;
-		}
-
 	}
-	
+
+	free(top_frame);
+	free(left_frame);
+	SDL_FreeSurface(title);
+
 	if (game) {
 		if (done == 1) KB_MessageBox("%s the %s,\n\nA new game is being created. Please wait while I perform godlike actions to make this game playable.",  0);
 		if (done == 2) KB_MessageBox("%s the %s,\n\nPlease wait while I prepare a suitable environment for your bountying enjoyment!",  0);
@@ -1028,7 +1055,7 @@ void display_logo() {
 
 			SDL_Rect pos;
 
-			SDL_Surface *title = KB_LoadIMG8(GR_LOGO, 0);
+			SDL_Surface *title = SDL_LoadRESOURCE(GR_LOGO, 0, 0);
 
 			SDL_CenterRect(&pos, title, screen);
 
@@ -1067,14 +1094,14 @@ void display_title() {
 
 			SDL_Rect pos;
 
-			SDL_Surface *title = KB_LoadIMG8(GR_TITLE, 0);
+			SDL_Surface *title = SDL_LoadRESOURCE(GR_TITLE, 0, 0);
 
 			SDL_CenterRect(&pos, title, screen);
 
 			SDL_FillRect( screen , NULL, 0x000000);
 
 			SDL_BlitSurface( title, NULL , screen, &pos );
-			
+
 	    	SDL_Flip( screen );
 
 			SDL_FreeSurface(title);
@@ -1120,7 +1147,7 @@ void display_debug() {
 			SDL_Rect pos2 = { TILE_W, 0, TILE_W, 0 };
 
 			SDL_Surface *title = SDL_LoadRESOURCE(GR_TROOP, troop_id, 0);
-			SDL_Surface *font = KB_LoadIMG8(GR_FONT, 0);
+			SDL_Surface *font = SDL_LoadRESOURCE(GR_FONT, 0, 0);
 			SDL_Surface *peasant = KB_LoadIMG8(GR_TROOP, troop_id);
 			//sys->conf->module++;
 			int gr = GR_TROOP;
@@ -1219,18 +1246,27 @@ void display_overworld(KBgame *game) {
 	SDL_Surface *ts = SDL_LoadRESOURCE(GR_TILESET, 0, 0);
 	SDL_Surface *hero = SDL_LoadRESOURCE(GR_CURSOR, 0, 1);
 
-	SDL_Surface *sidebar = KB_LoadIMG8(GR_UI, 0);
+	SDL_Surface *sidebar = SDL_LoadRESOURCE(GR_UI, 0, 0);
 	
-	SDL_Surface *bar = KB_LoadIMG8(GR_SELECT, 1);
+	SDL_Surface *bar = SDL_LoadRESOURCE(GR_SELECT, 1, 0);
 	
-	SDL_Rect bar_rect=  { 0, 0, 320, 5 };
-	SDL_Rect bar_rectD=  { 0, 17, 320, 5 };
-	SDL_BlitSurface(bar, &bar_rect, screen, &bar_rectD);
+	SDL_Rect *top_frame  = RECT_LoadRESOURCE(RECT_UI, 0);	
+	SDL_Rect *left_frame  = RECT_LoadRESOURCE(RECT_UI, 1);
+	SDL_Rect *right_frame  = RECT_LoadRESOURCE(RECT_UI, 2);
+	SDL_Rect *bar_frame  = RECT_LoadRESOURCE(RECT_UI, 4);
 	
-	SDL_Rect status_rect =  { 16, 8, 288, 9 };
-	SDL_FillRect(screen, &status_rect, 0);
+	SDL_Rect *fs = KB_fontsize(sys);
+	Uint32 *colors = KB_Resolve(COL_TEXT, 0);	
+	
+	SDL_Rect status_rect =  { left_frame->w, top_frame->h, screen->w - left_frame->w - right_frame->w, fs->h + 2 };
+	SDL_FillRect(screen, &status_rect, colors[0]);
+	SDL_BlitSurface(bar, NULL, screen, bar_frame);
 
 	int tileset_pitch = ts->w / tile->w;
+
+	SDL_Rect map = { left_frame->w, top_frame->h + status_rect.h + bar->h, tile->w * 5, tile->h * 5 };
+
+	status_rect.y++;
 
 	int key = 0;
 	int done = 0;
@@ -1367,8 +1403,6 @@ void display_overworld(KBgame *game) {
 
 			SDL_Rect pos;
 			
-			SDL_Rect map = { 16, 14 + 8, src.w*5, src.h*5 };
-
 			pos.w = src.w;
 			pos.h = src.h;
 
@@ -1462,7 +1496,7 @@ void display_overworld(KBgame *game) {
 				hdst.y += src.h;
 				hsrc.x = 11 * hsrc.w;
 				SDL_BlitSurface( sidebar, &hsrc, screen, &hdst);
-				
+
 				int i,j;
 				for (j = 0; j < 5; j++)
 				for (i = 0; i < 5; i++)
@@ -1479,8 +1513,8 @@ void display_overworld(KBgame *game) {
 				SDL_BlitSurface( sidebar, &hsrc, screen, &hdst);
 			}
 
-
-	inprint(screen, " Options / Controls / Days Left:600 ", 8 + 8, 9);
+			KB_iloc(status_rect.x, status_rect.y);
+			KB_printf(sys, " Options / Controls / Days Left: %d ", game->days_left);
 
 	    	SDL_Flip( screen );
 
@@ -1520,8 +1554,7 @@ int run_game(KBconfig *conf) {
 	}
 
 	/* Load and use module font */
-	sys->font = KB_LoadIMG8(GR_FONT, 0);
-	infont(sys->font);
+	KB_setfont(sys, SDL_LoadRESOURCE(GR_FONT, 0, 0)); 
 
 	/* --- X X X --- */
 	display_logo();
@@ -1544,7 +1577,7 @@ int run_game(KBconfig *conf) {
 	display_overworld(game);
 
 	/* Just for fun, output game name */
-	KB_stdlog("%s the %s\n", game->name, classes[game->class][game->rank].title);
+	KB_stdlog("%s the %s (%d days left)\n", game->name, classes[game->class][game->rank].title, game->days_left);
 	sleep(2);
 
 	/* Stop environment */

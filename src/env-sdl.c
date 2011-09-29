@@ -49,12 +49,19 @@ KBenv *KB_startENV(KBconfig *conf) {
 	height = 200;
 	flags = SDL_SWSURFACE;
 
+	nsys->pan = 0;
+
 	if (conf->filter) {
 		width = 640;
-		height = 480;
+		height = 400;
 	}
+
 	if (conf->fullscreen) {
-		flags |= SDL_FULLSCREEN;	
+		flags |= SDL_FULLSCREEN;
+		if (height == 400) {
+			nsys->pan = 40;
+			height = 480;
+		}
 	}
 
     nsys->screen = SDL_SetVideoMode( width, height, 32, flags );
@@ -66,6 +73,8 @@ KBenv *KB_startENV(KBconfig *conf) {
 	RESOURCE_DefaultConfig(conf);
 
 	prepare_inline_font();	// <-- inline font
+	nsys->font_size.w = 8;
+	nsys->font_size.h = 8;
 
 	nsys->bg_color = 0;
 	nsys->fg_color = 0xFFFFFF;
@@ -83,6 +92,89 @@ void KB_stopENV(KBenv *env) {
 	free(env);
 
 	SDL_Quit();
+}
+
+inline void KB_loc(KBenv *env, word base_x, word base_y) {
+	env->base_x = base_x;
+	env->base_y = base_y;
+	env->cursor_x = 0;
+	env->cursor_y = 0;
+}
+
+inline void KB_curs(KBenv *env, word cursor_x, word cursor_y) {
+	env->cursor_x = cursor_x;
+	env->cursor_y = cursor_y;
+}
+
+void KB_setfont(KBenv *env, SDL_Surface *surf) {
+	infont(surf);
+	env->font = surf;
+	env->font_size.w = surf->w / 16;
+	env->font_size.h = surf->h / 8;
+}
+
+void KB_setcolor(KBenv *env, Uint32* colors) /* Colors must be in 0x00RRGGBB format ! */
+{
+	SDL_Color pal[4];
+	int i;
+	for (i = 0; i < 4; i++) {
+		pal[i].r = (Uint8)((colors[i] & 0x00FF0000) >> 16); 
+		pal[i].g = (Uint8)((colors[i] & 0x0000FF00) >> 8);
+		pal[i].b = (Uint8)((colors[i] & 0x000000FF));
+	}
+	SDL_SetColors(env->font, pal, 0, 4);
+}
+
+SDL_Rect *KB_fontsize(KBenv *env) {
+	static SDL_Rect size;
+	size.x = 0;
+	size.y = 0;
+	if (env->font) {
+		size.w = env->font->w / 16;
+		size.h = env->font->h / 8;
+	} else {
+		size.w = size.h = 8;
+	}
+	return &size;
+}
+
+void KB_print(KBenv *env, const char *str) { 
+	SDL_Rect dest = { 0 }, letter = { 0 };
+	int i, len;
+
+	dest.h = letter.w = env->font->w / 16;
+	dest.h = letter.h = env->font->h / 8;
+
+	dest.x = env->cursor_x * letter.w;
+	dest.y = env->cursor_y * letter.h;
+
+	len = strlen(str);
+	for (i = 0; i < len; i++) {
+		int id = (char)str[i];
+		int row = id / 16;
+		int col = id - (row * 16);
+		if (str[i] == '\n') {
+			env->cursor_x = 0;
+			env->cursor_y++;
+			continue;
+		}
+		letter.x = col * letter.w;
+		letter.y = row * letter.w;
+		dest.x = env->base_x + env->cursor_x * letter.w;
+		dest.y = env->base_y + env->cursor_y * letter.h;		
+		SDL_BlitSurface(env->font, &letter, env->screen, &dest);
+		env->cursor_x++;
+	}	
+}
+
+
+void KB_printf(KBenv *env, const char *fmt, ...) { 
+	char buf[256];
+	va_list argptr;
+	va_start(argptr, fmt);
+	vsnprintf(buf, 255, fmt, argptr);
+	KB_print(env, buf);
+	va_end(argptr);
 }
 
 /*
@@ -311,6 +403,17 @@ SDL_Surface *SDL_LoadRESOURCE(int id, int sub_id, int flip) {
 	}
 
 	return ret;
+}
+
+SDL_Rect* RECT_LoadRESOURCE(int id, int sub_id) {
+	int zoom = (conf->filter ? 2 : 1);
+	SDL_Rect *src = (SDL_Rect *)KB_Resolve(id, sub_id);
+	SDL_Rect *dst = malloc(sizeof(SDL_Rect));
+	dst->x = src->x*zoom;//probably cheaper then memcpy 
+	dst->y = src->y*zoom;
+	dst->w = src->w*zoom;
+	dst->h = src->h*zoom;
+	return dst;
 }
 
 SDL_Surface* KB_LoadIMG8(int id, int sub_id) {
