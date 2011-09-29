@@ -264,9 +264,12 @@ int KB_closedirIMG(KB_DIR *dirp)
 KB_File* KB_fopenIMG_in(const char * filename, const char * mode, KB_DIR *dirp)
 {
 	struct imgGroup *grp = (struct imgGroup *)dirp->d;
-	int i = atoi(filename);
-
+	int i;
 	KB_File *f;
+
+	i = atoi(filename);
+	if (i >= grp->head.num_files) return NULL;
+
 	f = malloc(sizeof(KB_File));
 	if (f == NULL) return NULL;
 

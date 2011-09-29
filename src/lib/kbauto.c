@@ -578,6 +578,9 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 			middle_name = "select";
 			suffix = bpp_names[mod->bpp];
 			ident = "#0";
+						char buffl[8];
+			sprintf(buffl, "#%d", sub_id);
+			ident = &buffl[0];
 		}
 		break;
 		case GR_FONT:
@@ -602,7 +605,7 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 		{
 			/* A tile */
 			method = RAW_IMG;
-			if (sub_id > 36) {
+			if (sub_id > 35) {
 				sub_id -= 36;
 				middle_name = "tilesetb";
 			} else {
@@ -616,7 +619,45 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 		break;
 		case GR_TILESET:	/* subId - continent */
 		{
+#define SDL_ClonePalette(DST, SRC) SDL_SetPalette((DST), SDL_LOGPAL | SDL_PHYSPAL, (SRC)->format->palette->colors, 0, (SRC)->format->palette->ncolors)
 			/* This one must be assembled */
+			int i;
+			SDL_Rect dst = { 0, 0, 48, 34 };
+			SDL_Rect src = { 0, 0, 48, 34 };
+			SDL_Surface *ts = SDL_CreatePALSurface(8 * dst.w, 70/7 * dst.h);
+			for (i = 0; i < 72; i++) {
+				SDL_Surface *tile = DOS_Resolve(mod, GR_TILE, i);
+				SDL_ClonePalette(ts, tile);
+				SDL_BlitSurface(tile, &src, ts, &dst);
+				dst.x += dst.w;
+				if (dst.x >= ts->w) {
+					dst.x = 0;
+					dst.y += dst.h;
+				}
+				SDL_FreeSurface(tile);
+			}
+			return ts;
+		}
+		break;
+		case GR_CURSOR:	/* subId - undefined */
+		{
+			/* Hero sprite */
+			method = IMG_ROW;
+			middle_name = "cursor";
+			suffix = bpp_names[mod->bpp];
+			ident = "";
+			row_frames = 16;
+		}
+		break;
+		case GR_UI:	/* subId - undefined */
+		{
+			/* Sidebar tiles */
+			method = IMG_ROW;
+			middle_name = "cursor";
+			suffix = bpp_names[mod->bpp];
+			ident = "";
+			row_start = 12;
+			row_frames = 13;
 		}
 		break;
 		case GR_VILLAIN:	/* subId - villain index */
@@ -640,8 +681,14 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 		case GR_LOCATION:	/* subId - 0 home 1 town 2 - 6 dwelling */
 
 		break;		
-		case GR_UI:	/* subId - element index */
-
+		case COL_TEXT:
+		{
+			static Uint32 colors[16] = {
+				0xAA0000, 0xFFFFFF,
+				0xAA0000, 0xFFFFFF,
+			};
+			return &colors; 
+		}	
 		break;
 		default: break;
 	}

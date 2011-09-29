@@ -194,9 +194,20 @@ void render_game(KBenv *env, KBgame *game, KBgamestate *state, KBconfig *conf) {
 		RECT->w = HOST->w, \
 		RECT->h = HOST->h
 
+#define RECT_Pos(RECT, HOST) \
+		RECT->x = HOST->x, \
+		RECT->y = HOST->y
+
+#define RECT_AddPos(RECT, HOST) \
+		RECT->x += HOST->x, \
+		RECT->y += HOST->y
+
 #define RECT_Center(RECT, HOST) \
 		RECT->x = (HOST->w - RECT->w) / 2, \
 		RECT->y = (HOST->h - RECT->h) / 2
+
+#define RECT_Right(RECT, HOST) \
+		RECT->x = (HOST->w - RECT->w)
 
 /* In this one, ROWS and COLS of text are used */
 #define RECT_Text(RECT, ROWS, COLS) \
@@ -247,7 +258,7 @@ int KB_event(KBgamestate *state) {
 
 	int i;
 
-	static char kbd_state[256] = { 0 };
+	static char kbd_state[512] = { 0 };
 
 	Uint32 passed, now;
 
@@ -303,12 +314,12 @@ int KB_event(KBgamestate *state) {
 
 		if (event.type == SDL_KEYUP) {
 			SDL_keysym *kbd = &event.key.keysym;
-			kbd_state[(char)kbd->sym] = 0;
+			kbd_state[kbd->sym] = 0;
 		}
 
 		if (event.type == SDL_KEYDOWN) {
 			SDL_keysym *kbd = &event.key.keysym;
-			kbd_state[(char)kbd->sym] = 1;
+			kbd_state[kbd->sym] = 1;
 			for (i = 0; i < state->max_spots; i++) {
 				KBhotspot *sp = &state->spots[i];
 				if ((sp->flag & KFLAG_ANYKEY) || 
@@ -316,6 +327,10 @@ int KB_event(KBgamestate *state) {
 					( !sp->hot_mod || (sp->hot_mod & kbd->mod) )))
 					{
 						eve = i + 1; /* !!! */
+						if (sp->flag & KFLAG_TIMEKEY)
+						{
+							sp->passed = 0;
+						}
 						if (sp->flag & KFLAG_RETKEY)
 						{
 							eve = kbd->sym; /* !!! */
@@ -464,16 +479,33 @@ char *enter_name(int x, int y) {
 
 /* Wait for a keypress */
 inline void KB_Pause() { 
- 	while (!KB_event(&press_any_key));
+ 	while (!KB_event(&press_any_key)) SDL_Delay(10);
+}
+
+/* Change active colors */
+void KB_MessageColor(Uint32 bg, Uint32 fg, Uint32 frame) {
+	sys->bg_color = bg;
+	sys->fg_color = fg;
+	sys->ui_color = frame;
+	incolor(fg, bg);
 }
 
 /* Display a message. Wait for a key to discard. */
-void KB_MessageBox(const char *str, int wait) {
+SDL_Rect* KB_MessageBox(const char *str, int wait) {
+
 	SDL_Surface *screen = sys->screen;
-	
+	Uint32 bg = sys->bg_color;
+	Uint32 fg = sys->fg_color;
+	Uint32 ui = sys->ui_color;
+
 	int i, max_w = 28;
 
-	SDL_Rect rect;
+	static SDL_Rect rect;
+
+	if (wait > 1) { 
+		wait = 0;
+		max_w = 30;
+	}
 
 	/* Faux-pass to get max dimensions */
 	int h = 0, w = 0; i = 0;
@@ -488,20 +520,23 @@ void KB_MessageBox(const char *str, int wait) {
 
 	/* Keep in rect */
 	rect.w = max_w * 8;
-	rect.h = h * 8;
+	rect.h = (h-1) * 8;//h!
 
 	/* To the center of the screen */
 	rect.x = (screen->w - rect.w) / 2;
 	rect.y = (screen->h - rect.h) / 2;
 
 	/* A little bit up */
-	rect.y -= 16;
+	rect.y -= 8;//16
 
 	/* A nice frame */
 	rect.x -= 8;rect.y -= 8;rect.w += 16;rect.h += (8*2);
-	SDL_TextRect(screen, &rect, 0xFFFFFF, 0x000000);
+	SDL_TextRect(screen, &rect, ui, bg);
 	rect.x += 8;rect.y += 8;rect.w -= 16;rect.h -= (8*2);
 	SDL_FillRect(screen, &rect, 0xFF0000);
+	
+	/* Restore color */
+	incolor(fg, bg);
 
 	/* True-pass */
 	i = 0; h = 0; w = 0;
@@ -518,10 +553,12 @@ void KB_MessageBox(const char *str, int wait) {
 		}
 		i++;
 	} while (str[i - 1] != '\0');
-	
+
 	SDL_Flip(screen);
-	SDL_Delay(10);
+
 	if (wait) KB_Pause();
+
+	return &rect;
 }
 
 /* Actual KBgame* allocator */
@@ -763,6 +800,48 @@ KBgame *load_game() {
 	return game;
 }
 
+void show_credits() {
+
+	SDL_Surface *userpic = KB_LoadIMG8(GR_SELECT, 2);
+	
+	SDL_Rect *max;
+
+	KB_MessageColor(0x0000AA, 0xFFFFFF, 0xFFFF55);
+
+	max = KB_MessageBox(
+		"King's Bounty Designed By:    \n"
+		"  Jon Van Caneghem\n"
+		"\n"
+		"Programmed By:\n"
+		"  Mark Caldwell\n"
+		"  Andy Caldwell\n"
+		"\n"
+		"Graphics By:\n"
+		"  Kenneth L. Mayfield\n"
+		"  Vincent DeQuattro, Jr.\n"
+		"\n"
+		"      Copyright 1990-95\n"
+		"   New World Computing, Inc\n"
+		"     All Rights Reserved"
+		, 2);
+
+	SDL_Rect pos = { 0 };
+
+	RECT_Size((&pos), userpic);
+	RECT_Right((&pos), max);
+	RECT_AddPos((&pos), max);	
+
+	pos.y += (8 * 2);
+
+	SDL_BlitSurface(userpic, NULL, sys->screen, &pos);
+
+	SDL_Flip(sys->screen); 
+
+	SDL_FreeSurface(userpic);
+
+	KB_Pause();
+}
+
 KBgame *select_game(KBconfig *conf) {
 
 	SDL_Surface *screen = sys->screen;
@@ -771,8 +850,12 @@ KBgame *select_game(KBconfig *conf) {
 	int done = 0;
 	int redraw = 1;
 
-	KBgame *game = NULL;
+	int credits = 1;
 
+	KBgame *game = NULL;
+	
+	Uint32 *colors = KB_Resolve(COL_TEXT, 0);
+	
 	while (!done) {
 
 		key = KB_event(&character_selection);
@@ -808,16 +891,21 @@ KBgame *select_game(KBconfig *conf) {
 			SDL_CenterRect(&pos, title, screen);
 
 			SDL_BlitSurface( title, NULL , screen, &pos );
-
+	if (!credits)
+		incolor(colors[0], colors[1]),
 	inprint(screen, "Select Char A-D or L-Load saved game", 8 + 8, 8);
 
 	    	SDL_Flip( screen );
 
 			SDL_FreeSurface(title);
 
-			SDL_Delay(10);
-
 			redraw = 0;
+		}
+
+		if (credits) {
+			show_credits();
+			credits = 0;
+			redraw = 1;
 		}
 
 	}
@@ -1096,6 +1184,314 @@ void display_debug() {
  
 }
 
+void KB_BlitMap(SDL_Surface *dest, SDL_Surface *tileset, SDL_Rect *viewport) {
+
+	KBconfig *conf = sys->conf;
+
+
+}
+
+#define SOFT_WAIT 150
+
+KBgamestate adventure_state = {
+	{
+		{	{ SOFT_WAIT }, SDLK_UP, 0, KFLAG_SOFTKEY      	},
+		{	{ SOFT_WAIT }, SDLK_8, 0, KFLAG_SOFTKEY      	},		
+		{	{ SOFT_WAIT }, SDLK_DOWN, 0, KFLAG_SOFTKEY      	},
+		{	{ SOFT_WAIT }, SDLK_2, 0, KFLAG_SOFTKEY      	},		
+		{	{ SOFT_WAIT }, SDLK_LEFT, 0, KFLAG_SOFTKEY      	},
+		{	{ SOFT_WAIT }, SDLK_4, 0, KFLAG_SOFTKEY      	},
+		{	{ SOFT_WAIT }, SDLK_RIGHT, 0, KFLAG_SOFTKEY      	},
+		{	{ SOFT_WAIT }, SDLK_6, 0, KFLAG_SOFTKEY      	},
+		
+		{	{ SOFT_WAIT }, SDLK_SYN, 0, KFLAG_TIMER },
+		0,
+	},
+	0
+};
+
+/* Main game loop (adventure screen) */
+void display_overworld(KBgame *game) {
+
+	SDL_Surface *screen = sys->screen;
+	
+	SDL_Surface *tile = SDL_LoadRESOURCE(GR_TILE, 0, 0);
+	SDL_Surface *ts = SDL_LoadRESOURCE(GR_TILESET, 0, 0);
+	SDL_Surface *hero = SDL_LoadRESOURCE(GR_CURSOR, 0, 1);
+
+	SDL_Surface *sidebar = KB_LoadIMG8(GR_UI, 0);
+	
+	SDL_Surface *bar = KB_LoadIMG8(GR_SELECT, 1);
+	
+	SDL_Rect bar_rect=  { 0, 0, 320, 5 };
+	SDL_Rect bar_rectD=  { 0, 17, 320, 5 };
+	SDL_BlitSurface(bar, &bar_rect, screen, &bar_rectD);
+	
+	SDL_Rect status_rect =  { 16, 8, 288, 9 };
+	SDL_FillRect(screen, &status_rect, 0);
+
+	int tileset_pitch = ts->w / tile->w;
+
+	int key = 0;
+	int done = 0;
+	int redraw = 1;
+
+	int cursor_x = game->x;
+	int cursor_y = game->y;
+
+	int frame  = 0;
+	int flip = 0;
+	int boat_flip = 0;
+
+	int max_frame = 3;
+	int tick = 0;
+
+	SDL_Rect src = { 0 };
+	
+	src.w = tile->w;
+	src.h = tile->h;
+
+	SDL_FreeSurface(tile);
+
+	while (!done) {
+
+		key = KB_event(&adventure_state);
+
+		switch (key) {
+			case 1:
+			case 2:	/* UP */
+				cursor_y++;
+				frame = 3;
+				max_frame = 3;
+			break;
+			case 3:
+			case 4:
+				cursor_y--;
+				frame = 3;
+				max_frame = 3;
+			break;
+			case 5:
+			case 6:
+				cursor_x--;
+				flip = 1;
+				frame = 3;
+				max_frame = 3;
+			break;
+			case 7:
+			case 8:
+				cursor_x++;
+				flip = 0;
+				frame = 3;
+				max_frame = 3;
+			break;
+			case 9:
+			if (++tick > 3) tick = 0;
+			if (max_frame == 3) {
+				max_frame = 2;
+				break;
+			}
+			frame++;
+			if (frame > max_frame) {
+				frame = 0;
+				max_frame = 2;
+			}
+			redraw = 1;
+			break;
+		}
+		if (cursor_x != game->x || cursor_y != game->y) {
+		
+			byte m = game->map[0][cursor_y][cursor_x];		
+
+#define IS_GRASS(M) ((M) < 2 || (M) == 0x80)
+#define IS_WATER(M) ((M) >= 0x14 && (M) <= 0x20)
+
+			int walk = 1;
+			
+			if (game->mount == KBMOUNT_SAIL)
+				boat_flip = flip;
+
+			if (!IS_GRASS(m)) {
+
+				if (game->boat_x == cursor_x
+				&& game->boat_y == cursor_y
+				&& game->boat == game->continent) {
+					/* Boarding a boat */
+					game->mount = KBMOUNT_SAIL;
+				}
+				else
+				if (IS_WATER(m)) {
+					if (game->mount != KBMOUNT_SAIL)	{
+						printf("Stopping at water tile: %02x\n", m);
+						walk = 0;
+					}
+				}
+				else
+				{
+					printf("Stopping at tile: %02x\n", m);
+					walk = 0;
+				}
+			}
+
+			if (walk) {
+				redraw = 1;
+
+				/* Hitting shore */
+				if (!IS_WATER(m)) {
+					/* Leave ship */
+					if (game->mount == KBMOUNT_SAIL) {
+						game->mount = KBMOUNT_RIDE;
+						game->boat_x = game->x;
+						game->boat_y = game->y;
+					}
+				}	
+	
+				game->last_x = game->x;
+				game->last_y = game->y;
+	
+				game->x = cursor_x;
+				game->y = cursor_y;
+	
+				/* When sailing, tuck the boat with us */
+				if (game->mount == KBMOUNT_SAIL) {
+					game->boat_x = game->x;
+					game->boat_y = game->y;
+				}
+			} else {
+				cursor_x = game->x;
+				cursor_y = game->y;
+			}
+		}
+		if (key == 0xFF) done = 1;
+
+		if (redraw) {
+
+			SDL_Rect pos;
+			
+			SDL_Rect map = { 16, 14 + 8, src.w*5, src.h*5 };
+
+			pos.w = src.w;
+			pos.h = src.h;
+
+			SDL_FillRect( screen , &map, 0xFF0000);
+			
+			int i, j;
+			
+			int border_y = game->y - 2;
+			int border_x = game->x - 2;
+			//if (border_x + 5 > 64) border_x = 64 - 5;
+			//if (border_y + 5 > 64) border_y = 64 - 5;
+			//if (border_x < 0) border_x = 0;
+			//if (border_y < 0) border_y = 0;	
+			
+			for (j = 0; j < 5; j++) {
+			for (i = 0; i < 5; i++) {
+
+				byte m;
+				
+				if (border_x + i > 63 || border_y + j > 63 || 
+					border_x + i < 0 || border_y + j < 0) m = 32;
+				else
+					m = game->map[0][border_y + j][border_x + i];
+					
+
+				m &= 0x7F;
+
+				int th = m / 8;
+				int tw = m - (th * 8);
+
+				src.x = tw * src.w;
+				src.y = th * src.h;
+				pos.x = i * (pos.w) + map.x;
+				pos.y = (4-j) * (pos.h) + map.y;
+
+				SDL_BlitSurface( ts, &src , screen, &pos );
+			}  }
+
+
+			{
+				SDL_Rect hsrc = { 0, 0, src.w, src.h };
+				SDL_Rect hdst = { map.x + 2 * src.w, map.y + 2 * src.h, src.w, src.h };
+				
+				hsrc.x += src.w * (game->mount + frame);
+				hsrc.y += src.h * (flip);
+
+				SDL_BlitSurface( hero, &hsrc , screen, &hdst );
+			}
+
+			if (game->mount != KBMOUNT_SAIL && game->boat == game->continent)
+			{
+				int boat_lx = game->boat_x - game->x + 2;
+				int boat_ly = game->y - game->boat_y + 2;
+				
+				if (boat_lx >= 0 && boat_ly >= 0 && boat_lx <= 4 && boat_ly <= 4)
+				{				
+			
+				SDL_Rect hsrc = { 0, 0, src.w, src.h };
+				SDL_Rect hdst = { map.x + boat_lx * src.w, map.y + boat_ly * src.h, src.w, src.h };
+				
+				hsrc.x += src.w * (0);
+				hsrc.y += src.h * (boat_flip);
+
+				SDL_BlitSurface( hero, &hsrc , screen, &hdst );
+				}
+			}
+
+
+			{
+
+				SDL_Rect hsrc = { 0, 0, src.w, src.h };
+				SDL_Rect hdst = { map.x + 5 * src.w, map.y, src.w, src.h };
+
+				/* Contract */
+				hsrc.x = 8 * hsrc.w;
+				SDL_BlitSurface( sidebar, &hsrc, screen, &hdst);
+
+				/* Siege weapons */
+				hdst.y += src.h;
+				game->siege_weapons = 1;
+				hsrc.x = (game->siege_weapons ? tick * hsrc.w : 9 * hsrc.w);
+				SDL_BlitSurface( sidebar, &hsrc, screen, &hdst);
+				
+				/* Magic star */
+				hdst.y += src.h;
+				game->knows_magic = 1;
+				hsrc.x = (game->knows_magic ? (tick + 4) * hsrc.w : 10 * hsrc.w);
+				SDL_BlitSurface( sidebar, &hsrc, screen, &hdst);
+				
+				/* Puzzle map */
+				hdst.y += src.h;
+				hsrc.x = 11 * hsrc.w;
+				SDL_BlitSurface( sidebar, &hsrc, screen, &hdst);
+				
+				int i,j;
+				for (j = 0; j < 5; j++)
+				for (i = 0; i < 5; i++)
+				{
+					SDL_Rect mrect = { hdst.x + i * 9 + 2, hdst.y + j * 6 + 2, 9, 6 } ;
+					SDL_FillRect(screen, &mrect, 0x000000);
+					mrect.w -= 1; mrect.h -= 1;
+					SDL_FillRect(screen, &mrect, 0xAA0000);
+				} 
+
+				/* Gold purse */
+				hdst.y += src.h;
+				hsrc.x = 12 * hsrc.w;
+				SDL_BlitSurface( sidebar, &hsrc, screen, &hdst);
+			}
+
+
+	inprint(screen, " Options / Controls / Days Left:600 ", 8 + 8, 9);
+
+	    	SDL_Flip( screen );
+
+			redraw = 0;
+		}
+	}
+
+	SDL_FreeSurface(sidebar);
+	SDL_FreeSurface(ts);
+}
+
 int run_game(KBconfig *conf) {
 
 	int mod;
@@ -1135,7 +1531,7 @@ int run_game(KBconfig *conf) {
 	/* Select a game to play (new/load) */
 	KBgame *game = select_game(conf);
 
-	display_debug();//debug(game);
+	//display_debug();//debug(game);
 
 	/* No game! Quit */
 	if (!game) {
@@ -1143,6 +1539,9 @@ int run_game(KBconfig *conf) {
 		KB_stopENV(sys);
 		return 0;
 	}
+
+	/* PLAY THE GAME */
+	display_overworld(game);
 
 	/* Just for fun, output game name */
 	KB_stdlog("%s the %s\n", game->name, classes[game->class][game->rank].title);

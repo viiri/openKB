@@ -62,10 +62,14 @@ KBenv *KB_startENV(KBconfig *conf) {
     nsys->conf = conf;
 
 	nsys->font = NULL;
-
+	
 	RESOURCE_DefaultConfig(conf);
 
 	prepare_inline_font();	// <-- inline font
+
+	nsys->bg_color = 0;
+	nsys->fg_color = 0xFFFFFF;
+	nsys->ui_color = 0xFFFFFF;
 
 	return nsys;
 }
@@ -119,12 +123,12 @@ void SDL_BlitSurfaceFLIP(SDL_Surface *surface, SDL_Rect *src, SDL_Surface *new_s
 	source = (Uint8*)(surface->pixels);
 	dest = (Uint8*)(new_surface->pixels);
 
-	for(sy = src->y, dy = dst->y; sy < src->h; sy++, dy++)
-	for(sx = src->x, dx = dst->x; sx < src->w; sx++, dx++)
+	for(sy = src->y, dy = dst->y; sy < src->y + src->h; sy++, dy++)
+	for(sx = src->x, dx = dst->x + dst->w - 1; sx < src->x + src->w; sx++, dx--)
 		for (p = 0; p < bpp; p++)	
 		{
 			dest[ dy * (new_surface->w * bpp) + (dx * bpp) + p ] = 
-			source[ (sy + 1) * (surface->w * bpp) - (sx * bpp) + p ];
+			source[ sy * (surface->w * bpp) + (sx * bpp) + p ];
 		}
 }
 
@@ -237,6 +241,8 @@ SDL_Surface *SDL_LoadRESOURCE(int id, int sub_id, int flip) {
 
 	Uint32 w, h;
 
+	word flip_range = 48;
+
 	SDL_Surface *ret = NULL;
 
 	SDL_Surface *surf = KB_LoadIMG8(id, sub_id);
@@ -279,8 +285,24 @@ SDL_Surface *SDL_LoadRESOURCE(int id, int sub_id, int flip) {
 
 			if (flip == 2) flip_rect.x += flip_rect.w;
 			if (flip == 1) flip_rect.y += flip_rect.h;
+			
+			int i;
+			flip_range *= zoom;
+			SDL_Rect mbase;
+			SDL_Rect mflip;
+			mbase.h = mflip.h = base_rect.h;
+			mbase.w = mflip.w = flip_range;
+			mbase.y = base_rect.y;
+			mbase.x = base_rect.x;// + base_rect.w - flip_range;
+			mflip.y = flip_rect.y;
+			mflip.x = flip_rect.x;
+			for (i = 0; i < flip_rect.w/flip_range; i++) {
+				SDL_BlitSurfaceFLIP(bigsurf, &mbase, bigsurf, &mflip);
+				mbase.x += flip_range;
+				mflip.x += flip_range;				
+			}
 
-			SDL_BlitSurfaceFLIP(bigsurf, &base_rect, bigsurf, &flip_rect); 			
+			//SDL_BlitSurfaceFLIP(bigsurf, &base_rect, bigsurf, &flip_rect); 			
 		} 	
 
 

@@ -49,16 +49,22 @@
 
 #define GR_FONT		0x08	/* subId - undefined */
 
-#define GR_UI		0x20	/* subId - element index */
+#define GR_CURSOR	0x10	/* subId - undefined */
+#define GR_HERO	GR_CURSOR
+
+#define GR_UI		0x20	/* subId - undefined */
 #define GR_SELECT	0x21	/* subId - undefined */
 
 #define GR_PORTRAIT	0x22	/* subId - player class */
 #define GR_VIEW 	0x24	/* subId - undefined */
 
 #define GR_GOLD 	0x25	/* subId - undefined */
+#define GR_PURSE	0x26	/* subId - undefined */
+#define GR_COIN		0x27	/* subId - coin id */
 
 #define SN_TUNE		0x60	/* subId - tune index (0-10) */
 #define PAL_PALETTE	0x70	/* subId - undefined */
+#define COL_TEXT	0x71	/* subId - undefined */
 
 #define DAT_WORLD	0x90	/* complete world map ; subId - undefined */
 #define DAT_LAND	0x91	/* map for specific continent ; subId - continent index */

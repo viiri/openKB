@@ -32,6 +32,10 @@ typedef struct KBenv {
 
 	KBconfig *conf;
 
+	Uint32 fg_color;
+	Uint32 bg_color;
+	Uint32 ui_color;
+
 	int width;
 	int height;
 	int bpp;
