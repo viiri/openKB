@@ -22,12 +22,6 @@
 
 #define DAT_SIZE 20421
 
-// TODO: i recall theres a global way for those now?
-#define _UN_BYTE(PTR) *PTR++
-#define _UN_WORD(PTR) UNPACK_16_LE(*PTR++, *PTR++)
-#define _UN_SWORD(PTR) UNPACK_24_LE(*PTR++, *PTR++, *PTR++)
-#define _UN_DWORD(PTR) UNPACK_32_LE(*PTR++, *PTR++, *PTR++, *PTR++)
-
 #define RPOS(STR) printf("%s Pos: %06x\n", STR, p - &buf[0])
 
 KBgame* KB_loadDAT(const char* filename) {
@@ -59,87 +53,87 @@ KBgame* KB_loadDAT(const char* filename) {
 	p += 11;
 
 	/* Main stats */
-	game->class = _UN_BYTE(p);
-	game->rank = _UN_BYTE(p);
-	game->spell_power = _UN_BYTE(p);
-	game->max_spells = _UN_BYTE(p);
+	game->class = READ_BYTE(p);
+	game->rank = READ_BYTE(p);
+	game->spell_power = READ_BYTE(p);
+	game->max_spells = READ_BYTE(p);
 
 	/* Quest progress */
 	for (n = 0; n < MAX_VILLAINS; n++)
-		game->villain_caught[n] = _UN_BYTE(p);
+		game->villain_caught[n] = READ_BYTE(p);
 
 	for (n = 0; n < MAX_ARTIFACTS; n++)
-		game->artifact_found[n] = _UN_BYTE(p);
+		game->artifact_found[n] = READ_BYTE(p);
 
 	for (n = 0; n < MAX_CONTINENTS; n++)
-		game->continent_found[n] = _UN_BYTE(p);
+		game->continent_found[n] = READ_BYTE(p);
 
 	for (n = 0; n < MAX_CONTINENTS; n++)
-		game->orb_found[n] = _UN_BYTE(p);
+		game->orb_found[n] = READ_BYTE(p);
 
 	/* Spell book */
 	for (n = 0; n < MAX_SPELLS; n++)
-		game->spells[n] = _UN_BYTE(p);
+		game->spells[n] = READ_BYTE(p);
 
 	/* More stats */
-	game->knows_magic = _UN_BYTE(p);
-	game->siege_weapons = _UN_BYTE(p);
-	game->contract = _UN_BYTE(p);
+	game->knows_magic = READ_BYTE(p);
+	game->siege_weapons = READ_BYTE(p);
+	game->contract = READ_BYTE(p);
 
 	for (n = 0; n < 5; n++)
-		game->player_troops[n] = _UN_BYTE(p);
+		game->player_troops[n] = READ_BYTE(p);
 
 	/* Options and difficulty setting */
-	game->options[0] = _UN_BYTE(p);//delay
+	game->options[0] = READ_BYTE(p);//delay
 
-	game->difficulty = _UN_BYTE(p);
+	game->difficulty = READ_BYTE(p);
 
- 	game->options[1] = _UN_BYTE(p);//sounds
- 	game->options[2] = _UN_BYTE(p);//walk beep
- 	game->options[3] = _UN_BYTE(p);//animation
- 	game->options[4] = _UN_BYTE(p);//show army size
+ 	game->options[1] = READ_BYTE(p);//sounds
+ 	game->options[2] = READ_BYTE(p);//walk beep
+ 	game->options[3] = READ_BYTE(p);//animation
+ 	game->options[4] = READ_BYTE(p);//show army size
 
 	/* Player location */
-	game->continent = _UN_BYTE(p);
-	game->x = _UN_BYTE(p);
-	game->y = _UN_BYTE(p);
-	game->last_x = _UN_BYTE(p);
-	game->last_y = _UN_BYTE(p);
-	game->boat_x = _UN_BYTE(p);
-	game->boat_y = _UN_BYTE(p);
-	game->boat = _UN_BYTE(p);
-	game->mount = _UN_BYTE(p);
+	game->continent = READ_BYTE(p);
+	game->x = READ_BYTE(p);
+	game->y = READ_BYTE(p);
+	game->last_x = READ_BYTE(p);
+	game->last_y = READ_BYTE(p);
+	game->boat_x = READ_BYTE(p);
+	game->boat_y = READ_BYTE(p);
+	game->boat = READ_BYTE(p);
+	game->mount = READ_BYTE(p);
 
-	game->options[5] = _UN_BYTE(p);//CGA palette
+	game->options[5] = READ_BYTE(p);//CGA palette
 
 	/* Spells sold in towns */
 	for (n = 0; n < MAX_TOWNS; n++)
-		game->town_spell[n] = _UN_BYTE(p);
+		game->town_spell[n] = READ_BYTE(p);
 
 	/* Town/Contract */
 	for (n = 0; n < 5; n++)
-		game->contract_cycle[n] = _UN_BYTE(p);
-	game->last_contract =  _UN_BYTE(p);
-	game->max_contract = _UN_BYTE(p);
+		game->contract_cycle[n] = READ_BYTE(p);
+	game->last_contract =  READ_BYTE(p);
+	game->max_contract = READ_BYTE(p);
 
 	/* Steps left till end of day */
-	game->steps_left = _UN_BYTE(p);
+	game->steps_left = READ_BYTE(p);
 
 	/* Castle ownership */
 	for (n = 0; n < MAX_CASTLES; n++)
-		game->castle_owner[n] = _UN_BYTE(p);
+		game->castle_owner[n] = READ_BYTE(p);
 
 	/* Visited castles and towns */
 	for (n = 0; n < MAX_CASTLES; n++)
-		game->castle_visited[n] = _UN_BYTE(p);
+		game->castle_visited[n] = READ_BYTE(p);
 
 	for (n = 0; n < MAX_TOWNS; n++)
-		game->town_visited[n] = _UN_BYTE(p);
+		game->town_visited[n] = READ_BYTE(p);
 
 	/* Scepter location (encrypted) */
-	game->scepter_continent = _UN_BYTE(p);
-	game->scepter_x = _UN_BYTE(p);
-	game->scepter_y = _UN_BYTE(p);
+	game->scepter_continent = READ_BYTE(p);
+	game->scepter_x = READ_BYTE(p);
+	game->scepter_y = READ_BYTE(p);
 
 	/* Fog of war */
 	map_size = ( MAX_CONTINENTS * LEVEL_W * LEVEL_H );
@@ -150,95 +144,95 @@ KBgame* KB_loadDAT(const char* filename) {
 	/* Castle garrison troops */
 	for (n = 0; n < MAX_CASTLES; n++)
 		for (k = 0; k < 5; k++)
-			game->castle_troops[n][k] = _UN_BYTE(p);
+			game->castle_troops[n][k] = READ_BYTE(p);
 
 	/* Read friendly followers' coords */
 	for (n = 0; n < 20; n++) {
-		game->follower_coords[n][0] = _UN_BYTE(p);//X
-		game->follower_coords[n][1] = _UN_BYTE(p);//Y	
+		game->follower_coords[n][0] = READ_BYTE(p);//X
+		game->follower_coords[n][1] = READ_BYTE(p);//Y	
 	}
 
 	/* Map chests */
 	for (n = 0; n < MAX_CONTINENTS - 1; n++) {
-		game->map_coords[n][0] = _UN_BYTE(p);//X
-		game->map_coords[n][1] = _UN_BYTE(p);//Y
+		game->map_coords[n][0] = READ_BYTE(p);//X
+		game->map_coords[n][1] = READ_BYTE(p);//Y
 	}
 
 	/* Orb chests */
 	for (n = 0; n < MAX_CONTINENTS; n++) {
-		game->orb_coords[n][0] = _UN_BYTE(p);//X
-		game->orb_coords[n][1] = _UN_BYTE(p);//Y
+		game->orb_coords[n][0] = READ_BYTE(p);//X
+		game->orb_coords[n][1] = READ_BYTE(p);//Y
 	}
 
 	/* Teleporting caves */
 	for (n = 0; n < MAX_CONTINENTS * 2; n++) {
-		game->teleport_coords[n][0] = _UN_BYTE(p);//X
-		game->teleport_coords[n][1] = _UN_BYTE(p);//Y
+		game->teleport_coords[n][0] = READ_BYTE(p);//X
+		game->teleport_coords[n][1] = READ_BYTE(p);//Y
 	}
 
 	/* Dwellings locations */
 	for (n = 0; n < MAX_DWELLINGS; n++) {
-		game->dwelling_coords[n][0] = _UN_BYTE(p);//X
-		game->dwelling_coords[n][1] = _UN_BYTE(p);//Y
+		game->dwelling_coords[n][0] = READ_BYTE(p);//X
+		game->dwelling_coords[n][1] = READ_BYTE(p);//Y
 	}
 
 	/* Read hostile followers' coords */
 	for (n = 20; n < MAX_FOLLOWERS; n++) {
-		game->follower_coords[n][0] = _UN_BYTE(p);//X
-		game->follower_coords[n][1] = _UN_BYTE(p);//Y	
+		game->follower_coords[n][0] = READ_BYTE(p);//X
+		game->follower_coords[n][1] = READ_BYTE(p);//Y	
 	}
 
 	/* Read hostile followers' troops */
 	for (n = 20; n < MAX_FOLLOWERS; n++)
 		for (k = 0; k < 3; k++)
-			game->follower_troops[n][k] = _UN_BYTE(p);
+			game->follower_troops[n][k] = READ_BYTE(p);
 
 	/* Read follower numbers */
 	for (n = 20; n < MAX_FOLLOWERS; n++)
 		for (k = 0; k < 3; k++)
-			game->follower_numbers[n][k] = _UN_BYTE(p);
+			game->follower_numbers[n][k] = READ_BYTE(p);
 
 	/* Read dwelling troop type and population count */
 	for (n = 0; n < MAX_DWELLINGS; n++)
-			game->dwelling_troop[n] = _UN_BYTE(p);	
+			game->dwelling_troop[n] = READ_BYTE(p);	
 
 	for (n = 0; n < MAX_DWELLINGS; n++)
-			game->dwelling_population[n] = _UN_BYTE(p);
+			game->dwelling_population[n] = READ_BYTE(p);
 
 	/* Read scepter key and un-encrypt the coordinates */
-	game->scepter_key = _UN_BYTE(p);
-	game->scepter_continent ^ game->scepter_key;
-	game->scepter_x ^ game->scepter_key;
-	game->scepter_y ^ game->scepter_key;
+	game->scepter_key = READ_BYTE(p);
+	game->scepter_continent ^= game->scepter_key;
+	game->scepter_x ^= game->scepter_key;
+	game->scepter_y ^= game->scepter_key;
 
 	/* More stats */
-	game->base_leadership = _UN_WORD(p);
-	game->leadership = _UN_WORD(p);
-	game->commission = _UN_WORD(p);
-	game->followers_killed = _UN_WORD(p);
+	game->base_leadership = READ_WORD(p);
+	game->leadership = READ_WORD(p);
+	game->commission = READ_WORD(p);
+	game->followers_killed = READ_WORD(p);
 
 	/* Player army numbers */
 	for (n = 0; n < 5; n++)
-		game->player_numbers[n] = _UN_WORD(p);
+		game->player_numbers[n] = READ_WORD(p);
 
 	/* Castle garrison numbers */
 	for (n = 0; n < MAX_CASTLES; n++)
 		for (k = 0; k < 5; k++)
-			game->castle_numbers[n][k] = _UN_WORD(p);
+			game->castle_numbers[n][k] = READ_WORD(p);
 
 	/* More stats */
-	game->time_stop = _UN_WORD(p);
-	game->days_left = _UN_WORD(p);
+	game->time_stop = READ_WORD(p);
+	game->days_left = READ_WORD(p);
 
 	/* Score (unused) */
-	game->score = _UN_WORD(p);
+	game->score = READ_WORD(p);
 
 	/* Skip 4 bytes */
-	game->unknown1 = _UN_BYTE(p);
-	game->unknown2 = _UN_BYTE(p);
+	game->unknown1 = READ_BYTE(p);
+	game->unknown2 = READ_BYTE(p);
 
 	/* Player's gold (32 bit, can get quite rich!) */
-	game->gold = _UN_DWORD(p);
+	game->gold = READ_DWORD(p);
 
 	/* Map dump */
 	n = map_size; 
