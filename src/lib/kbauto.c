@@ -660,6 +660,15 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 			row_frames = 13;
 		}
 		break;
+		case GR_PURSE:	/* subId - undefined */
+		{
+			/* Single sidebar tile (gold purse) */
+			method = RAW_IMG;
+			middle_name = "cursor";
+			suffix = bpp_names[mod->bpp];
+			ident = "#13";
+		}
+		break;		
 		case GR_VILLAIN:	/* subId - villain index */
 		{
 			/* A villain (with animation) */
@@ -676,6 +685,17 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 			middle_name = "comtiles";
 			suffix = bpp_names[mod->bpp];
 			ident = "";	
+		}
+		break;
+		case GR_VIEW:	/* subId - undefined */
+		{
+			/* Character sheet tiles */
+			method = IMG_ROW;
+			middle_name = "view";
+			suffix = bpp_names[mod->bpp];
+			ident = "";
+			row_start = 0;
+			row_frames = 14;
 		}
 		break;
 		case GR_LOCATION:	/* subId - 0 home 1 town 2 - 6 dwelling */

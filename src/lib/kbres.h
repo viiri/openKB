@@ -60,7 +60,16 @@
 
 #define GR_GOLD 	0x25	/* subId - undefined */
 #define GR_PURSE	0x26	/* subId - undefined */
-#define GR_COIN		0x27	/* subId - coin id */
+#define GR_COIN		0x27	/* subId - coin index (0-3) */
+#define GR_COINS	0x28	/* subId - undefined */
+
+#define GR_VIEW 	0x30	/* artifacts, maps, empty slot, empty map ; subId - undefined */
+#define GR_ARTIFACTS 0x31	/* artifacts ; subId - undefined */
+#define GR_MAPS 	0x32	/* filled maps; subId - undefined */
+#define GR_INVSLOT	0x33	/* an empty inventory slot; subId - undefined */
+#define GR_BLANKMAP	0x34	/* an empty map tile; subId - undefined */
+#define GR_ARTIFACT	0x35	/* filled map; subId - artifact index (0-7) */
+#define GR_ORBMAP	0x36	/* filled map; subId - continent index (0-3) */
 
 #define SN_TUNE		0x60	/* subId - tune index (0-10) */
 #define PAL_PALETTE	0x70	/* subId - undefined */
