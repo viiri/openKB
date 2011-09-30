@@ -1218,53 +1218,165 @@ void KB_BlitMap(SDL_Surface *dest, SDL_Surface *tileset, SDL_Rect *viewport) {
 
 }
 
+KBgamestate yes_no_question = {
+	{
+		{	{ 0 }, SDLK_y, 0, 0      	},
+		{	{ 0 }, SDLK_n, 0, 0      	},
+		0
+	},
+	0
+};
+
+void visit_castle(KBgame *game) {
+	SDL_Flip(sys->screen);
+	KB_Pause();
+}
+
+void visit_town(KBgame *game) {
+	SDL_Flip(sys->screen);	
+	KB_Pause();
+}
+
+void visit_dwelling(KBgame *game) {
+	SDL_Flip(sys->screen);
+	KB_Pause();
+}
+
+void read_signpost(KBgame *game) {
+	KB_iloc(0, 0);
+	KB_iprintf("Read sign post at %d, %d\n", game->x, game->y);
+
+	SDL_Flip(sys->screen);
+	KB_Pause();
+}
+
+void take_chest(KBgame *game) {
+	SDL_Flip(sys->screen);
+	KB_Pause();
+	game->map[0][game->y][game->x] = 0;
+}
+
+void take_artifact(KBgame *game) {
+
+}
+
+int attack_follower(KBgame *game) {
+	KB_iloc(0, 0);
+	KB_iprintf("Attack ? y / n\n", game->x, game->y);
+
+	SDL_Flip(sys->screen);
+
+	int key = 0;
+	while (!key) key = KB_event(&yes_no_question);
+	
+	return key - 1;
+}
+
+
 #define SOFT_WAIT 150
+#define ARROW_KEYS 18
+#define ACTION_KEYS 14
+
+#define SYN_EVENT (ACTION_KEYS + ARROW_KEYS + 1)
+
+#define KBACT_VIEW_ARMY 	0
+#define KBACT_VIEW_CONTROLS	1 
+#define KBACT_FLY       	2
+#define KBACT_LAND      	3
+#define KBACT_VIEW_CONTRACT	4
+#define KBACT_VIEW_MAP  	5
+#define KBACT_VIEW_PUZZLE  	6
+#define KBACT_SEARCH    	7
+#define KBACT_USE_MAGIC 	8
+#define KBACT_VIEW_CHAR 	9
+#define KBACT_END_WEEK  	10
+#define KBACT_SAVE_QUIT 	11
+#define KBACT_FAST_QUIT 	12
+#define KBACT_DISMISS_ARMY 	13
 
 KBgamestate adventure_state = {
 	{
+		{	{ SOFT_WAIT }, SDLK_HOME, 0, KFLAG_SOFTKEY     	},
+		{	{ SOFT_WAIT }, SDLK_7, 0, KFLAG_SOFTKEY      	},
 		{	{ SOFT_WAIT }, SDLK_UP, 0, KFLAG_SOFTKEY      	},
-		{	{ SOFT_WAIT }, SDLK_8, 0, KFLAG_SOFTKEY      	},		
-		{	{ SOFT_WAIT }, SDLK_DOWN, 0, KFLAG_SOFTKEY      	},
-		{	{ SOFT_WAIT }, SDLK_2, 0, KFLAG_SOFTKEY      	},		
-		{	{ SOFT_WAIT }, SDLK_LEFT, 0, KFLAG_SOFTKEY      	},
+		{	{ SOFT_WAIT }, SDLK_8, 0, KFLAG_SOFTKEY      	},
+		{	{ SOFT_WAIT }, SDLK_PAGEUP, 0, KFLAG_SOFTKEY   	},
+		{	{ SOFT_WAIT }, SDLK_9, 0, KFLAG_SOFTKEY      	},
+		{	{ SOFT_WAIT }, SDLK_LEFT, 0, KFLAG_SOFTKEY     	},
 		{	{ SOFT_WAIT }, SDLK_4, 0, KFLAG_SOFTKEY      	},
-		{	{ SOFT_WAIT }, SDLK_RIGHT, 0, KFLAG_SOFTKEY      	},
+		{	{ SOFT_WAIT }, SDLK_SPACE, 0, KFLAG_SOFTKEY    	},
+		{	{ SOFT_WAIT }, SDLK_5, 0, KFLAG_SOFTKEY      	},
+		{	{ SOFT_WAIT }, SDLK_RIGHT, 0, KFLAG_SOFTKEY    	},
 		{	{ SOFT_WAIT }, SDLK_6, 0, KFLAG_SOFTKEY      	},
-		
+		{	{ SOFT_WAIT }, SDLK_END, 0, KFLAG_SOFTKEY    	},
+		{	{ SOFT_WAIT }, SDLK_1, 0, KFLAG_SOFTKEY      	},
+		{	{ SOFT_WAIT }, SDLK_DOWN, 0, KFLAG_SOFTKEY     	},
+		{	{ SOFT_WAIT }, SDLK_2, 0, KFLAG_SOFTKEY      	},		
+		{	{ SOFT_WAIT }, SDLK_PAGEDOWN, 0, KFLAG_SOFTKEY 	},
+		{	{ SOFT_WAIT }, SDLK_3, 0, KFLAG_SOFTKEY      	},
+
+		{	{ 0 }, SDLK_a, 0, 0      	},
+		{	{ 0 }, SDLK_c, 0, 0      	},
+		{	{ 0 }, SDLK_f, 0, 0      	},
+		{	{ 0 }, SDLK_l, 0, 0      	},		
+		{	{ 0 }, SDLK_i, 0, 0      	},
+		{	{ 0 }, SDLK_m, 0, 0      	},
+		{	{ 0 }, SDLK_p, 0, 0      	},
+		{	{ 0 }, SDLK_s, 0, 0      	},
+		{	{ 0 }, SDLK_u, 0, 0      	},
+		{	{ 0 }, SDLK_v, 0, 0      	},
+		{	{ 0 }, SDLK_w, 0, 0      	},
+		{	{ 0 }, SDLK_q, 0, 0      	},
+
+		{	{ 0 }, SDLK_q, KMOD_CTRL, 0	},
+		{	{ 0 }, SDLK_d, 0, 0      	},
+
 		{	{ SOFT_WAIT }, SDLK_SYN, 0, KFLAG_TIMER },
 		0,
 	},
 	0
 };
 
+static signed char move_offset_x[9] = { -1, 0, 1, -1, 0, 1, -1,  0,  1 };
+static signed char move_offset_y[9] = {  1, 1, 1,  0, 0, 0, -1, -1, -1 };
+
 /* Main game loop (adventure screen) */
 void display_overworld(KBgame *game) {
 
 	SDL_Surface *screen = sys->screen;
-	
+	int filter = sys->conf->filter;
+	//sys->conf->filter = 0;
 	SDL_Surface *tile = SDL_LoadRESOURCE(GR_TILE, 0, 0);
 	SDL_Surface *ts = SDL_LoadRESOURCE(GR_TILESET, 0, 0);
 	SDL_Surface *hero = SDL_LoadRESOURCE(GR_CURSOR, 0, 1);
+	sys->conf->filter = filter;
 
+	SDL_Surface *purse = SDL_LoadRESOURCE(GR_PURSE, 0, 0);	/* single sidebar tile */
 	SDL_Surface *sidebar = SDL_LoadRESOURCE(GR_UI, 0, 0);
-	
+
 	SDL_Surface *bar = SDL_LoadRESOURCE(GR_SELECT, 1, 0);
 	
 	SDL_Rect *top_frame  = RECT_LoadRESOURCE(RECT_UI, 0);	
 	SDL_Rect *left_frame  = RECT_LoadRESOURCE(RECT_UI, 1);
 	SDL_Rect *right_frame  = RECT_LoadRESOURCE(RECT_UI, 2);
+	SDL_Rect *bottom_frame  = RECT_LoadRESOURCE(RECT_UI, 3);	
 	SDL_Rect *bar_frame  = RECT_LoadRESOURCE(RECT_UI, 4);
-	
+
 	SDL_Rect *fs = KB_fontsize(sys);
 	Uint32 *colors = KB_Resolve(COL_TEXT, 0);	
-	
+
 	SDL_Rect status_rect =  { left_frame->w, top_frame->h, screen->w - left_frame->w - right_frame->w, fs->h + 2 };
 	SDL_FillRect(screen, &status_rect, colors[0]);
 	SDL_BlitSurface(bar, NULL, screen, bar_frame);
 
 	int tileset_pitch = ts->w / tile->w;
 
-	SDL_Rect map = { left_frame->w, top_frame->h + status_rect.h + bar->h, tile->w * 5, tile->h * 5 };
+	SDL_Rect map = { left_frame->w, top_frame->h + status_rect.h + bar->h, screen->w - purse->w - right_frame->w - left_frame->w, screen->h - top_frame->h - bar->h - status_rect.h - bottom_frame->h};
+
+	word perim_h = map.w / tile->w;
+	word perim_w = map.h / tile->h;
+	word radii_w = (perim_w - 1) / 2;
+	word radii_h = (perim_h - 1) / 2;
 
 	status_rect.y++;
 
@@ -1282,6 +1394,8 @@ void display_overworld(KBgame *game) {
 	int max_frame = 3;
 	int tick = 0;
 
+	int walk = 0;
+
 	SDL_Rect src = { 0 };
 	
 	src.w = tile->w;
@@ -1293,56 +1407,50 @@ void display_overworld(KBgame *game) {
 
 		key = KB_event(&adventure_state);
 
-		switch (key) {
-			case 1:
-			case 2:	/* UP */
-				cursor_y++;
-				frame = 3;
-				max_frame = 3;
-			break;
-			case 3:
-			case 4:
-				cursor_y--;
-				frame = 3;
-				max_frame = 3;
-			break;
-			case 5:
-			case 6:
-				cursor_x--;
-				flip = 1;
-				frame = 3;
-				max_frame = 3;
-			break;
-			case 7:
-			case 8:
-				cursor_x++;
-				flip = 0;
-				frame = 3;
-				max_frame = 3;
-			break;
-			case 9:
+		if (key == 0xFF) done = 1;
+
+		if (key > 0 && key < ARROW_KEYS + 1 && !walk) {
+
+			int ox = move_offset_x[(key-1)/2];
+			int oy = move_offset_y[(key-1)/2];
+
+			if (ox == 1) flip = 0;
+			if (ox == -1) flip = 1;
+
+			cursor_x += ox;
+			cursor_y += oy;
+			
+			if (cursor_x < 0) cursor_x = 0;
+			if (cursor_x > 63) cursor_x = 63;
+			if (cursor_y < 0) cursor_y = 0;
+			if (cursor_y > 63) cursor_y = 63;
+		}
+
+		if (key == SYN_EVENT) {
 			if (++tick > 3) tick = 0;
 			if (max_frame == 3) {
 				max_frame = 2;
-				break;
+			} else {
+				frame++;
+				if (frame > max_frame) {
+					frame = 0;
+					max_frame = 2;
+				}
+				redraw = 1;
 			}
-			frame++;
-			if (frame > max_frame) {
-				frame = 0;
-				max_frame = 2;
-			}
-			redraw = 1;
-			break;
 		}
+
 		if (cursor_x != game->x || cursor_y != game->y) {
-		
+
 			byte m = game->map[0][cursor_y][cursor_x];		
 
 #define IS_GRASS(M) ((M) < 2 || (M) == 0x80)
 #define IS_WATER(M) ((M) >= 0x14 && (M) <= 0x20)
+#define IS_DESERT(M) ((M) >= 0x2e && (M) <= 0x3a)
+#define IS_INTERACTIVE(M) ((M) & 0x80)
 
-			int walk = 1;
-			
+			walk = 1;
+
 			if (game->mount == KBMOUNT_SAIL)
 				boat_flip = flip;
 
@@ -1356,14 +1464,15 @@ void display_overworld(KBgame *game) {
 				}
 				else
 				if (IS_WATER(m)) {
-					if (game->mount != KBMOUNT_SAIL)	{
-						printf("Stopping at water tile: %02x\n", m);
-						walk = 0;
-					}
+					if (game->mount != KBMOUNT_SAIL) walk = 0;
 				}
 				else
-				{
-					printf("Stopping at tile: %02x\n", m);
+				if (IS_DESERT(m)) {
+					game->steps_left = 0;
+				}
+				else
+				if (!IS_INTERACTIVE(m))	{
+					printf("Stopping at tile: %02x -- %02x\n", m, m & 0x80);
 					walk = 0;
 				}
 			}
@@ -1380,13 +1489,16 @@ void display_overworld(KBgame *game) {
 						game->boat_y = game->y;
 					}
 				}	
-	
+
 				game->last_x = game->x;
 				game->last_y = game->y;
-	
+
 				game->x = cursor_x;
 				game->y = cursor_y;
-	
+
+				frame = 3;
+				max_frame = 3;
+
 				/* When sailing, tuck the boat with us */
 				if (game->mount == KBMOUNT_SAIL) {
 					game->boat_x = game->x;
@@ -1397,29 +1509,26 @@ void display_overworld(KBgame *game) {
 				cursor_y = game->y;
 			}
 		}
-		if (key == 0xFF) done = 1;
 
+		SDL_Rect inpos = { 0 };
+			
 		if (redraw) {
 
 			SDL_Rect pos;
-			
+
 			pos.w = src.w;
 			pos.h = src.h;
 
 			SDL_FillRect( screen , &map, 0xFF0000);
-			
-			int i, j;
-			
-			int border_y = game->y - 2;
-			int border_x = game->x - 2;
-			//if (border_x + 5 > 64) border_x = 64 - 5;
-			//if (border_y + 5 > 64) border_y = 64 - 5;
-			//if (border_x < 0) border_x = 0;
-			//if (border_y < 0) border_y = 0;	
-			
-			for (j = 0; j < 5; j++) {
-			for (i = 0; i < 5; i++) {
 
+			int i, j;
+
+			int border_y = game->y - radii_h;
+			int border_x = game->x - radii_w;
+
+			/** Draw map **/
+			for (j = 0; j < perim_h; j++)
+			for (i = 0; i < perim_w; i++) {
 				byte m;
 				
 				if (border_x + i > 63 || border_y + j > 63 || 
@@ -1427,7 +1536,6 @@ void display_overworld(KBgame *game) {
 				else
 					m = game->map[0][border_y + j][border_x + i];
 					
-
 				m &= 0x7F;
 
 				int th = m / 8;
@@ -1436,68 +1544,105 @@ void display_overworld(KBgame *game) {
 				src.x = tw * src.w;
 				src.y = th * src.h;
 				pos.x = i * (pos.w) + map.x;
-				pos.y = (4-j) * (pos.h) + map.y;
+				pos.y = (perim_h - 1 - j) * (pos.h) + map.y;
 
 				SDL_BlitSurface( ts, &src , screen, &pos );
-			}  }
 
+				//SDL_Flip(screen);
+				//SDL_Delay(100);
+			}
 
+			/** Draw boat **/
+			if (game->mount != KBMOUNT_SAIL && game->boat == game->continent)
+			{
+				int boat_lx = game->boat_x - game->x + radii_w;
+				int boat_ly = game->y - game->boat_y + (perim_w - 1 - radii_h);
+
+				if (boat_lx >= 0 && boat_ly >= 0 && boat_lx < perim_w && boat_ly < perim_h)
+				{
+					SDL_Rect hsrc = { 0, 0, src.w, src.h };
+					SDL_Rect hdst = { map.x + boat_lx * src.w, map.y + boat_ly * src.h, src.w, src.h };
+
+					hsrc.x += src.w * (0);
+					hsrc.y += src.h * (boat_flip);
+
+					SDL_BlitSurface( hero, &hsrc , screen, &hdst );
+				}
+			}
+		}
+
+		if (walk) {
+			walk = 1;
+			byte m = game->map[0][cursor_y][cursor_x];
+			if (IS_INTERACTIVE(m)) {
+				switch (m) {
+					case 0x85:	visit_castle(game);	walk = 0; break;
+					case 0x8a:	visit_town(game); walk = 0; break;
+					case 0x8b:	take_chest(game);	break;
+					case 0x8c:
+					case 0x8d:
+					case 0x8e:
+					case 0x8f:	visit_dwelling(m - 0x8c); walk = 0; break;
+					case 0x90:	read_signpost(game);		break;
+					case 0x91:	walk = !attack_follower(game);	break;
+					case 0x92:
+					case 0x93:	take_artifact(m - 0x92);	break;
+					default:
+						KB_errlog("Unknown interactive tile %02x at location %d, %d\n", m, cursor_x, cursor_y);
+					break;
+				}
+			}
+			if (!walk) {
+				cursor_x = game->last_x;
+				cursor_y = game->last_y;
+				walk = 1;
+			} else {
+				walk = 0;
+			}
+		}
+
+		if (redraw) {
+
+			/** Draw player **/
 			{
 				SDL_Rect hsrc = { 0, 0, src.w, src.h };
-				SDL_Rect hdst = { map.x + 2 * src.w, map.y + 2 * src.h, src.w, src.h };
+				SDL_Rect hdst = { map.x + radii_w * src.w, map.y + (perim_h - 1 - radii_h) * src.h, src.w, src.h };
 				
 				hsrc.x += src.w * (game->mount + frame);
 				hsrc.y += src.h * (flip);
 
 				SDL_BlitSurface( hero, &hsrc , screen, &hdst );
+			//	SDL_Flip(screen);
+			//	SDL_Delay(3000);
 			}
 
-			if (game->mount != KBMOUNT_SAIL && game->boat == game->continent)
+			/** Draw siderbar UI **/
 			{
-				int boat_lx = game->boat_x - game->x + 2;
-				int boat_ly = game->y - game->boat_y + 2;
-				
-				if (boat_lx >= 0 && boat_ly >= 0 && boat_lx <= 4 && boat_ly <= 4)
-				{				
-			
-				SDL_Rect hsrc = { 0, 0, src.w, src.h };
-				SDL_Rect hdst = { map.x + boat_lx * src.w, map.y + boat_ly * src.h, src.w, src.h };
-				
-				hsrc.x += src.w * (0);
-				hsrc.y += src.h * (boat_flip);
-
-				SDL_BlitSurface( hero, &hsrc , screen, &hdst );
-				}
-			}
-
-
-			{
-
-				SDL_Rect hsrc = { 0, 0, src.w, src.h };
-				SDL_Rect hdst = { map.x + 5 * src.w, map.y, src.w, src.h };
+				SDL_Rect hsrc = { 0, 0, purse->w, purse->h };
+				SDL_Rect hdst = { screen->w - right_frame->w - purse->w, map.y, src.w, src.h };
 
 				/* Contract */
 				hsrc.x = 8 * hsrc.w;
 				SDL_BlitSurface( sidebar, &hsrc, screen, &hdst);
 
 				/* Siege weapons */
-				hdst.y += src.h;
+				hdst.y += hsrc.h;
 				game->siege_weapons = 1;
 				hsrc.x = (game->siege_weapons ? tick * hsrc.w : 9 * hsrc.w);
 				SDL_BlitSurface( sidebar, &hsrc, screen, &hdst);
 				
 				/* Magic star */
-				hdst.y += src.h;
+				hdst.y += hsrc.h;
 				game->knows_magic = 1;
 				hsrc.x = (game->knows_magic ? (tick + 4) * hsrc.w : 10 * hsrc.w);
 				SDL_BlitSurface( sidebar, &hsrc, screen, &hdst);
 				
 				/* Puzzle map */
-				hdst.y += src.h;
+				hdst.y += hsrc.h;
 				hsrc.x = 11 * hsrc.w;
 				SDL_BlitSurface( sidebar, &hsrc, screen, &hdst);
 
-				int i,j;
+				int i, j; /* puzzle pieces */
 				for (j = 0; j < 5; j++)
 				for (i = 0; i < 5; i++)
 				{
@@ -1505,23 +1650,24 @@ void display_overworld(KBgame *game) {
 					SDL_FillRect(screen, &mrect, 0x000000);
 					mrect.w -= 1; mrect.h -= 1;
 					SDL_FillRect(screen, &mrect, 0xAA0000);
-				} 
+				}
 
 				/* Gold purse */
-				hdst.y += src.h;
+				hdst.y += purse->h;
 				hsrc.x = 12 * hsrc.w;
 				SDL_BlitSurface( sidebar, &hsrc, screen, &hdst);
 			}
 
+			/* Status bar */
 			KB_iloc(status_rect.x, status_rect.y);
-			KB_printf(sys, " Options / Controls / Days Left: %d ", game->days_left);
+			KB_printf(sys, " Options / Controls / Days Left:%d ", game->days_left);
 
 	    	SDL_Flip( screen );
-
 			redraw = 0;
 		}
 	}
 
+	SDL_FreeSurface(purse);
 	SDL_FreeSurface(sidebar);
 	SDL_FreeSurface(ts);
 }
