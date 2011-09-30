@@ -129,8 +129,8 @@ typedef uint8_t 	byte  ;
 #endif
 
 #define READ_BYTE(PTR) *PTR++
-#define READ_WORD(PTR) KB_UNPACK_WORD(*PTR, *(PTR+1)); PTR+=2
-#define READ_SWORD(PTR) KB_UNPACK_SWORD(*PTR, *(PTR+1), *(PTR+2)); PTR+=3
-#define READ_DWORD(PTR) KB_UNPACK_DWORD(*PTR, *(PTR+1), *(PTR+2), *(PTR+3)); PTR+=4
+#define READ_WORD(PTR) KB_UNPACK_WORD(*PTR, *(PTR+1)), PTR+=2
+#define READ_SWORD(PTR) KB_UNPACK_SWORD(*PTR, *(PTR+1), *(PTR+2)), PTR+=3
+#define READ_DWORD(PTR) KB_UNPACK_DWORD(*PTR, *(PTR+1), *(PTR+2), *(PTR+3)), PTR+=4
 
 #endif /* _OPENKB_LIBKB_SYS */
