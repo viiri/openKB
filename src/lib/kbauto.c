@@ -710,6 +710,78 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 			return &colors; 
 		}	
 		break;
+		case STR_SIGN:
+		{
+			char *list = DOS_Resolve(mod, STRL_SIGNS, 0);
+			char *rem = list;
+			int i = 0;
+			while (1) {
+				if (*list == '\0') {
+					if (i == sub_id) break;
+					i++;
+					list++;
+					if (*list == '\0') break;
+					rem = list;
+					continue;
+				}
+				list++;				
+			}
+			return rem;
+		}
+		break;
+		case STRL_SIGNS:
+		{
+			static char buf[4096];
+			static char pbuf[4096];
+
+	int segment = 0x15850;
+
+			int ptroff = 0x1844D;
+			int off = 0x191CB;
+			int len = 0x19815 - 0x191CB;
+			
+			KB_File *f;	int n;   
+
+			KB_debuglog(0,"? DOS EXE FILE: %s\n", "KB.EXE");
+			f = KB_fopen_with("kb.exe", "rb", mod);
+			if (f == NULL) return NULL;
+#if 0			
+			KB_fseek(f, ptroff, 0);
+			n = KB_fread(&pbuf[0], sizeof(char), len, f);
+#endif
+			KB_fseek(f, off, 0);
+			n = KB_fread(&buf[0], sizeof(char), len, f);
+			KB_fclose(f);
+			
+			char *p = &pbuf[0];
+			
+		
+			int i, j = 1;
+			for (i = 0; i < n - 1; i++)  {
+				if (buf[i] == '\0') {
+					if (j) buf[i] = '\n';
+					j=1-j;
+				}
+			}
+
+#if 0			
+			//READ_WORD_BE(p);
+			//p+=2;
+			for (i = 1; i < 20; i++) {
+				word soff;
+				soff = READ_WORD_BE(p);
+				//p+=2;
+				buf[soff + segment - off - 1] = '\0';
+				printf("\n####");
+				printf("Splitting: '%s'\n", &buf[soff + segment - off]);
+				sleep(1);
+				//KB_fseek(f, segment + soff, 0);
+			}
+#endif
+
+			return &buf[0];
+		}
+		break;
 		case RECT_MAP:
 		{
 			static SDL_Rect map = {	16, 14 + 7, 48 * 5, 34 * 5	};
