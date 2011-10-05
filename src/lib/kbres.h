@@ -56,7 +56,6 @@
 #define GR_SELECT	0x21	/* subId - undefined */
 
 #define GR_PORTRAIT	0x22	/* subId - player class */
-#define GR_VIEW 	0x24	/* subId - undefined */
 
 #define GR_GOLD 	0x25	/* subId - undefined */
 #define GR_PURSE	0x26	/* subId - undefined */
