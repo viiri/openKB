@@ -219,8 +219,8 @@ void render_game(KBenv *env, KBgame *game, KBgamestate *state, KBconfig *conf) {
 
 /* In this one, ROWS and COLS of text are used */
 #define RECT_Text(RECT, ROWS, COLS) \
-		RECT->w = COLS * 8, \
-		RECT->h = ROWS * 8
+		RECT->w = COLS * sys->font_size.w, \
+		RECT->h = ROWS * sys->font_size.h
 
 //
 // TODO: get rid of those, call RECT_* directly
@@ -403,20 +403,20 @@ void SDL_TextRect(SDL_Surface *dest, SDL_Rect *r, Uint32 fore, Uint32 back) {
 	incolor(fore, back);
 
 	/* Top and bottom (horizontal fill) */
-	for (i = r->x + fs->w; i < r->x + r->w - fs->w; i += 8) {
+	for (i = r->x ; i + fs->w < r->x + r->w; i += fs->w) {
 		inprint(dest, "\x0E", i, r->y);
-		inprint(dest, "\x0F", i, r->y + r->h);
+		inprint(dest, "\x0F", i, r->y + r->h - fs->h);
 	}
 	/* Left and right (vertical fill) */
-	for (j = r->y + fs->h; j < r->y + r->h; j += 8) {
+	for (j = r->y ; j + fs->h < r->y + r->h; j += fs->h) {
 		inprint(dest, "\x14", r->x, j);
 		inprint(dest, "\x15", i, j);
 	}
 	/* Corners */
 	inprint(dest, "\x10", r->x, r->y);/* Top-left */ 
 	inprint(dest, "\x11", i, r->y);/* Top-right */
-	inprint(dest, "\x12", r->x, j);/* Bottom-left */
-	inprint(dest, "\x13", i, j);/* Bottom-right */
+	inprint(dest, "\x12", r->x, r->y + r->h - fs->h);/* Bottom-left */
+	inprint(dest, "\x13", i, r->y + r->h - fs->h);/* Bottom-right */
 }
 /* Enter name */
 char *enter_name(int x, int y) {
@@ -535,7 +535,7 @@ SDL_Rect* KB_MessageBox(const char *str, int wait) {
 
 	/* Keep in rect */
 	rect.w = max_w * fs->w;
-	rect.h = (h-1) * fs->h;//h!
+	rect.h = h * fs->h;
 
 	/* To the center of the screen */
 	rect.x = (screen->w - rect.w) / 2;
@@ -576,6 +576,66 @@ SDL_Rect* KB_MessageBox(const char *str, int wait) {
 	return &rect;
 }
 
+SDL_Rect* KB_BottomFrame() {
+	SDL_Surface *screen = sys->screen;
+
+	Uint32 bg = sys->bg_color;
+	Uint32 fg = sys->fg_color;
+	Uint32 ui = sys->ui_color;
+
+	SDL_Rect *fs = &sys->font_size;
+	
+	SDL_Rect *left_frame = RECT_LoadRESOURCE(RECT_UI, 1);
+	SDL_Rect *bottom_frame = RECT_LoadRESOURCE(RECT_UI, 3);
+
+	SDL_Rect border;
+	static SDL_Rect text;	
+
+	/* Make a 30 x 8 border (+1 character on each side) */ 
+	RECT_Text((&border), 8, 30);
+	border.h += fs->h / 2; /* Plus some extra pixels, because 'bottom box' is uneven */
+	border.x = left_frame->w;
+	border.y = screen->h - bottom_frame->h - border.h;
+
+	/* Actual text is 28 x 6 (meaning 28 cols per 6 rows, btw) */
+	RECT_Pos((&text), (&border));
+	text.y += fs->h;
+	text.x += fs->w;
+	RECT_Text((&text), 6, 28);
+
+	/* A nice frame */
+	SDL_FillRect(screen, &border, 0xFF0000);
+	SDL_TextRect(screen, &border, ui, bg);
+	SDL_FillRect(screen, &text, 0x00FF00);
+
+	free(left_frame);
+	free(bottom_frame);
+
+	return &text;
+}
+
+SDL_Rect* KB_BottomBox(const char *header, const char *str, int wait) {
+	SDL_Surface *screen = sys->screen;
+
+	SDL_Rect *fs = &sys->font_size;
+
+	SDL_Rect *text = KB_BottomFrame();	
+
+	/* Header (few pixels up) */	
+	KB_iloc(text->x, text->y - fs->h/4 - fs->h/8);
+	KB_iprint(header);
+
+	/* Message */
+	KB_iloc(text->x, text->y + fs->h/4);
+	KB_iprint("\n\n");	
+	KB_iprint(str);
+
+	SDL_Flip(screen);
+
+	return &text;
+}
+
+
 /* Actual KBgame* allocator */
 KBgame *spawn_game(char *name, int pclass, int difficulty) {
 
@@ -607,7 +667,7 @@ KBgame *create_game(int pclass) {
 	SDL_Rect menu;
 	
 	int cols = 30;//w
-	int rows = 11;//h
+	int rows = 12;//h
 
 	SDL_Rect *fs = KB_fontsize(sys);
 
@@ -745,7 +805,7 @@ KBgame *load_game() {
 
 	/* Size */
 	menu.w = l * fs->w + fs->w * 2;
-	menu.h = num_files * fs->h + fs->h * 5;
+	menu.h = num_files * fs->h + fs->h * 6;
 
 	/* To the center of the screen */
 	menu.x = (screen->w - menu.w) / 2;
@@ -972,7 +1032,7 @@ int select_module() {
 
 	/* Size */
 	menu.w = l * 8 + 16;
-	menu.h = conf->num_modules * 8 + 8;
+	menu.h = conf->num_modules * 8 + 16;
 
 	/* To the center of the screen */
 	menu.x = (screen->w - menu.w) / 2;
@@ -1243,8 +1303,25 @@ void visit_dwelling(KBgame *game) {
 }
 
 void read_signpost(KBgame *game) {
-	KB_iloc(0, 0);
-	KB_iprintf("Read sign post at %d, %d\n", game->x, game->y);
+
+	int id = 0;
+	int ok = 0;
+	int i, j;
+	for (j = 0; j < 64; j++) {
+		for (i = 0; i < 64; i++) {
+			if (game->map[0][j][i] == 0x90) {
+				if (i == game->x && j == game->y) { ok = 1; break; }
+				id ++;
+			}
+		}
+		if (ok) break; 
+	}
+
+	char *sign = KB_Resolve(STR_SIGN, id);
+
+	KB_stdlog("Read sign post [%d] at %d, %d { %s }\n", id, game->x, game->y, sign);
+
+	KB_BottomBox("A sign reads:", sign, 1);
 
 	SDL_Flip(sys->screen);
 	KB_Pause();
