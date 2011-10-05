@@ -483,13 +483,19 @@ void free_troops() {
 		SDL_FreeSurface(troop_cache[i]);
 }
 
-int dwmap[5][5] = {
-	{ 2, 8, 10, 14, 18 },
-	{ 0, 3, 0, 0, 0 },
-	{ 0, 0, 0, 0, 0 },
-	{ 0, 0, 0, 0, 0 },
-	{ 4, 5, 13, 21, 23 },
-};
+int dwmap[5][5];
+
+void fill_dwmap() {
+	int dw_off[5] = { 0 };
+	int i;
+	for (i = 0; i < MAX_TROOPS; i++) {
+		int dwells = troops[i].dwells;
+		/* Hack -- cycle dwellings so 'castle' is first, 'plains' second */
+		dwells++;
+		if (dwells > DWELLING_CASTLE) dwells = DWELLING_PLAINS;
+		dwmap[dwells][dw_off[dwells]++] = i;
+	}
+}
 
 int opponent_ready = 0;
 int youare_ready = 0;
@@ -512,6 +518,8 @@ KBcombat* prepare_for_combat() {
 	int done = 0;
 	
 	alloc_troops();
+
+	fill_dwmap();
 
 	SDL_Surface *screen = sys->screen;	
 	SDL_Surface *troop = troop_cache[0];
@@ -640,9 +648,6 @@ inprint(screen, (youare_ready ? "You are READY" : "You are not ready! Press F1!"
 		key = KB_event();
 
 		if (key == 0xFF) { war = NULL; done = 1; }
-
-		if (key == SDLK_BACKSPACE) dwmap[dwelling_id][dwelling_slot]--;
-		if (key == SDLK_SPACE) dwmap[dwelling_id][dwelling_slot]++;
 
 		if (youare_ready == 0) {
 
