@@ -352,7 +352,10 @@ SDL_Surface *SDL_LoadRESOURCE(int id, int sub_id, int flip) {
 	if (w != surf->w || h != surf->h) {
 
 		SDL_Surface *bigsurf = SDL_CloneSurfaceHW(surf, h, w);
-		SDL_ClonePalette(bigsurf, surf);
+		if (surf->format->palette) SDL_ClonePalette(bigsurf, surf);
+		else {
+			KB_stdlog("Warning: A %d-bpp image\n", surf->format->BitsPerPixel);
+		}
 		SDL_SetColorKey(bigsurf, SDL_SRCCOLORKEY, 0xFF);
 
 		if (zoom > 1) { /* Zoom-copy */
