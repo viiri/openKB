@@ -37,6 +37,7 @@
 #define GR_TROOP	0x02	/* subId - troop index */
 #define GR_TILE		0x03	/* subId - tile index */
 #define GR_TILESET	0x04	/* subId - continent flavor */
+#define GR_TILEROW	0x0B	/* subId - row index (1 row = 36 tiles) */
 #define GR_VILLAIN	0x05	/* subId - villain index */
 
 #define GR_FACE 	0x07	/* subId - face index (villain index * 4) */

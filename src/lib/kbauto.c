@@ -914,6 +914,8 @@ void* GNU_Resolve(KBmodule *mod, int id, int sub_id) {
 		{
 			image_name = "select";
 			image_subid = "-0";
+			if (sub_id == 1) image_subid="-1";
+			if (sub_id == 2) image_subid="-2";
 			image_suffix = ".png";
 			is_transparent = 0;
 		}
@@ -936,6 +938,57 @@ void* GNU_Resolve(KBmodule *mod, int id, int sub_id) {
 			image_name = "comtiles";
 			image_suffix = ".png";
 			is_transparent = 0;
+		}
+		break;
+		case GR_TILEROW:	/* subId - row index */
+		{
+			/* A tile */
+			if (sub_id > 35) {
+				sub_id -= 36;
+				image_name = "tilesetb";
+			} else {
+				image_name = "tileseta";
+			}
+			image_suffix = ".png";
+			is_transparent = 0;
+		}
+		break;
+		case GR_TILESET:	/* subId - continent */
+		{
+#define SDL_ClonePalette(DST, SRC) SDL_SetPalette((DST), SDL_LOGPAL | SDL_PHYSPAL, (SRC)->format->palette->colors, 0, (SRC)->format->palette->ncolors)
+			/* This one must be assembled */
+			int i;
+			SDL_Rect dst = { 0, 0, 48, 34 };
+			SDL_Rect src = { 0, 0, 48, 34 };
+			SDL_Surface *ts = SDL_CreatePALSurface(8 * dst.w, 70/7 * dst.h);
+			SDL_Surface *row = NULL;
+			row = GNU_Resolve(mod, GR_TILEROW, 0);
+			if (row->format->palette)
+				SDL_ClonePalette(ts, row);
+			else {
+				KB_errlog("Warning - can't read palette in a 24-bpp file\n");
+			}			
+			for (i = 0; i < 72; i++) {
+				if (i == 36) {
+					SDL_FreeSurface(row);
+					row = GNU_Resolve(mod, GR_TILEROW, 36);
+					src.x = 0;
+					src.y = 0;
+				}
+				if (dst.x >= dst.w*8) {
+					dst.x = 0;
+					dst.y += dst.h;
+				}				
+				SDL_BlitSurface(row, &src, ts, &dst);
+				if (dst.w != src.w) {
+					KB_errlog("Missing pixels for tile %d -- need %d, have %d\n", i, src.w, dst.w);
+					dst.w = src.w;
+				}
+				dst.x += dst.w;
+				src.x += src.w;
+			}
+			SDL_FreeSurface(row);
+			return ts;
 		}
 		break;
 		default: break;

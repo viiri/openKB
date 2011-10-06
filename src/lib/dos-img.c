@@ -283,14 +283,14 @@ KB_File* KB_fopenIMG_in(const char * filename, const char * mode, KB_DIR *dirp)
 	/* Calculate area and byte length */
 	dword area = grp->cache.files[i].w * grp->cache.files[i].h;
 	f->len = (area) / (8 / grp->cache.bpp) + 4;
-
+#if 0
 KB_debuglog(0, "[imgdir]Craving for image <%d> [%s]\n", i, filename);
 KB_debuglog(0, "[imgdir] offset: %08x mask: %08x w: %d, h: %d	| len: %ld\n", 
 	grp->head.files[i].offset,
 	grp->head.files[i].mask_offset,
 	grp->cache.files[i].w,
 	grp->cache.files[i].h, f->len);
-
+#endif
 	return f;
 }
 
