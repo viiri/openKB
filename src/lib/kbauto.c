@@ -927,12 +927,25 @@ void* GNU_Resolve(KBmodule *mod, int id, int sub_id) {
 			is_transparent = 0;
 		}
 		break;
+		case GR_VILLAIN:
+		{
+			image_name = villain_names[sub_id];
+			image_suffix = ".png";
+			is_transparent = 0;
+		}
+		break;
 		case GR_TROOP:
 		{
 			image_name = troop_names[sub_id];
 			image_suffix = ".png";
 		}
 		break;
+		case GR_CURSOR:
+		{
+			image_name = "cursor";
+			image_suffix = ".png";
+		}
+		break;		
 		case GR_COMTILES:
 		{
 			image_name = "comtiles";
