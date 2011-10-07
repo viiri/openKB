@@ -1841,6 +1841,16 @@ void display_overworld(KBgame *game) {
 
 		if (key == 0xFF) done = 1;
 
+		if (key == ARROW_KEYS + 3) {
+			game->mount = KBMOUNT_FLY;
+		}
+
+		if (key == ARROW_KEYS + 4 && game->mount == KBMOUNT_FLY) {
+			if (game->map[0][game->y][game->x] == 0)
+				game->mount = KBMOUNT_RIDE;
+		}
+
+
 		if (key > 0 && key < ARROW_KEYS + 1 && !walk) {
 
 			int ox = move_offset_x[(key-1)/2];
@@ -1886,7 +1896,7 @@ void display_overworld(KBgame *game) {
 			if (game->mount == KBMOUNT_SAIL)
 				boat_flip = flip;
 
-			if (!IS_GRASS(m)) {
+			if (!IS_GRASS(m) && game->mount != KBMOUNT_FLY) {
 
 				if (game->boat_x == cursor_x
 				&& game->boat_y == cursor_y
@@ -2006,7 +2016,7 @@ void display_overworld(KBgame *game) {
 		if (walk) {
 			walk = 1;
 			byte m = game->map[0][cursor_y][cursor_x];
-			if (IS_INTERACTIVE(m)) {
+			if (IS_INTERACTIVE(m) && game->mount != KBMOUNT_FLY) {
 				switch (m) {
 					case 0x85:	visit_castle(game);	walk = 0; break;
 					case 0x8a:	visit_town(game); walk = 0; break;
