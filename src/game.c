@@ -82,6 +82,8 @@ typedef struct KBgamestate {
 
 #define SDLK_SYN 0x16
 
+#define SOFT_WAIT 150
+
 #define _NON { 0 }
 #define _TIME(INTERVAL) { INTERVAL, 0 }
 #define _AREA(X,Y,W,H) { X, Y, W, H }
@@ -99,6 +101,15 @@ KBgamestate debug_menu = {
 KBgamestate press_any_key = {
 	{
 		{	_AREA(0, 0, 1024, 768), 0xFF, 0, KFLAG_ANYKEY },
+		0,
+	},
+	0
+};
+
+KBgamestate press_any_key_interactive = {
+	{
+		{	_AREA(0, 0, 1024, 768), 0xFF, 0, KFLAG_ANYKEY },
+		{	_TIME(SOFT_WAIT), SDLK_SYN, 0, KFLAG_TIMER },
 		0,
 	},
 	0
@@ -199,8 +210,8 @@ void render_game(KBenv *env, KBgame *game, KBgamestate *state, KBconfig *conf) {
  * that has ->w and ->h members (thus the usage of macros).
  */
 #define RECT_Size(RECT, HOST) \
-		RECT->w = HOST->w, \
-		RECT->h = HOST->h
+		(RECT)->w = (HOST)->w, \
+		(RECT)->h = (HOST)->h
 
 #define RECT_Pos(RECT, HOST) \
 		RECT->x = HOST->x, \
@@ -216,6 +227,10 @@ void render_game(KBenv *env, KBgame *game, KBgamestate *state, KBconfig *conf) {
 
 #define RECT_Right(RECT, HOST) \
 		RECT->x = (HOST->w - RECT->w)
+
+#define RECT_Bottom(RECT, HOST) \
+		(RECT)->y = ((HOST)->h - (RECT)->h)
+
 
 /* In this one, ROWS and COLS of text are used */
 #define RECT_Text(RECT, ROWS, COLS) \
@@ -631,6 +646,8 @@ SDL_Rect* KB_BottomBox(const char *header, const char *str, int wait) {
 	KB_iprint(str);
 
 	SDL_Flip(screen);
+
+	if (wait) KB_Pause();
 
 	return &text;
 }
@@ -1287,14 +1304,351 @@ KBgamestate yes_no_question = {
 	0
 };
 
-void visit_castle(KBgame *game) {
+KBgamestate five_choices = {
+	{
+		{	{ 0 }, SDLK_a, 0, 0      	},
+		{	{ 0 }, SDLK_b, 0, 0      	},
+		{	{ 0 }, SDLK_c, 0, 0      	},
+		{	{ 0 }, SDLK_d, 0, 0      	},
+		{	{ 0 }, SDLK_e, 0, 0      	},
+
+		{	{ SOFT_WAIT }, SDLK_SYN, 0, KFLAG_TIMER },
+		0,
+	},
+	0
+};
+
+
+void draw_location(int loc_id, int troop_id, int frame) {
+	SDL_Surface *bg = SDL_LoadRESOURCE(GR_LOCATION, loc_id, 0);
+	SDL_Surface *troop = SDL_LoadRESOURCE(GR_TROOP, troop_id, 0);
+
+	SDL_Rect pos;
+	SDL_Rect tpos;
+	SDL_Rect troop_frame = { 0, 0, troop->w / 4, troop->h };
+
+	SDL_Rect *fs = &sys->font_size;
+
+	SDL_Rect *left_frame = RECT_LoadRESOURCE(RECT_UI, 1);
+	SDL_Rect *top_frame = RECT_LoadRESOURCE(RECT_UI, 0);
+	SDL_Rect *bar_frame  = RECT_LoadRESOURCE(RECT_UI, 4);
+
+	RECT_Size(&pos, bg); 
+	pos.x = left_frame->w;
+	pos.y = top_frame->h + bar_frame->h + fs->h + 2;
+
+	troop_frame.x = frame * troop_frame.w;
+
+	tpos.x = troop_frame.w * 1;
+	RECT_Size(&tpos, &troop_frame);
+	RECT_Bottom(&tpos, bg);
+	RECT_AddPos((&tpos), (&pos));
+
+	SDL_BlitSurface(bg, NULL, sys->screen, &pos);
+
+	SDL_BlitSurface(troop, &troop_frame, sys->screen, &tpos);
+
+	SDL_FreeSurface (bg);
+	free(left_frame);
+	free(top_frame);
+	free(bar_frame);
+}
+
+
+KBgamestate throne_room_or_barracks = {
+	{
+		{	{ 0 }, SDLK_a, 0, 0      	},
+		{	{ 0 }, SDLK_b, 0, 0      	},
+
+		{	{ SOFT_WAIT }, SDLK_SYN, 0, KFLAG_TIMER },
+		0,
+	},
+	0
+};
+
+void visit_home_castle(KBgame *game) {
+
+	int id = MAX_CASTLES;
+	//printf("Visiting castle %d at %d , %d , %d x %d <%p>\n", id, game->x, game->y, bg->w, bg->h, bg);
+
+	int home_troops[5];
+	int off = 0;
+
+	int i;
+	for (i = 0; i < MAX_TROOPS; i++) {
+		if (troops[i].dwells == DWELLING_CASTLE)
+			home_troops[off++] = i;
+	}
+
+	SDL_Rect *fs = &sys->font_size;
+
+	SDL_Rect *text = KB_BottomFrame();	
+
+	/* Status bar */
+	KB_iloc(0, 0);
+	KB_iprint("Press 'ESC' to exit");
+
+	/* Header (few pixels up) */	
+	KB_iloc(text->x, text->y - fs->h/4 - fs->h/8);
+	//KB_iprint(header);
+	KB_iprintf("Castle %s\n", castle_names[id]);
+
+	/* Message */
+	KB_iloc(text->x, text->y + fs->h/4);
+	KB_iprint("\n\n");	
+	//KB_iprint(str);
+
+	//KB_BottomBox("Castle %s", "A) Recruit Soldiers\nB) Audience with the King\nC) \nD)\nE)",0);
+
+
+	int random_troop = home_troops[ rand() % 5 ];
+
+	int done = 0;
+	int frame = 0;
+	while (!done) {
+
+		int key = KB_event(&throne_room_or_barracks);	
+	
+		if (key == 0xFF) done = 1;
+		if (key == 1) {
+			printf("Audience with king\n");
+		}
+		if (key == 2) {
+			printf("Recruit Soldiers\n");
+		}
+		if (key == 3) frame++;
+		if (frame > 3) frame = 0;
+
+		draw_location(0, random_troop, frame);
+
+		SDL_Flip(sys->screen);
+	}
+
+}
+
+void visit_own_castle(KBgame *game, int castle_id) {
+
+}
+
+int lay_siege(KBgame *game, int castle_id) {
+
+	int id = castle_id;
+
+	//printf("Visiting castle %d at %d , %d , %d x %d <%p>\n", id, game->x, game->y, bg->w, bg->h, bg);
+
+	SDL_Rect *fs = &sys->font_size;
+
+	SDL_Rect *text = KB_BottomFrame();	
+
+	/* Header (few pixels up) */	
+	KB_iloc(text->x, text->y - fs->h/4 - fs->h/8);
+	//KB_iprint(header);
+	KB_iprintf("Castle %s\n", castle_names[id]);
+
+	/* Message */
+	KB_iloc(text->x, text->y + fs->h/4);
+	KB_iprint("\n\n");
+	if (game->castle_owner[id] == 0x7F) {
+		KB_iprint("Various groups of monsters occupy this castle.");
+	} else {
+		char *name = KB_Resolve(STR_VNAME, game->castle_owner[id] & 0x1F);
+		KB_iprint(name);
+		KB_iprint(" and\narmy occupy this castle.");
+		KB_iprint("\n\n\n");
+	}
+		KB_iloc(text->x, text->y + fs->h * 6);
+	KB_iprint("            Lay Siege (y/n)?");	
+	
+	//KB_BottomBox("Castle %s", "A) Recruit Soldiers\nB) Audience with the King\nC) \nD)\nE)",0);
+
 	SDL_Flip(sys->screen);
-	KB_Pause();
+
+	int done = 0;
+	while (!done) {
+		int key = KB_event(&yes_no_question);	
+		if (key) done = key;
+	}
+
+	return done - 1;
+}
+
+
+void visit_castle(KBgame *game) {
+
+	enum {
+		not_found,
+		home,
+		your,
+		enemy,
+	} ctype = not_found;
+
+	int id = 0;
+	int i, j;
+
+	if (HOME_CONTINENT == game->continent
+	&&	HOME_X == game->x && HOME_Y == game->y) {
+		id = MAX_CASTLES;
+		ctype = home;
+	}
+	else
+	for (i = 0; i < MAX_CASTLES; i++) {
+		if (castle_coords[i][0] == game->continent
+		&&	castle_coords[i][1] == game->x
+		&&	castle_coords[i][2] == game->y) {
+			id = i;
+			ctype = (game->castle_owner[id] == 0xFF ? your : enemy);
+		}
+	}
+
+	if (ctype == not_found) {
+		KB_errlog("Can't find castle at continent %d - X=%d Y=%d\n",game->continent,game->x,game->y);
+		return; 
+	}
+	if (ctype == home) {
+		visit_home_castle(game);
+	}
+	if (ctype == your) {
+		visit_own_castle(game, id);
+	}
+	if (ctype == enemy) {
+		lay_siege(game, id);
+	}
+
+	if (game->castle_owner[id] == 0xFF) {
+		printf("Castle owned by you\n");
+	} else if (game->castle_owner[id] == 0x7F) {
+		printf("Castle owned by monsters\n");	
+	} else {
+		char *sign = KB_Resolve(STR_VNAME, game->castle_owner[id] & 0x1F);
+		printf("Got: %s\n", sign);
+		printf("Castle owned by [%08x]\n", game->castle_owner[id] );
+	}
+
+
+}
+
+void gather_information(KBgame *game, int id) {
+
+	char buf[1024];
+
+	SDL_Rect *fs = &sys->font_size;
+	SDL_Rect *text = KB_BottomFrame();	
+
+	/* Header (few pixels up) */	
+	KB_iloc(text->x, text->y - fs->h/4 - fs->h/8);
+	if (game->castle_owner[id] == 0x7F) {
+		KB_iprintf("Castle %s is \n");
+	} else {
+		char *name = KB_Resolve(STR_VNAME, game->castle_owner[id] & 0x1F);
+		KB_iprintf("Castle %s is under\n%s's rule.\n", castle_names[id], name);
+	}
+
+	/* Army */
+	KB_iloc(text->x, text->y + fs->h * 2);
+	int i;
+	for (i = 0; i < 5; i++) {
+		if (game->castle_numbers[id][i] == 0) break;
+		KB_iprintf("  %s %s\n", number_name(game->castle_numbers[id][i]), troops[ game->castle_troops[id][i] ].name);
+	}
+
+	SDL_Flip(sys->screen);
 }
 
 void visit_town(KBgame *game) {
-	SDL_Flip(sys->screen);	
-	KB_Pause();
+
+	int id = 0;
+	int i;
+
+	for (i = 0; i < MAX_TOWNS; i++) {
+		if (town_coords[i][0] == game->continent
+		&&	town_coords[i][1] == game->x
+		&&	town_coords[i][2] == game->y) {
+			id = i;
+		}
+	}
+
+
+	SDL_Rect *fs = &sys->font_size;
+
+	SDL_Rect *text = KB_BottomFrame();	
+
+	int random_troop = rand() % MAX_TROOPS;
+
+	/* Status bar */
+	KB_iloc(0, 0);
+	KB_iprint("Press 'ESC' to exit");
+
+	int done = 0;
+	int frame = 0;
+	int redraw = 1;
+	int redraw_menu = 1;
+	int msg_hold = 0;
+	while (!done) {
+
+		int key = KB_event( msg_hold ? &press_any_key_interactive : &five_choices);
+
+		if (redraw_menu) {
+		
+			/** Draw menu **/
+			/* Header (few pixels up) */	
+			KB_iloc(text->x, text->y - fs->h/4 - fs->h/8);
+			//KB_iprint(header);
+			KB_iprintf("Town of %s\n", town_names[id]);
+			KB_iprintf("                    GP=%dK\n", 8000 / 1000);
+		
+			/* Message */
+			//KB_iloc(text->x, text->y + fs->h/4);
+			//KB_iprint("\n\n");	
+			KB_iprint("A) Get New Contract\n");
+			KB_iprint("B) Cancel boat rental\n");
+			KB_iprint("C) Gather information\n");
+			KB_iprintf("D) %s spell (%d)\n", spell_names[ game->town_spell[id] ], spell_costs[ game->town_spell[id] ]);
+			KB_iprint("E) Buy seige weapons (3000)\n");
+			//KB_iprint(str);
+			
+			redraw_menu = 0;
+
+		}
+
+		if (redraw) {
+
+			/** Draw pretty picture (Background + Animated Troop) **/
+			draw_location(1, random_troop, frame);
+		
+			//KB_BottomBox("Castle %s", "A) Recruit Soldiers\nB) Audience with the King\nC) \nD)\nE)",0);
+	
+			SDL_Flip(sys->screen);
+			
+			redraw = 0;		
+		}
+		
+		if (msg_hold) {
+			
+			if (key == 2) key = 6;
+			else if (key) {
+				msg_hold = 0;
+				redraw_menu = 1;
+				redraw = 1;
+			}
+		
+		} else {
+		
+			if (key == 0xFF) done = 1;
+			if (key == 1) {
+				printf("Choice: %d\n", key);
+			}
+			if (key == 3) {
+				gather_information(game, id);
+				msg_hold = 1;
+			}
+			
+		}
+
+		if (key == 6) { frame++; redraw = 1; }
+		if (frame > 3) frame = 0;
+
+	}
+
 }
 
 void visit_dwelling(KBgame *game) {
@@ -1338,8 +1692,10 @@ void take_artifact(KBgame *game) {
 }
 
 int attack_follower(KBgame *game) {
-	KB_iloc(0, 0);
-	KB_iprintf("Attack ? y / n\n", game->x, game->y);
+
+	KB_BottomBox("Danger", "Attack? y/n", 0);
+	//KB_iloc(0, 0);
+	//KB_iprintf("Attack ? y / n\n", game->x, game->y);
 
 	SDL_Flip(sys->screen);
 
@@ -1350,7 +1706,6 @@ int attack_follower(KBgame *game) {
 }
 
 
-#define SOFT_WAIT 150
 #define ARROW_KEYS 18
 #define ACTION_KEYS 14
 

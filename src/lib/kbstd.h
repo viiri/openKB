@@ -49,7 +49,12 @@ extern void KB_errlog(char *fmt, ...);
 extern void  KB_debuglog(int mod, char *fmt, ...); 
 
 /*
- * Match a name in an asciz-array, return word_index+1 on success, 0 on failure
+ * Return Nth word in an asciiz-list
+ */
+const char* KB_strlist_ind(const char *list, int id);
+
+/*
+ * Match a string in an asciiz-list, return word_index+1 on success, 0 on failure
  */
 extern int KB_strlistcmp(const char *list, const char *needle);
 

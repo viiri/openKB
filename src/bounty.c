@@ -217,7 +217,7 @@ char *town_names[MAX_TOWNS] = {
 	"Zaezoizu",     	//19 (19)
 };
 
-char *castle_names[MAX_CASTLES] = {
+char *castle_names[MAX_CASTLES + 1] = {
 	"Azram",    	//00
 	"Basefit",  	//01
 	"Cancomar", 	//02
@@ -244,14 +244,15 @@ char *castle_names[MAX_CASTLES] = {
 	"Xelox",    	//17
 	"Yeneverre",	//18
 	"Zyzzarzaz",	//19
+	"of King Maximus",
 };
 
 char *spell_names[MAX_SPELLS] = {
 	"Clone",    	//00
 	"Teleport", 	//01
-	"Fireball",	//02
+	"Fireball", 	//02
 	"Lightning",	//03
-	"Freeze",	//04
+	"Freeze",   	//04
 	"Resurrect",	//05
 	"Turn Undead",	//06
 
@@ -263,6 +264,25 @@ char *spell_names[MAX_SPELLS] = {
 	"Instant Army",	//0C
 	"Raise Control",//0D
 };
+
+word spell_costs[MAX_SPELLS] = {
+	1,    	//00
+	2, 	//01
+	3, 	//02
+	4,	//03
+	5,   	//04
+	6,	//05
+	7,	//06
+
+	100,   	//07
+	9,	//08
+	10,	//09
+	11,	//0A
+	12,	//0B
+	13,	//0C
+	14,//0D
+};
+
 
 char *number_names[6] = {
 	"A multitude of",	/* 0	(500+) */
@@ -293,3 +313,63 @@ char *continent_names[4] = {
 	"Archipelia",
 	"Saharia",
 };
+
+/* continent, X, Y */
+byte castle_coords[MAX_CASTLES][3] = {
+	{ 0, 30,27 },
+	{ 1, 47,6 },
+	{ 0, 36,49 },
+	{ 1, 30,18 },
+	{ 2, 11,46 },
+	{ 0, 22,49 },
+	{ 2, 41,36 },
+	{ 2, 43,27 },
+	{ 0, 11,30 },
+	{ 1, 41,34 },
+	{ 0, 57,58 },
+	{ 2, 52,57 },
+	{ 1, 25,39 },
+	{ 0, 22,24 },
+	{ 0, 6,57 },
+	{ 0, 58,23 },
+	{ 1, 42,56 },
+	{ 0, 54,6 },
+	{ 3, 17,39 },
+	{ 2, 9,18 },
+	{ 3, 41,12 },
+	{ 0, 40,5 },
+	{ 0, 40,41 },
+	{ 2, 45,6  },
+	{ 1, 19,19 },
+	{ 3, 46,43 },
+};
+
+byte town_coords[MAX_CASTLES][3] = {
+	{ 0, 29,12  },
+	{ 1, 58,4   },
+	{ 0, 38,50  },
+	{ 1, 34,23  },
+	{ 2, 5,50   },
+	{ 0, 17,44  },
+	{ 2, 13,60  },
+	{ 2, 9,39   },
+	{ 0, 14,27  },
+	{ 1, 58,33  },
+	{ 0, 51,28  },
+	{ 2, 57,57  },
+	{ 1, 3,37   },
+	{ 0, 17,21  },
+	{ 0, 41,58  },
+	{ 0, 50,13  },
+	{ 1, 58,60  },
+	{ 0, 57,5   },
+	{ 3, 9,60   },
+	{ 2, 13,7   },
+	{ 3, 7,3    },
+	{ 0, 12,3   },
+	{ 0, 46,35  },
+	{ 2, 49,8   },
+	{ 1, 3,8    },
+	{ 3, 58,48  },
+};
+
