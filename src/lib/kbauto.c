@@ -794,7 +794,7 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 		break;
 		case STR_VNAME:
 		{
-			return KB_strlist_ind(DOS_Resolve(mod, STRL_VNAMES, 0), id);
+			return KB_strlist_ind(DOS_Resolve(mod, STRL_VNAMES, 0), sub_id);
 		}
 		break;
 		case STRL_VNAMES:

@@ -80,6 +80,7 @@ const char* KB_strlist_ind(const char *list, int id)
 			if (w == id) break;
 			w++;
 			list++;
+			match = NULL;
 			if (*list == '\0') break;
 			match = list;
 			continue;
