@@ -705,6 +705,10 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 			suffix = bpp_names[mod->bpp];
 			ident = "#0";
 			if (sub_id == 1) middle_name = "town";
+			if (sub_id == 2) middle_name = "plai";
+			if (sub_id == 3) middle_name = "frst";
+			if (sub_id == 4) middle_name = "cave";
+			if (sub_id == 5) middle_name = "dngn";
 		}
 		break;		
 		case COL_TEXT:

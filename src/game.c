@@ -200,8 +200,21 @@ void render_game(KBenv *env, KBgame *game, KBgamestate *state, KBconfig *conf) {
 #define KB_icolor(ARGS...) KB_setcolor(sys, ## ARGS)
 #define KB_iloc(ARGS...) KB_loc(sys, ## ARGS)
 #define KB_icurs(ARGS...) KB_curs(sys, ## ARGS)
+#define KB_ilh(ARGS...) KB_lh(sys, ## ARGS)
 #define KB_iprint(ARGS...) KB_print(sys, ## ARGS)
 #define KB_iprintf(ARGS...) KB_printf(sys, ## ARGS)
+
+void KB_imenu(KBgamestate *state, int id, int cols) {
+
+	word x, y;
+
+	KB_getpos(sys, &x, &y);
+
+	state->spots[id].coords.x = x;
+	state->spots[id].coords.y = y;
+	state->spots[id].coords.w = sys->font_size.w * cols;
+	state->spots[id].coords.h = sys->font_size.h;
+}
 
 /*
  * "inline" functions to adjust SDL_Rect around HOST.
@@ -247,7 +260,7 @@ inline void SDL_CenterRect(SDL_Rect *rect, SDL_Surface *img, SDL_Surface *host)
 
 inline void SDL_CenterRectTxt(SDL_Rect *rect, int rows, int cols, SDL_Surface *host)
 {
-	SDL_Rect *size = KB_fontsize(sys);
+	SDL_Rect *size = &sys->font_size;
 	rect->w = cols * size->w;
 	rect->h = rows * size->h;
 	RECT_Center(rect, host); 
@@ -411,7 +424,7 @@ void SDL_TextRect(SDL_Surface *dest, SDL_Rect *r, Uint32 fore, Uint32 back) {
 
 	int i, j;
 
-	SDL_Rect *fs = KB_fontsize(sys);
+	SDL_Rect *fs = &sys->font_size;
 
 	/* Choose colors, Fill Rect */
 	SDL_FillRect(dest, r, back);	
@@ -433,8 +446,9 @@ void SDL_TextRect(SDL_Surface *dest, SDL_Rect *r, Uint32 fore, Uint32 back) {
 	inprint(dest, "\x12", r->x, r->y + r->h - fs->h);/* Bottom-left */
 	inprint(dest, "\x13", i, r->y + r->h - fs->h);/* Bottom-right */
 }
+
 /* Enter name */
-char *enter_name(int x, int y) {
+char *text_input(int max_len, int numbers_only, int x, int y) {
 	static char entered_name[11];
 
 	SDL_Surface *screen = sys->screen;
@@ -444,7 +458,7 @@ char *enter_name(int x, int y) {
 	int redraw = 1;
 
 	SDL_Rect menu;
-	SDL_Rect *fs = KB_fontsize(sys);
+	SDL_Rect *fs = &sys->font_size;
 
 	entered_name[0] = '\0';
 	int curs = 0;
@@ -456,7 +470,7 @@ char *enter_name(int x, int y) {
 
 		key = KB_event(&enter_string);
 
-		if (key == 0xFF) { curs = 0; done = 1; }
+		if (key == 0xFF) { curs = 0; done = -1; }
 
 		if (key == SDLK_RETURN) {
 			done = 1;
@@ -477,8 +491,12 @@ char *enter_name(int x, int y) {
 			redraw = 1;
 		} else
 		if (key) {
-			if (key < 128 && isascii(key)) {
-				if (curs < 10) {
+			if (key < 128 && isascii(key) && 
+				 ( !numbers_only ||
+				   ( isdigit(key) ) 
+				 )
+			   ) {
+				if (curs < max_len) {
 					entered_name[curs] = (char)key;
 					curs++;
 					entered_name[curs] = '\0';
@@ -489,9 +507,10 @@ char *enter_name(int x, int y) {
 
 		if (redraw) {
 
-			inprint(screen, entered_name, x, y);
-			char buf[2]; sprintf(buf, "%c", twirl[twirl_pos]); 
-			inprint(screen, buf, x + curs * fs->w, y);
+			KB_iloc(x, y);
+			KB_iprintf("%s", entered_name);
+			KB_iloc(x + curs * fs->w, y);
+			KB_iprintf("%c", twirl[twirl_pos]);
 
 	    	SDL_Flip( screen );
 
@@ -502,7 +521,7 @@ char *enter_name(int x, int y) {
 	inprint(screen, " ", x + curs * 8, y);
 	entered_name[curs] = '\0';
 
-	return &entered_name;	
+	return (done == -1 ? NULL : &entered_name[0]);	
 }
 
 /* Wait for a keypress */
@@ -526,7 +545,7 @@ SDL_Rect* KB_MessageBox(const char *str, int wait) {
 	Uint32 fg = sys->fg_color;
 	Uint32 ui = sys->ui_color;
 
-	SDL_Rect *fs = KB_fontsize(sys);
+	SDL_Rect *fs = &sys->font_size;
 
 	int i, max_w = 28;
 
@@ -638,18 +657,18 @@ SDL_Rect* KB_BottomBox(const char *header, const char *str, int wait) {
 
 	/* Header (few pixels up) */	
 	KB_iloc(text->x, text->y - fs->h/4 - fs->h/8);
-	KB_iprint(header);
+	if (header) KB_iprint(header);
 
 	/* Message */
 	KB_iloc(text->x, text->y + fs->h/4);
-	KB_iprint("\n\n");	
+	if (header) KB_iprint("\n\n");	
 	KB_iprint(str);
 
 	SDL_Flip(screen);
 
 	if (wait) KB_Pause();
 
-	return &text;
+	return text;
 }
 
 
@@ -686,7 +705,7 @@ KBgame *create_game(int pclass) {
 	int cols = 30;//w
 	int rows = 12;//h
 
-	SDL_Rect *fs = KB_fontsize(sys);
+	SDL_Rect *fs = &sys->font_size;
 
 	SDL_CenterRectTxt(&menu, rows, cols, screen);
 
@@ -751,8 +770,8 @@ KBgame *create_game(int pclass) {
 		}
 
 		if (!has_name) {
-			name = enter_name(menu.x + fs->w * 18, menu.y + fs->h);
-			if (name[0] == '\0') done = 1;
+			name = text_input(10, 0, menu.x + fs->w * 18, menu.y + fs->h);
+			if (name == NULL || name[0] == '\0') done = 1;
 			else has_name = 1;
 			redraw = 1;
 		}
@@ -784,8 +803,8 @@ KBgame *load_game() {
 	byte pclass[10];
 	int num_files = 0;
 
-	SDL_Rect *fs = KB_fontsize(sys);
-	
+	SDL_Rect *fs = &sys->font_size;
+
 	SDL_Rect *top_frame = RECT_LoadRESOURCE(RECT_UI, 0);
 	SDL_Rect *left_frame = RECT_LoadRESOURCE(RECT_UI, 1);
 
@@ -797,7 +816,7 @@ KBgame *load_game() {
 		char base[255];
 		char ext[255];
 		
-		name_split(e->d_name, &base, &ext);
+		name_split(e->d_name, base, ext);
 
 		if (strcasecmp("DAT", ext)) continue;
 		strcpy(filename[num_files], base);
@@ -903,8 +922,9 @@ KBgame *load_game() {
 
 void show_credits() {
 
+	SDL_Rect *fs = &sys->font_size;
+
 	SDL_Surface *userpic = SDL_LoadRESOURCE(GR_SELECT, 2, 0);
-	SDL_Rect *fs = KB_fontsize(sys);
 
 	SDL_Rect *max;
 
@@ -1295,6 +1315,62 @@ void KB_BlitMap(SDL_Surface *dest, SDL_Surface *tileset, SDL_Rect *viewport) {
 
 }
 
+/* Calculate and return army leadership */
+static int army_leadership(KBgame *game, byte troop_id) {
+	int free_leadership = game->leadership;
+
+	int i;
+	for (i = 0; i < 5; i++) {
+
+		if (game->player_troops[i] == troop_id) {
+
+			free_leadership -= troops[ game->player_troops[i] ].hit_points * game->player_numbers[i];
+			break;	
+		}
+
+	}
+
+	return free_leadership;
+}
+
+int buy_troop(KBgame *game, byte troop_id, word number) {
+
+	int slot = -1;
+	
+	int i;
+
+	int cost = troops[troop_id].recruit_cost * number;
+	
+	if (cost > game->gold) {
+		KB_BottomBox("\n\n\nYou don't have enough gold!", "", 1);
+		return 1;
+	}
+	
+	for (i = 0; i < 5; i++) {
+	
+		if (game->player_troops[i] == troop_id) {
+			slot = i;
+			break;
+		}
+		if (game->player_numbers[i] == 0) {
+			slot = i;
+			break;
+		} 
+	}
+
+	if (slot == -1) {
+		KB_BottomBox("", "No troop slots left!", 1);
+		return;
+	}
+
+	game->player_troops[slot] = troop_id;
+	game->player_numbers[slot] += number;
+
+	game->gold -= troops[troop_id].recruit_cost * number;
+
+	return 0;
+}
+
 KBgamestate yes_no_question = {
 	{
 		{	{ 0 }, SDLK_y, 0, 0      	},
@@ -1343,6 +1419,7 @@ void draw_location(int loc_id, int troop_id, int frame) {
 	RECT_Size(&tpos, &troop_frame);
 	RECT_Bottom(&tpos, bg);
 	RECT_AddPos((&tpos), (&pos));
+	tpos.y -= sys->zoom;
 
 	SDL_BlitSurface(bg, NULL, sys->screen, &pos);
 
@@ -1357,14 +1434,158 @@ void draw_location(int loc_id, int troop_id, int frame) {
 
 KBgamestate throne_room_or_barracks = {
 	{
-		{	{ 0 }, SDLK_a, 0, 0      	},
-		{	{ 0 }, SDLK_b, 0, 0      	},
+		{	{ 0, 0, 0, 0 }, SDLK_a, 0, 0      	},
+		{	{ 0, 0, 0, 0 }, SDLK_b, 0, 0      	},
 
 		{	{ SOFT_WAIT }, SDLK_SYN, 0, KFLAG_TIMER },
 		0,
 	},
 	0
 };
+
+void audience_with_king(KBgame *game) {
+
+	char message[128];
+
+	int captured = 0;
+	int needed = 0;
+	
+	int i;
+	
+	for (i = 0; i < MAX_VILLAINS; i++)
+		if (game->villain_caught[i]) captured++;
+
+	needed = classes[game->class][game->rank + 1].villains_needed - captured;
+
+	KB_BottomBox(NULL, "Trumpets announce your\narrival with regal fanfare.\n\n"
+		"King Maximus rises from his\n"
+		"throne to greet you and\n"
+		"proclaims:           (space)", 1);
+
+	sprintf(message, "\n\n"
+		"My dear %s,\n\n"
+		"I can aid you better after\n"
+		"you've captured %d more\n"
+		"villains.",
+	game->name, needed);
+
+	KB_BottomBox(message, "", 1);
+
+}
+
+void recruit_soldiers(KBgame *game) {
+
+	int home_troops[5];
+	int off = 0;
+
+	int i;
+	for (i = 0; i < MAX_TROOPS; i++) {
+		if (troops[i].dwells == DWELLING_CASTLE)
+			home_troops[off++] = i;
+	}
+
+	int max = 9999;
+
+	const char *twirl = "\x1D" "\x05" "\x1F" "\x1C" ; /* stands for: | / - \ */
+	byte twirl_pos = 0;
+
+	byte whom = 0;
+
+	SDL_Rect *fs = &sys->font_size;
+
+	SDL_Rect *text = KB_BottomFrame();
+
+	/* Status bar */
+	KB_iloc(0, 0);
+	KB_iprint("Press 'ESC' to exit");
+
+	int done = 0;
+	int redraw = 1;
+	while (!done) {
+
+		if (redraw) {
+			text = KB_BottomFrame();
+		
+			/** Left side **/
+			/* Header (few pixels up) */
+			KB_iloc(text->x, text->y - fs->h/4);
+			KB_iprint("Recruit Soldiers\n");
+
+			/* Message */
+			KB_iloc(text->x, text->y + fs->h/4);
+			KB_ilh(fs->h + fs->h/8);
+			KB_iprint("\n");
+			for (i = 0; i < 5; i++) {
+				KB_imenu(&five_choices, i, 13);
+				KB_iprintf("%c) %-11s", 'A' + i, troops[home_troops[i]].name);
+				KB_iprintf("%d\n", troops[home_troops[i]].recruit_cost);
+			}	
+
+			/** Right side **/
+			/* Header (few pixels up) */
+			KB_iloc(text->x + fs->w * 20, text->y - fs->h/4);
+			KB_iprintf("GP=%dK\n", game->gold / 1000);
+
+			/* Message */
+			KB_iloc(text->x + fs->w * 20, text->y + fs->h/4);
+			KB_ilh(fs->h + fs->h/8);
+			KB_iprint("\n");
+			KB_iprint("\n");
+			KB_iprint("(A-C) ");
+			if (whom == 0) {
+				KB_iprintf("%c\n", twirl[twirl_pos]);
+				KB_iprint("        \n        \n        ");
+			} else {
+				KB_iprintf("%c\n", 'A' + whom - 1);
+				KB_iprintf("Max=%d\n", max);
+				KB_iprint("How Many\n");
+				KB_iprint("        ");
+			}
+
+			SDL_Flip(sys->screen);
+			redraw = 0;
+		}
+
+		if (!whom) {
+
+			int key = KB_event(&five_choices);
+
+			if (key == 0xFF) { done = 1; }
+
+			if (key && key < 6) {
+
+				whom = key;
+				redraw = 1;
+
+				/* Calculate "MAX YOU CAN HANDLE" number based on leadership (and troop hp?) */
+				max = army_leadership(game, home_troops[whom-1]) / troops [ home_troops[whom-1] ].hit_points;
+			}
+			if (key == 6) {
+				twirl_pos++;
+				if (twirl_pos > 3) twirl_pos = 0;
+				redraw = 1;
+			}
+
+		} else {
+			char *enter = text_input(6, 1, text->x + fs->w * 20, text->y + fs->h/4 + (fs->h + fs->h/8) * 5);
+
+			if (enter == NULL) { whom = 0; }
+			else {
+				int number = atoi(enter);
+				if (number > max) number = max;
+
+				/* BUY troop */
+				buy_troop(game, home_troops[whom-1], number);
+
+				/* Calculate new "MAX YOU CAN HANDLE" number based on leadership (and troop hp?) */
+				max = army_leadership(game, home_troops[whom-1]) / troops [ home_troops[whom-1] ].hit_points;
+			}
+
+			redraw = 1;
+		}
+
+	}
+}
 
 void visit_home_castle(KBgame *game) {
 
@@ -1382,48 +1603,61 @@ void visit_home_castle(KBgame *game) {
 
 	SDL_Rect *fs = &sys->font_size;
 
-	SDL_Rect *text = KB_BottomFrame();	
-
 	/* Status bar */
 	KB_iloc(0, 0);
 	KB_iprint("Press 'ESC' to exit");
-
-	/* Header (few pixels up) */	
-	KB_iloc(text->x, text->y - fs->h/4 - fs->h/8);
-	//KB_iprint(header);
-	KB_iprintf("Castle %s\n", castle_names[id]);
-
-	/* Message */
-	KB_iloc(text->x, text->y + fs->h/4);
-	KB_iprint("\n\n");	
-	//KB_iprint(str);
-
-	//KB_BottomBox("Castle %s", "A) Recruit Soldiers\nB) Audience with the King\nC) \nD)\nE)",0);
-
 
 	int random_troop = home_troops[ rand() % 5 ];
 
 	int done = 0;
 	int frame = 0;
+	int redraw = 1;
+	int redraw_menu = 1;
 	while (!done) {
 
-		int key = KB_event(&throne_room_or_barracks);	
+		int key = KB_event(&throne_room_or_barracks);
 	
 		if (key == 0xFF) done = 1;
 		if (key == 1) {
-			printf("Audience with king\n");
+			recruit_soldiers(game);
+			redraw_menu = 1;
 		}
 		if (key == 2) {
-			printf("Recruit Soldiers\n");
+			audience_with_king(game);
+			redraw_menu = 1;
 		}
-		if (key == 3) frame++;
+		if (key == 3) { frame++; redraw = 1; }
 		if (frame > 3) frame = 0;
 
-		draw_location(0, random_troop, frame);
+		if (redraw || redraw_menu) {
 
-		SDL_Flip(sys->screen);
+			if (redraw_menu) {
+				SDL_Rect *text = KB_BottomFrame();
+
+				/* Header (few pixels up) */	
+				KB_iloc(text->x, text->y - fs->h/4);
+				KB_iprintf("Castle %s\n", castle_names[id]);
+
+				/* Menu */
+				KB_iloc(text->x, text->y );
+				KB_ilh(fs->h + fs->h/8);
+				KB_iprint("\n\n");
+				KB_imenu(&throne_room_or_barracks, 0, 25);
+				KB_iprint("A) Recruit Soldiers      \n");
+				KB_imenu(&throne_room_or_barracks, 1, 25);
+				KB_iprint("B) Audience with the King\n");
+			}
+
+			if (redraw) {
+				/* Background */
+				draw_location(0, random_troop, frame);
+			}
+
+			SDL_Flip(sys->screen);
+			redraw = 0;
+			redraw_menu = 0;
+		}
 	}
-
 }
 
 void visit_own_castle(KBgame *game, int castle_id) {
@@ -1449,7 +1683,7 @@ int lay_siege(KBgame *game, int castle_id) {
 	KB_iloc(text->x, text->y + fs->h/4);
 	KB_iprint("\n\n");
 	if (game->castle_owner[id] == 0x7F) {
-		KB_iprint("Various groups of monsters occupy this castle.");
+		KB_iprint("Various groups of monsters\noccupy this castle.");
 	} else {
 		char *name = KB_Resolve(STR_VNAME, game->castle_owner[id] & 0x1F);
 		KB_iprint(name);
@@ -1594,7 +1828,7 @@ void visit_town(KBgame *game) {
 			KB_iloc(text->x, text->y - fs->h/4 - fs->h/8);
 			//KB_iprint(header);
 			KB_iprintf("Town of %s\n", town_names[id]);
-			KB_iprintf("                    GP=%dK\n", 8000 / 1000);
+			KB_iprintf("                    GP=%dK\n", game->gold / 1000);
 		
 			/* Message */
 			//KB_iloc(text->x, text->y + fs->h/4);
@@ -1651,9 +1885,108 @@ void visit_town(KBgame *game) {
 
 }
 
-void visit_dwelling(KBgame *game) {
-	SDL_Flip(sys->screen);
-	KB_Pause();
+void visit_dwelling(KBgame *game, byte rtype) {
+
+	enum {
+		not_found,
+		regular,
+		teleport,
+		alcove,
+	} dtype = not_found;
+
+	int id;
+	int i;
+
+	if (ALCOVE_CONTINENT == game->continent
+	&&	ALCOVE_X == game->x && ALCOVE_Y == game->y) {
+		id = MAX_DWELLINGS + 2;
+		dtype = alcove;
+	}
+	else if (game->teleport_coords[game->continent][0] == game->x
+		&&	 game->teleport_coords[game->continent][1] == game->y) {
+		id = MAX_DWELLINGS + 1;
+		dtype = teleport;
+	}
+	else
+	for (i = 0; i < MAX_DWELLINGS; i++) {
+		if (
+		  	game->dwelling_coords[i][0] == game->x
+		&&	game->dwelling_coords[i][1] == game->y) {
+			id = i;
+			dtype = regular;
+		}
+	}
+
+	int max = 9999;
+
+	const char *twirl = "\x1D" "\x05" "\x1F" "\x1C" ; /* stands for: | / - \ */
+	byte twirl_pos = 0;
+
+	byte troop_id = game->dwelling_troop[id];
+
+	SDL_Rect *fs = &sys->font_size;
+
+	SDL_Rect *text = KB_BottomFrame();
+
+	/* Status bar */
+	KB_iloc(0, 0);
+	KB_iprint("Press 'ESC' to exit");
+
+
+	/* Calculate "MAX YOU CAN HANDLE" number based on leadership (and troop hp?) */
+	max = army_leadership(game, troop_id) / troops [ troop_id ].hit_points;
+
+	int done = 0;
+	int redraw = 1;
+	while (!done) {
+
+		char *enter;
+
+		if (redraw) {
+			/** Background **/
+			draw_location(2 + rtype, troop_id, 0);
+
+			/** Menu **/
+			text = KB_BottomFrame();
+
+			/* Header (few pixels up) */
+			KB_iloc(text->x, text->y - fs->h/4);
+			KB_iprintf("           %s\n", dwelling_names[rtype]);
+			KB_iprint("           ");
+			for (i = strlen(dwelling_names[rtype]); i > 0 ; i--) 
+				KB_iprint("-");
+
+			/* Message */
+			KB_iloc(text->x, text->y - fs->h/4);
+			KB_iprint("\n\n\n");
+			KB_iprintf("%d Skeletons are available\n", game->dwelling_population[id]);
+			KB_iprintf("Cost=% 3d each.      GP=%dK\n", troops[ troop_id ].recruit_cost, game->gold / 1000);
+			KB_iprintf("You may recruit up to %d\n", max);
+			KB_iprint ("Recruit how many        ");
+
+			SDL_Flip(sys->screen);
+			redraw = 0;
+		}
+
+		enter = text_input(6, 1, text->x + fs->w * 17, text->y - fs->h/4 + (fs->h) * 6);
+
+		if (enter == NULL) { done = 1; }
+		else {
+			int number = atoi(enter);
+			if (number > max) continue;
+			if (number > game->dwelling_population[id]) continue;
+
+			/* BUY troop */
+			if (!buy_troop(game, troop_id, number))
+				/* Reduce dwelling population */
+				game->dwelling_population[id] -= number;
+
+			/* Calculate new "MAX YOU CAN HANDLE" number based on leadership (and troop hp?) */
+			max = army_leadership(game, troop_id) / troops [ troop_id ].hit_points;
+		}
+
+		redraw = 1;
+	}
 }
 
 void read_signpost(KBgame *game) {
@@ -1687,7 +2020,7 @@ void take_chest(KBgame *game) {
 	game->map[0][game->y][game->x] = 0;
 }
 
-void take_artifact(KBgame *game) {
+void take_artifact(KBgame *game, byte id) {
 
 }
 
@@ -1794,7 +2127,7 @@ void display_overworld(KBgame *game) {
 	SDL_Rect *bottom_frame  = RECT_LoadRESOURCE(RECT_UI, 3);	
 	SDL_Rect *bar_frame  = RECT_LoadRESOURCE(RECT_UI, 4);
 
-	SDL_Rect *fs = KB_fontsize(sys);
+	SDL_Rect *fs = &sys->font_size;
 	Uint32 *colors = KB_Resolve(COL_TEXT, 0);	
 
 	SDL_Rect status_rect =  { left_frame->w, top_frame->h, screen->w - left_frame->w - right_frame->w, fs->h + 2 };
@@ -2024,11 +2357,11 @@ void display_overworld(KBgame *game) {
 					case 0x8c:
 					case 0x8d:
 					case 0x8e:
-					case 0x8f:	visit_dwelling(m - 0x8c); walk = 0; break;
+					case 0x8f:	visit_dwelling(game, m - 0x8c); walk = 0; break;
 					case 0x90:	read_signpost(game);		break;
 					case 0x91:	walk = !attack_follower(game);	break;
 					case 0x92:
-					case 0x93:	take_artifact(m - 0x92);	break;
+					case 0x93:	take_artifact(game, m - 0x92);	break;
 					default:
 						KB_errlog("Unknown interactive tile %02x at location %d, %d\n", m, cursor_x, cursor_y);
 					break;
