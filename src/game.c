@@ -1315,22 +1315,58 @@ void KB_BlitMap(SDL_Surface *dest, SDL_Surface *tileset, SDL_Rect *viewport) {
 
 }
 
+/* Close contract on villain */
+static void fullfill_contract(KBgame *game, byte villain_id) {
+	int i;
+	int slot = -1;
+
+	/** Fullfill contract **/
+	game->villain_caught[villain_id] = 1;
+	game->contract = 0xFF;
+
+	/** Cycle contracts available in towns **/
+	/* Find slot */
+	for (i = 0; i < 5; i++)
+		if (game->contract_cycle[i] == villain_id) slot = i;
+	if (slot == -1) return;
+
+	/* Clear slot */
+	game->contract_cycle[slot] = 0xFF;
+
+	/* Find new villain */
+	for (i = game->max_contract; i < MAX_VILLAINS; i++) {
+		if (game->villain_caught[i]) continue;
+		/* Save villain in slot */
+		game->contract_cycle[slot] = i;
+		break;
+	}
+	/* Start further next time */
+	game->max_contract++;
+}
+
 /* Calculate and return army leadership */
 static int army_leadership(KBgame *game, byte troop_id) {
 	int free_leadership = game->leadership;
 
 	int i;
 	for (i = 0; i < 5; i++) {
-
 		if (game->player_troops[i] == troop_id) {
-
-			free_leadership -= troops[ game->player_troops[i] ].hit_points * game->player_numbers[i];
+			free_leadership -= troops[troop_id].hit_points * game->player_numbers[i];
 			break;	
 		}
-
 	}
 
 	return free_leadership;
+}
+
+/* Return total number of spells known */ 
+static int known_spells(KBgame *game) {
+	int i;
+	int spells = 0;
+	for (i = 0; i < MAX_SPELLS; i++) {
+		spells += game->spells[i];
+	}
+	return spells;
 }
 
 int buy_troop(KBgame *game, byte troop_id, word number) {
@@ -1769,16 +1805,18 @@ void gather_information(KBgame *game, int id) {
 	SDL_Rect *text = KB_BottomFrame();	
 
 	/* Header (few pixels up) */	
-	KB_iloc(text->x, text->y - fs->h/4 - fs->h/8);
+	KB_iloc(text->x, text->y - fs->h/4 - fs->h / 8);
+	KB_ilh(fs->h + fs->h/8);
+	KB_iprintf("Castle %s is under\n", castle_names[id]);
 	if (game->castle_owner[id] == 0x7F) {
-		KB_iprintf("Castle %s is \n");
+		KB_iprint("no one's rule.\n");
 	} else {
 		char *name = KB_Resolve(STR_VNAME, game->castle_owner[id] & 0x1F);
-		KB_iprintf("Castle %s is under\n%s's rule.\n", castle_names[id], name);
+		KB_iprintf("%s's rule.\n", name);
 	}
 
 	/* Army */
-	KB_iloc(text->x, text->y + fs->h * 2);
+	KB_iloc(text->x, text->y + fs->h*2 - fs->h / 8);
 	int i;
 	for (i = 0; i < 5; i++) {
 		if (game->castle_numbers[id][i] == 0) break;
@@ -1804,7 +1842,7 @@ void visit_town(KBgame *game) {
 
 	SDL_Rect *fs = &sys->font_size;
 
-	SDL_Rect *text = KB_BottomFrame();	
+	SDL_Rect *text = KB_BottomFrame();
 
 	int random_troop = rand() % MAX_TROOPS;
 
@@ -1822,8 +1860,9 @@ void visit_town(KBgame *game) {
 		int key = KB_event( msg_hold ? &press_any_key_interactive : &five_choices);
 
 		if (redraw_menu) {
-		
 			/** Draw menu **/
+			text = KB_BottomFrame();
+
 			/* Header (few pixels up) */	
 			KB_iloc(text->x, text->y - fs->h/4 - fs->h/8);
 			//KB_iprint(header);
@@ -1833,15 +1872,19 @@ void visit_town(KBgame *game) {
 			/* Message */
 			//KB_iloc(text->x, text->y + fs->h/4);
 			//KB_iprint("\n\n");	
+			KB_imenu(&five_choices, 0, 30);
 			KB_iprint("A) Get New Contract\n");
-			KB_iprint("B) Cancel boat rental\n");
+			KB_imenu(&five_choices, 1, 30);
+			if (game->boat == 0xFF)
+				KB_iprintf("B) Rent boat (%d week) \n", 500);
+			else
+				KB_iprint("B) Cancel boat rental\n");
+			KB_imenu(&five_choices, 2, 30);
 			KB_iprint("C) Gather information\n");
+			KB_imenu(&five_choices, 3, 30);
 			KB_iprintf("D) %s spell (%d)\n", spell_names[ game->town_spell[id] ], spell_costs[ game->town_spell[id] ]);
+			KB_imenu(&five_choices, 4, 30);
 			KB_iprint("E) Buy seige weapons (3000)\n");
-			//KB_iprint(str);
-			
-			redraw_menu = 0;
-
 		}
 
 		if (redraw) {
@@ -1850,10 +1893,12 @@ void visit_town(KBgame *game) {
 			draw_location(1, random_troop, frame);
 		
 			//KB_BottomBox("Castle %s", "A) Recruit Soldiers\nB) Audience with the King\nC) \nD)\nE)",0);
-	
+		}
+
+		if (redraw || redraw_menu) {
 			SDL_Flip(sys->screen);
-			
-			redraw = 0;		
+			redraw = 0;
+			redraw_menu = 0;		
 		}
 		
 		if (msg_hold) {
@@ -1868,54 +1913,152 @@ void visit_town(KBgame *game) {
 		} else {
 		
 			if (key == 0xFF) done = 1;
+			
+			/** Get new contract **/
 			if (key == 1) {
 				printf("Choice: %d\n", key);
+				for (i = 0 ; i < 5; i++) {
+					printf("Contract cycle: %d = [ %02x] %d\n", i, game->contract_cycle[i], game->contract_cycle[i]);
+				}
+				printf("Last contract: %d\nMax contract: %d\n", game->last_contract, game->max_contract);
+
+				game->last_contract++;
+				if (game->last_contract > 4)
+					game->last_contract = 0;
+
+				game->contract = game->last_contract;
+				char *name = KB_Resolve(STR_VNAME, game->contract);
+				KB_stdlog("Got new contract for: --%s--\n", name);
 			}
+			/** Rent/cancel Boat **/
+			if (key == 2) {
+				if (game->boat == 0xFF) {
+					if (game->gold <= 500) {
+						KB_BottomBox("\n\n\nYou don't have enough gold!", "", 0);
+						msg_hold = 1;
+					} else {
+						int i, j;
+
+#define IS_WATER(M) ((M) >= 0x14 && (M) <= 0x20)						
+
+						redraw_menu = 1;
+
+						game->gold -= 500;
+
+						game->boat = game->continent;
+						game->boat_x = game->x - 1;
+						game->boat_y = game->y;
+	
+						if (!IS_WATER(game->map[game->boat][game->boat_y][game->boat_x]))
+							game->boat_y--;
+						if (!IS_WATER(game->map[game->boat][game->boat_y][game->boat_x]))
+							game->boat_y+=2;
+						if (!IS_WATER(game->map[game->boat][game->boat_y][game->boat_x]))
+							game->boat_x+=2;							
+					}
+				} else {
+					if (game->last_x == game->boat_x &&
+						game->last_y == game->boat_y &&
+						game->continent == game->boat
+					) {
+						KB_BottomBox(NULL, "\n\nPlease vacate the boat first", 0);
+						msg_hold = 1;
+					} else {				
+						game->boat = 0xFF;
+						redraw_menu = 1;
+					}
+				}
+			}
+			/** Gather information **/
 			if (key == 3) {
 				gather_information(game, id);
 				msg_hold = 1;
 			}
-			
+			/** Buy spell **/
+			if (key == 4) {
+				int known = known_spells(game);
+				if (known >= game->max_spells) {
+					KB_BottomBox(NULL, "\n\n   You have learned your\n  maximum number of spells.", 0);
+					msg_hold = 1;
+				} else 	if (game->gold <= spell_costs[ game->town_spell[id] ]) {
+					KB_BottomBox("\n\n\nYou don't have enough gold!", "", 0);
+					msg_hold = 1;
+				} else {
+					char buf[128];
+					int left;
+
+					game->spells[ game->town_spell[id] ]++;
+					game->gold -= spell_costs[ game->town_spell[id] ];
+
+					left = (game->max_spells - known - 1);
+					sprintf(buf, "\n\n\nYou can learn %d more spell%s.", left, (left == 1 ? "" : "s")); 
+					KB_BottomBox(buf, "", 0);
+					msg_hold = 1;
+				}
+				redraw = 1;	
+			}
+			/** Buy siege weapons **/
+			if (key == 5) {
+				if (game->siege_weapons) {
+					KB_BottomBox("\n\n\n   You have siege weapons!", "", 0);
+					msg_hold = 1;
+				} else if (game->gold <= 3000) {
+					KB_BottomBox("\n\n\nYou don't have enough gold!", "", 0);
+					msg_hold = 1;
+				} else {				
+					game->siege_weapons = 1;
+					game->gold -= 3000;
+				}
+				redraw = 1;
+			}
 		}
 
 		if (key == 6) { frame++; redraw = 1; }
 		if (frame > 3) frame = 0;
-
 	}
+
+}
+
+void visit_alcove(KBgame *game) {
 
 }
 
 void visit_dwelling(KBgame *game, byte rtype) {
 
-	enum {
-		not_found,
-		regular,
-		teleport,
-		alcove,
-	} dtype = not_found;
-
-	int id;
+	int id = -1;
 	int i;
 
-	if (ALCOVE_CONTINENT == game->continent
-	&&	ALCOVE_X == game->x && ALCOVE_Y == game->y) {
-		id = MAX_DWELLINGS + 2;
-		dtype = alcove;
+	/* See if it's archmage's alcove */
+	if (
+		ALCOVE_CONTINENT == game->continent
+		&& ALCOVE_X == game->x
+		&& ALCOVE_Y == game->y
+	) {
+		visit_alcove(game);
+		return;
 	}
-	else if (game->teleport_coords[game->continent][0] == game->x
-		&&	 game->teleport_coords[game->continent][1] == game->y) {
-		id = MAX_DWELLINGS + 1;
-		dtype = teleport;
-	}
-	else
-	for (i = 0; i < MAX_DWELLINGS; i++) {
-		if (
-		  	game->dwelling_coords[i][0] == game->x
-		&&	game->dwelling_coords[i][1] == game->y) {
-			id = i;
-			dtype = regular;
+
+	/* See if it's a teleporting cave */
+	for (i = 0; i < 2; i++) {
+		/* If it's one end of the teleport */
+		if (game->teleport_coords[game->continent][i][0] == game->x
+		&&	game->teleport_coords[game->continent][i][1] == game->y) {
+			/* Go to another end */
+			game->x = game->teleport_coords[game->continent][1 - i][0];
+			game->y = game->teleport_coords[game->continent][1 - i][1];
+			return;
 		}
 	}
+
+	/* Find which dwelling is it */
+	for (i = 0; i < MAX_DWELLINGS; i++) {
+		if (game->dwelling_coords[i][0] == game->x
+		&&	game->dwelling_coords[i][1] == game->y)
+			id = i;
+	}
+
+	/* Somehow, there's no dwelling here */
+	if (id == -1) return;
 
 	int max = 9999;
 
@@ -1931,7 +2074,6 @@ void visit_dwelling(KBgame *game, byte rtype) {
 	/* Status bar */
 	KB_iloc(0, 0);
 	KB_iprint("Press 'ESC' to exit");
-
 
 	/* Calculate "MAX YOU CAN HANDLE" number based on leadership (and troop hp?) */
 	max = army_leadership(game, troop_id) / troops [ troop_id ].hit_points;
@@ -1959,7 +2101,7 @@ void visit_dwelling(KBgame *game, byte rtype) {
 			/* Message */
 			KB_iloc(text->x, text->y - fs->h/4);
 			KB_iprint("\n\n\n");
-			KB_iprintf("%d Skeletons are available\n", game->dwelling_population[id]);
+			KB_iprintf("%d %s are available\n", game->dwelling_population[id], troops[ troop_id ].name);
 			KB_iprintf("Cost=% 3d each.      GP=%dK\n", troops[ troop_id ].recruit_cost, game->gold / 1000);
 			KB_iprintf("You may recruit up to %d\n", max);
 			KB_iprint ("Recruit how many        ");
@@ -2286,7 +2428,7 @@ void display_overworld(KBgame *game) {
 		}
 
 		SDL_Rect inpos = { 0 };
-			
+
 		if (redraw) {
 
 			SDL_Rect pos;
