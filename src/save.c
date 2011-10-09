@@ -147,9 +147,11 @@ KBgame* KB_loadDAT(const char* filename) {
 			game->castle_troops[n][k] = READ_BYTE(p);
 
 	/* Read friendly followers' coords */
-	for (n = 0; n < 20; n++) {
-		game->follower_coords[n][0] = READ_BYTE(p);//X
-		game->follower_coords[n][1] = READ_BYTE(p);//Y	
+	for (n = 0; n < MAX_CONTINENTS; n++) {
+		for (k = 0; k < FRIENDLY_FOLLOWERS; k++) {
+			game->follower_coords[n][k][0] = READ_BYTE(p);//X
+			game->follower_coords[n][k][1] = READ_BYTE(p);//Y
+		}	
 	}
 
 	/* Map chests */
@@ -165,9 +167,11 @@ KBgame* KB_loadDAT(const char* filename) {
 	}
 
 	/* Teleporting caves */
-	for (n = 0; n < MAX_CONTINENTS * 2; n++) {
-		game->teleport_coords[n][0] = READ_BYTE(p);//X
-		game->teleport_coords[n][1] = READ_BYTE(p);//Y
+	for (n = 0; n < MAX_CONTINENTS; n++) {
+		for (k = 0; k < MAX_TELECAVES; k++) {
+			game->teleport_coords[n][k][0] = READ_BYTE(p);//X
+			game->teleport_coords[n][k][1] = READ_BYTE(p);//Y
+		}
 	}
 
 	/* Dwellings locations */
@@ -177,20 +181,30 @@ KBgame* KB_loadDAT(const char* filename) {
 	}
 
 	/* Read hostile followers' coords */
-	for (n = 20; n < MAX_FOLLOWERS; n++) {
-		game->follower_coords[n][0] = READ_BYTE(p);//X
-		game->follower_coords[n][1] = READ_BYTE(p);//Y	
+	for (n = 0; n < MAX_CONTINENTS; n++) {
+		for (k = FRIENDLY_FOLLOWERS; k < MAX_FOLLOWERS; k++) {
+			game->follower_coords[n][k][0] = READ_BYTE(p);//X
+			game->follower_coords[n][k][1] = READ_BYTE(p);//Y	
+		}
 	}
 
 	/* Read hostile followers' troops */
-	for (n = 20; n < MAX_FOLLOWERS; n++)
-		for (k = 0; k < 3; k++)
-			game->follower_troops[n][k] = READ_BYTE(p);
+	for (n = 0; n < MAX_CONTINENTS; n++) {	
+		for (k = FRIENDLY_FOLLOWERS; k < MAX_FOLLOWERS; k++) {
+			game->follower_troops[n][k][0] = READ_BYTE(p);
+			game->follower_troops[n][k][1] = READ_BYTE(p);
+			game->follower_troops[n][k][2] = READ_BYTE(p);
+		}
+	}
 
 	/* Read follower numbers */
-	for (n = 20; n < MAX_FOLLOWERS; n++)
-		for (k = 0; k < 3; k++)
-			game->follower_numbers[n][k] = READ_BYTE(p);
+	for (n = 0; n < MAX_CONTINENTS; n++) {	
+		for (k = FRIENDLY_FOLLOWERS; k < MAX_FOLLOWERS; k++) {
+			game->follower_numbers[n][k][0] = READ_BYTE(p);
+			game->follower_numbers[n][k][1] = READ_BYTE(p);
+			game->follower_numbers[n][k][2] = READ_BYTE(p);
+		}
+	}
 
 	/* Read dwelling troop type and population count */
 	for (n = 0; n < MAX_DWELLINGS; n++)

@@ -34,11 +34,13 @@
 #define MAX_ARTIFACTS 8
 
 #define MAX_VILLAINS 17
-#define MAX_FOLLOWERS (40*4)
+#define MAX_FOLLOWERS 40
 
 #define MAX_DWELLINGS 44
 #define MAX_CASTLES 26
 #define MAX_TOWNS 26
+
+#define MAX_TELECAVES 2
 
 #define HOME_CONTINENT 0
 #define HOME_X 11
@@ -47,6 +49,8 @@
 #define ALCOVE_CONTINENT 0
 #define ALCOVE_X 11
 #define ALCOVE_Y 19
+
+#define FRIENDLY_FOLLOWERS 5
 
 typedef struct KBgame KBgame;
 
@@ -95,7 +99,7 @@ struct KBgame {
 
 	byte town_spell[MAX_TOWNS]; /* Which spell is sold in town N ? */
 
-	byte teleport_coords[MAX_CONTINENTS][2];
+	byte teleport_coords[MAX_CONTINENTS][MAX_TELECAVES][2];
 
 	byte dwelling_coords[MAX_DWELLINGS][2];
 	byte dwelling_troop[MAX_DWELLINGS];	/* Which creature lives in dwelling N ? */ 
@@ -108,9 +112,9 @@ struct KBgame {
 	byte map_coords[MAX_CONTINENTS][2];	/* Special chests  */
 	byte orb_coords[MAX_CONTINENTS][2];	/* 4 per continent */
 
-	byte follower_coords[MAX_FOLLOWERS][2];//0 is X and 1 is Y
-	byte follower_troops[MAX_FOLLOWERS][5];//creature types
-	word follower_numbers[MAX_FOLLOWERS][5];//their count
+	byte follower_coords[MAX_CONTINENTS][MAX_FOLLOWERS][2];//0 is X and 1 is Y
+	byte follower_troops[MAX_CONTINENTS][MAX_FOLLOWERS][5];//creature types
+	word follower_numbers[MAX_CONTINENTS][MAX_FOLLOWERS][5];//their count
 
 	byte steps_left;	/* You can make that much steps before day runs out */
 	word time_stop;
