@@ -1957,10 +1957,8 @@ void visit_town(KBgame *game) {
 							game->boat_x+=2;							
 					}
 				} else {
-					if (game->last_x == game->boat_x &&
-						game->last_y == game->boat_y &&
-						game->continent == game->boat
-					) {
+					if (game->mount == KBMOUNT_SAIL) 
+					{
 						KB_BottomBox(NULL, "\n\nPlease vacate the boat first", 0);
 						msg_hold = 1;
 					} else {				
@@ -2023,6 +2021,27 @@ void visit_alcove(KBgame *game) {
 
 }
 
+int visit_telecave(KBgame *game, int force) {
+
+	int i;
+printf("VISIT TELECAVE [%d]\n", force);
+	/* See if it's a teleporting cave */
+	for (i = 0; i < 2; i++) {
+		/* If it's one end of the teleport */
+		if (game->teleport_coords[game->continent][i][0] == game->x
+		&&	game->teleport_coords[game->continent][i][1] == game->y) {
+			/* Go to another end */
+			if (force) {
+				printf("WAL IT\n");
+				game->x = game->teleport_coords[game->continent][1 - i][0];
+				game->y = game->teleport_coords[game->continent][1 - i][1];
+			}
+			return 0;
+		}
+	}
+	return 1;
+}
+
 void visit_dwelling(KBgame *game, byte rtype) {
 
 	int id = -1;
@@ -2038,22 +2057,10 @@ void visit_dwelling(KBgame *game, byte rtype) {
 		return;
 	}
 
-	/* See if it's a teleporting cave */
-	for (i = 0; i < 2; i++) {
-		/* If it's one end of the teleport */
-		if (game->teleport_coords[game->continent][i][0] == game->x
-		&&	game->teleport_coords[game->continent][i][1] == game->y) {
-			/* Go to another end */
-			game->x = game->teleport_coords[game->continent][1 - i][0];
-			game->y = game->teleport_coords[game->continent][1 - i][1];
-			return;
-		}
-	}
-
 	/* Find which dwelling is it */
 	for (i = 0; i < MAX_DWELLINGS; i++) {
-		if (game->dwelling_coords[i][0] == game->x
-		&&	game->dwelling_coords[i][1] == game->y)
+		if (game->dwelling_coords[game->continent][i][0] == game->x
+		&&	game->dwelling_coords[game->continent][i][1] == game->y)
 			id = i;
 	}
 
@@ -2065,7 +2072,7 @@ void visit_dwelling(KBgame *game, byte rtype) {
 	const char *twirl = "\x1D" "\x05" "\x1F" "\x1C" ; /* stands for: | / - \ */
 	byte twirl_pos = 0;
 
-	byte troop_id = game->dwelling_troop[id];
+	byte troop_id = game->dwelling_troop[game->continent][id];
 
 	SDL_Rect *fs = &sys->font_size;
 
@@ -2101,7 +2108,7 @@ void visit_dwelling(KBgame *game, byte rtype) {
 			/* Message */
 			KB_iloc(text->x, text->y - fs->h/4);
 			KB_iprint("\n\n\n");
-			KB_iprintf("%d %s are available\n", game->dwelling_population[id], troops[ troop_id ].name);
+			KB_iprintf("%d %s are available\n", game->dwelling_population[game->continent][id], troops[ troop_id ].name);
 			KB_iprintf("Cost=% 3d each.      GP=%dK\n", troops[ troop_id ].recruit_cost, game->gold / 1000);
 			KB_iprintf("You may recruit up to %d\n", max);
 			KB_iprint ("Recruit how many        ");
@@ -2116,12 +2123,12 @@ void visit_dwelling(KBgame *game, byte rtype) {
 		else {
 			int number = atoi(enter);
 			if (number > max) continue;
-			if (number > game->dwelling_population[id]) continue;
+			if (number > game->dwelling_population[game->continent][id]) continue;
 
 			/* BUY troop */
 			if (!buy_troop(game, troop_id, number))
 				/* Reduce dwelling population */
-				game->dwelling_population[id] -= number;
+				game->dwelling_population[game->continent][id] -= number;
 
 			/* Calculate new "MAX YOU CAN HANDLE" number based on leadership (and troop hp?) */
 			max = army_leadership(game, troop_id) / troops [ troop_id ].hit_points;
@@ -2291,9 +2298,6 @@ void display_overworld(KBgame *game) {
 	int done = 0;
 	int redraw = 1;
 
-	int cursor_x = game->x;
-	int cursor_y = game->y;
-
 	int frame  = 0;
 	int flip = 0;
 	int boat_flip = 0;
@@ -2325,24 +2329,6 @@ void display_overworld(KBgame *game) {
 				game->mount = KBMOUNT_RIDE;
 		}
 
-
-		if (key > 0 && key < ARROW_KEYS + 1 && !walk) {
-
-			int ox = move_offset_x[(key-1)/2];
-			int oy = move_offset_y[(key-1)/2];
-
-			if (ox == 1) flip = 0;
-			if (ox == -1) flip = 1;
-
-			cursor_x += ox;
-			cursor_y += oy;
-			
-			if (cursor_x < 0) cursor_x = 0;
-			if (cursor_x > 63) cursor_x = 63;
-			if (cursor_y < 0) cursor_y = 0;
-			if (cursor_y > 63) cursor_y = 63;
-		}
-
 		if (key == SYN_EVENT) {
 			if (++tick > 3) tick = 0;
 			if (max_frame == 3) {
@@ -2357,9 +2343,20 @@ void display_overworld(KBgame *game) {
 			}
 		}
 
-		if (cursor_x != game->x || cursor_y != game->y) {
+		if (key > 0 && key < ARROW_KEYS + 1 && !walk) {
 
-			byte m = game->map[0][cursor_y][cursor_x];		
+			int ox = move_offset_x[(key-1)/2];
+			int oy = move_offset_y[(key-1)/2];
+
+			int cursor_x = game->x + ox;
+			int cursor_y = game->y + oy;
+
+			if (cursor_x < 0) cursor_x = 0;
+			if (cursor_x > 63) cursor_x = 63;
+			if (cursor_y < 0) cursor_y = 0;
+			if (cursor_y > 63) cursor_y = 63;
+
+			byte m = game->map[game->continent][cursor_y][cursor_x];		
 
 #define IS_GRASS(M) ((M) < 2 || (M) == 0x80)
 #define IS_WATER(M) ((M) >= 0x14 && (M) <= 0x20)
@@ -2368,6 +2365,8 @@ void display_overworld(KBgame *game) {
 
 			walk = 1;
 
+			if (ox == 1) flip = 0;
+			if (ox == -1) flip = 1;
 			if (game->mount == KBMOUNT_SAIL)
 				boat_flip = flip;
 
@@ -2389,29 +2388,26 @@ void display_overworld(KBgame *game) {
 				}
 				else
 				if (!IS_INTERACTIVE(m))	{
-					printf("Stopping at tile: %02x -- %02x\n", m, m & 0x80);
+					printf("Stopping at tile: %02x -- %02x (%d x %d)\n", m, m & 0x80, cursor_x, cursor_y);
 					walk = 0;
 				}
+
 			}
 
 			if (walk) {
 				redraw = 1;
-
-				/* Hitting shore */
-				if (!IS_WATER(m)) {
-					/* Leave ship */
-					if (game->mount == KBMOUNT_SAIL) {
-						game->mount = KBMOUNT_RIDE;
-						game->boat_x = game->x;
-						game->boat_y = game->y;
-					}
-				}	
 
 				game->last_x = game->x;
 				game->last_y = game->y;
 
 				game->x = cursor_x;
 				game->y = cursor_y;
+
+				if (m == 0x8e && !visit_telecave(game, 1)) {
+					printf("HUH %d %d\n", cursor_x, cursor_y);
+					m = game->map[game->continent][cursor_y][cursor_x];
+					walk = 0;
+				}
 
 				frame = 3;
 				max_frame = 3;
@@ -2421,10 +2417,7 @@ void display_overworld(KBgame *game) {
 					game->boat_x = game->x;
 					game->boat_y = game->y;
 				}
-			} else {
-				cursor_x = game->x;
-				cursor_y = game->y;
-			}
+			} 
 		}
 
 		SDL_Rect inpos = { 0 };
@@ -2433,17 +2426,17 @@ void display_overworld(KBgame *game) {
 
 			SDL_Rect pos;
 
-			pos.w = src.w;
-			pos.h = src.h;
-
-			SDL_FillRect( screen , &map, 0xFF0000);
-
 			int i, j;
 
 			int border_y = game->y - radii_h;
 			int border_x = game->x - radii_w;
 
 			/** Draw map **/
+			pos.w = src.w;
+			pos.h = src.h;
+
+			SDL_FillRect( screen , &map, 0xFF0000);
+
 			for (j = 0; j < perim_h; j++)
 			for (i = 0; i < perim_w; i++) {
 				byte m;
@@ -2452,7 +2445,7 @@ void display_overworld(KBgame *game) {
 					border_x + i < 0 || border_y + j < 0) m = 32;
 				else
 					m = game->map[0][border_y + j][border_x + i];
-					
+
 				m &= 0x7F;
 
 				int th = m / 8;
@@ -2464,9 +2457,6 @@ void display_overworld(KBgame *game) {
 				pos.y = (perim_h - 1 - j) * (pos.h) + map.y;
 
 				SDL_BlitSurface( ts, &src , screen, &pos );
-
-				//SDL_Flip(screen);
-				//SDL_Delay(100);
 			}
 
 			/** Draw boat **/
@@ -2490,32 +2480,42 @@ void display_overworld(KBgame *game) {
 
 		if (walk) {
 			walk = 1;
-			byte m = game->map[0][cursor_y][cursor_x];
+			byte m = game->map[game->continent][game->y][game->x];
 			if (IS_INTERACTIVE(m) && game->mount != KBMOUNT_FLY) {
 				switch (m) {
 					case 0x85:	visit_castle(game);	walk = 0; break;
 					case 0x8a:	visit_town(game); walk = 0; break;
 					case 0x8b:	take_chest(game);	break;
+					case 0x8e:	if (!visit_telecave(game, 0)) break;
 					case 0x8c:
 					case 0x8d:
-					case 0x8e:
 					case 0x8f:	visit_dwelling(game, m - 0x8c); walk = 0; break;
 					case 0x90:	read_signpost(game);		break;
 					case 0x91:	walk = !attack_follower(game);	break;
 					case 0x92:
 					case 0x93:	take_artifact(game, m - 0x92);	break;
 					default:
-						KB_errlog("Unknown interactive tile %02x at location %d, %d\n", m, cursor_x, cursor_y);
+						KB_errlog("Unknown interactive tile %02x at location %d, %d\n", m, game->x, game->y);
 					break;
 				}
 			}
 			if (!walk) {
-				cursor_x = game->last_x;
-				cursor_y = game->last_y;
+				game->x = game->last_x;
+				game->y = game->last_y;
 				walk = 1;
 			} else {
 				walk = 0;
+				/* Hitting shore */
+				if (!IS_WATER(m)) {
+					/* Leave ship */
+					if (game->mount == KBMOUNT_SAIL) {
+						game->mount = KBMOUNT_RIDE;
+						game->boat_x = game->last_x;
+						game->boat_y = game->last_y;
+					}
+				}	
 			}
+			continue;
 		}
 
 		if (redraw) {
@@ -2529,8 +2529,6 @@ void display_overworld(KBgame *game) {
 				hsrc.y += src.h * (flip);
 
 				SDL_BlitSurface( hero, &hsrc , screen, &hdst );
-			//	SDL_Flip(screen);
-			//	SDL_Delay(3000);
 			}
 
 			/** Draw siderbar UI **/
@@ -2544,7 +2542,6 @@ void display_overworld(KBgame *game) {
 
 				/* Siege weapons */
 				hdst.y += hsrc.h;
-				game->siege_weapons = 1;
 				hsrc.x = (game->siege_weapons ? tick * hsrc.w : 9 * hsrc.w);
 				SDL_BlitSurface( sidebar, &hsrc, screen, &hdst);
 				
