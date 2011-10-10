@@ -36,7 +36,7 @@
 #define MAX_VILLAINS 17
 #define MAX_FOLLOWERS 40
 
-#define MAX_DWELLINGS 44
+#define MAX_DWELLINGS 11
 #define MAX_CASTLES 26
 #define MAX_TOWNS 26
 
@@ -101,9 +101,9 @@ struct KBgame {
 
 	byte teleport_coords[MAX_CONTINENTS][MAX_TELECAVES][2];
 
-	byte dwelling_coords[MAX_DWELLINGS][2];
-	byte dwelling_troop[MAX_DWELLINGS];	/* Which creature lives in dwelling N ? */ 
-	byte dwelling_population[MAX_DWELLINGS]; /* How much of those */
+	byte dwelling_coords[MAX_CONTINENTS][MAX_DWELLINGS][2];
+	byte dwelling_troop[MAX_CONTINENTS][MAX_DWELLINGS];	/* Which creature lives in dwelling N ? */ 
+	byte dwelling_population[MAX_CONTINENTS][MAX_DWELLINGS]; /* How much of those */
 
 	byte castle_owner[MAX_CASTLES]; /* 0x7F = no one, 0xFF = you, LOW 5 bits = villain */
 	byte castle_troops[MAX_CASTLES][5];	// creature types
@@ -187,8 +187,7 @@ typedef struct KBtroop {
 	byte	ranged_max;
 	byte	ranged_ammo;
 
-	word 	recruit_cost;
-	word	weekly_cost;
+	word 	recruit_cost;	/* In gold */
 
 	byte	abilities;		/* Bit-flags, see ABIL_ defines */
 

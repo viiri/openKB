@@ -175,9 +175,11 @@ KBgame* KB_loadDAT(const char* filename) {
 	}
 
 	/* Dwellings locations */
-	for (n = 0; n < MAX_DWELLINGS; n++) {
-		game->dwelling_coords[n][0] = READ_BYTE(p);//X
-		game->dwelling_coords[n][1] = READ_BYTE(p);//Y
+	for (n = 0; n < MAX_CONTINENTS; n++) {
+		for (k = 0; k < MAX_DWELLINGS; k++) {
+			game->dwelling_coords[n][k][0] = READ_BYTE(p);//X
+			game->dwelling_coords[n][k][1] = READ_BYTE(p);//Y
+		}
 	}
 
 	/* Read hostile followers' coords */
@@ -207,11 +209,13 @@ KBgame* KB_loadDAT(const char* filename) {
 	}
 
 	/* Read dwelling troop type and population count */
-	for (n = 0; n < MAX_DWELLINGS; n++)
-			game->dwelling_troop[n] = READ_BYTE(p);	
+	for (n = 0; n < MAX_CONTINENTS; n++)	
+		for (k = 0; k < MAX_DWELLINGS; k++)
+			game->dwelling_troop[n][k] = READ_BYTE(p);	
 
-	for (n = 0; n < MAX_DWELLINGS; n++)
-			game->dwelling_population[n] = READ_BYTE(p);
+	for (n = 0; n < MAX_CONTINENTS; n++)	
+		for (k = 0; k < MAX_DWELLINGS; k++)
+			game->dwelling_population[n][k] = READ_BYTE(p);
 
 	/* Read scepter key and un-encrypt the coordinates */
 	game->scepter_key = READ_BYTE(p);
