@@ -71,15 +71,28 @@ void  KB_errlog(char *fmt, ...)
 	va_end(argptr);
 }
 
+const char* KB_strlist_ind(const char *list, int id)
+{
+	const char *match = list;
+	int w = 0;
+	while (1) {
+		if (*list == '\0') {
+			if (w == id) break;
+			w++;
+			list++;
+			if (*list == '\0') break;
+			match = list;
+			continue;
+		}
+		list++;				
+	}
+	return match;
+}
+
 int KB_strlistcmp(const char *list, const char *needle)
 {
 	int i = 0, j = 0;
 	int w = 0;
-	
-	int nervous = 0;
-
-	int need = 0;
-	int match = 0;	
 
 	while (needle[j] != '\0') {
 		/* Mismatch */

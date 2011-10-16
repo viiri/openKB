@@ -84,10 +84,12 @@
 #define STR_SIGN	0xE0	/* signpost text ; subId - signpost index */
 #define STR_TROOP	0xE1	/* troop name ; subId - troop index */
 #define STR_MULTI	0xE2	/* troops name ; subId - troop index */
+#define STR_VNAME	0xE3	/* villain name ; subId - villain index */
 
 #define STRL_SIGNS	0xF0	/* signpost texts ; subId - undefined */
 #define STRL_TROOPS	0xF1	/* troop names ; subId - undefined */
 #define STRL_MULTIS	0xF2	/* troops names ; subId - undefined */
+#define STRL_VNAMES 0xF3	/* villains names ; subId - undefined */
 
 #ifdef HAVE_LIBSDL
 /* SDL flavor. */

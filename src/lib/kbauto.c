@@ -699,7 +699,13 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 		}
 		break;
 		case GR_LOCATION:	/* subId - 0 home 1 town 2 - 6 dwelling */
-
+		{
+			method = RAW_IMG;
+			middle_name = "cstl";
+			suffix = bpp_names[mod->bpp];
+			ident = "#0";
+			if (sub_id == 1) middle_name = "town";
+		}
 		break;		
 		case COL_TEXT:
 		{
@@ -782,6 +788,50 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 			return &buf[0];
 		}
 		break;
+		case STR_VNAME:
+		{
+			return KB_strlist_ind(DOS_Resolve(mod, STRL_VNAMES, 0), id);
+		}
+		break;
+		case STRL_VNAMES:
+		{
+			static char buf[4096];
+			static char pbuf[4096];
+
+	int segment = 0x15850;
+
+			int ptroff = 0x1842C;
+			int off = 0x190A5;
+			int len = 0x191cb - off;
+
+			KB_File *f;	int n;   
+
+			KB_debuglog(0,"? DOS EXE FILE: %s\n", "KB.EXE");
+			f = KB_fopen_with("kb.exe", "rb", mod);
+			if (f == NULL) return NULL;
+#if 1			
+			KB_fseek(f, ptroff, 0);
+			n = KB_fread(&pbuf[0], sizeof(char), len, f);
+#endif
+			KB_fseek(f, off, 0);
+			n = KB_fread(&buf[0], sizeof(char), len, f);
+			KB_fclose(f);
+
+			char *p = &pbuf[0];
+
+#if 1		
+			int i;
+			for (i = 0; i < 17; i++) {
+				word soff;
+				soff = READ_WORD(p);
+				KB_debuglog(0, "%02x [%04x - %08x] Splitting: '%s' %c %d \n", i, soff, soff + segment, &buf[soff + segment - off]);
+				//KB_fseek(f, segment + soff, 0);
+			}
+#endif
+
+			return &buf[0];
+		}
+		break;		
 		case RECT_MAP:
 		{
 			static SDL_Rect map = {	16, 14 + 7, 48 * 5, 34 * 5	};
@@ -927,12 +977,25 @@ void* GNU_Resolve(KBmodule *mod, int id, int sub_id) {
 			is_transparent = 0;
 		}
 		break;
+		case GR_VILLAIN:
+		{
+			image_name = villain_names[sub_id];
+			image_suffix = ".png";
+			is_transparent = 0;
+		}
+		break;
 		case GR_TROOP:
 		{
 			image_name = troop_names[sub_id];
 			image_suffix = ".png";
 		}
 		break;
+		case GR_CURSOR:
+		{
+			image_name = "cursor";
+			image_suffix = ".png";
+		}
+		break;		
 		case GR_COMTILES:
 		{
 			image_name = "comtiles";

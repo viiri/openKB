@@ -40,6 +40,10 @@
 #define MAX_CASTLES 26
 #define MAX_TOWNS 26
 
+#define HOME_CONTINENT 0
+#define HOME_X 11
+#define HOME_Y 7
+
 #define ALCOVE_CONTINENT 0
 #define ALCOVE_X 11
 #define ALCOVE_Y 19
@@ -97,7 +101,7 @@ struct KBgame {
 	byte dwelling_troop[MAX_DWELLINGS];	/* Which creature lives in dwelling N ? */ 
 	byte dwelling_population[MAX_DWELLINGS]; /* How much of those */
 
-	byte castle_owner[MAX_CASTLES];
+	byte castle_owner[MAX_CASTLES]; /* 0x7F = no one, 0xFF = you, LOW 5 bits = villain */
 	byte castle_troops[MAX_CASTLES][5];	// creature types
 	word castle_numbers[MAX_CASTLES][5];// their count
 
@@ -242,12 +246,16 @@ extern KBclass classes[4][4];
 
 extern char *dwelling_names[MAX_DWELLINGS];
 extern char *town_names[MAX_TOWNS];
-extern char *castle_names[MAX_CASTLES];
+extern char *castle_names[MAX_CASTLES + 1];
 extern char *spell_names[MAX_SPELLS];
+extern word spell_costs[MAX_SPELLS];
 extern char *number_names[6];
 extern word number_mins[6];
 extern char *number_name(word num);
 extern char *morale_names[3];
 extern char *continent_names[4];
+
+extern byte castle_coords[MAX_CASTLES][3];	/* [continent][x][y] */
+extern byte town_coords[MAX_CASTLES][3];
 
 #endif /* _OPENKB_BOUNTY_H */
