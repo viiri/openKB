@@ -123,7 +123,7 @@ struct KBgame {
 	byte player_troops[5];	/* Player army (creature types)	*/
 	word player_numbers[5];	/* Player army (troop count) */
 
-	word followers_killed;
+	word followers_killed; /* Total number of friendly troops lost in combat */
 
 	word base_leadership; /* That much leadership * 1,3,5 is awarded on each level up */
 	word leadership;

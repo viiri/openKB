@@ -671,6 +671,34 @@ SDL_Rect* KB_BottomBox(const char *header, const char *str, int wait) {
 	return text;
 }
 
+SDL_Rect* KB_TopBox(const char *str) {
+
+	SDL_Rect *fs = &sys->font_size;
+
+	SDL_Rect *top_frame = RECT_LoadRESOURCE(RECT_UI, 0);
+	SDL_Rect *left_frame = RECT_LoadRESOURCE(RECT_UI, 1);
+	SDL_Rect *bottom_frame = RECT_LoadRESOURCE(RECT_UI, 3);
+	SDL_Rect *right_frame = RECT_LoadRESOURCE(RECT_UI, 2);
+	SDL_Rect *bar_frame  = RECT_LoadRESOURCE(RECT_UI, 4);
+
+	SDL_Surface *screen = sys->screen;
+
+	Uint32 *colors = KB_Resolve(COL_TEXT, 0);	
+
+	SDL_Rect status_rect =  { left_frame->w, top_frame->h, sys->screen->w - left_frame->w - right_frame->w, fs->h + 2 };
+	SDL_FillRect(sys->screen, &status_rect, colors[0]);
+
+	/* Status bar */
+	KB_iloc(status_rect.x, status_rect.y + 1);
+	KB_iprint(str);
+
+	free(top_frame);
+	free(left_frame);
+	free(bottom_frame);
+	free(right_frame);
+	free(bar_frame);
+}
+
 
 /* Actual KBgame* allocator */
 KBgame *spawn_game(char *name, int pclass, int difficulty) {
@@ -1379,6 +1407,49 @@ static int player_army(KBgame *game) {
 	return followers;
 }
 
+/* Return number of castles currently owned by player */
+static int player_castles(KBgame *game) {
+	int castles = 0;
+	int i;
+	for (i = 0; i < MAX_CASTLES; i++) {
+		if (game->castle_owner[i] == 0xFF)
+			castles++;
+	}
+	return castles;
+}
+
+/* Return total number of villains captured by player */
+static int player_captured(KBgame *game) {
+	int num = 0;
+	int i;
+	for (i = 0; i < MAX_VILLAINS; i++) {
+		if (game->villain_caught[i])
+			num++;
+	}
+	return num;
+}
+
+/* Return total number of artifacts found by player */
+static int player_num_artifacts(KBgame *game) {
+	int num = 0;
+	int i;
+	for (i = 0; i < MAX_ARTIFACTS; i++) {
+		if (game->artifact_found[i])
+			num++;
+	}
+	return num;
+}
+
+/* Return player's commission */
+static int player_commission(KBgame *game) {
+	return game->commission;
+}
+
+/* Calculate and return player's score */
+static int player_score(KBgame *game) {
+	return 9999;
+}
+
 
 int buy_troop(KBgame *game, byte troop_id, word number) {
 
@@ -1491,7 +1562,123 @@ void draw_location(int loc_id, int troop_id, int frame) {
 
 void view_character(KBgame *game) {
 
+	SDL_Surface *portrait = SDL_LoadRESOURCE(GR_PORTRAIT, game->class, 0);
+	SDL_Surface *items = SDL_LoadRESOURCE(GR_VIEW, 0, 0);
 
+	SDL_Rect *fs = &sys->font_size;
+
+	SDL_Rect *left_frame = RECT_LoadRESOURCE(RECT_UI, 1);
+	SDL_Rect *top_frame = RECT_LoadRESOURCE(RECT_UI, 0);
+	SDL_Rect *bar_frame  = RECT_LoadRESOURCE(RECT_UI, 4);
+	SDL_Rect *right_frame  = RECT_LoadRESOURCE(RECT_UI, 2);
+
+	SDL_Rect pos = { left_frame->w, top_frame->h + bar_frame->h + fs->h + 2, sys->screen->w - left_frame->w - right_frame->w, 0 }; 
+
+	SDL_Rect dest = { pos.x, pos.y, portrait->w, portrait->h }; 
+
+	SDL_BlitSurface(portrait, NULL, sys->screen, &dest );
+
+	SDL_Rect box = { pos.x + portrait->w, pos.y, pos.w - portrait->w, portrait->h };	
+
+	SDL_FillRect(sys->screen, &box, 0x000000);
+
+	SDL_Rect stats = { pos.x + portrait->w + fs->w / 8 , pos.y + fs->h / 4 + fs->h / 8, pos.w - portrait->w, 2 };
+	
+	SDL_Rect line = { pos.x + portrait->w , pos.y + fs->h / 2, pos.w - portrait->w, fs->h / 8 };
+
+	KB_iloc(stats.x, stats.y);
+	KB_ilh(fs->h + 2);
+	KB_iprintf("%s the %s\n", game->name, classes[game->class][game->rank].title);
+	KB_iprintf("Leadership         %5d\n", game->leadership);
+	line.y = sys->cursor_y * fs->h + sys->base_y + fs->h / 8;
+	SDL_FillRect(sys->screen, &line, 0xFFFFFF);
+
+	KB_iloc(stats.x, stats.y + (fs->h+2) * 2 + (fs->h/8));
+	KB_iprintf("Commission/Week    %5d\n", player_commission(game));
+	KB_iprintf("Gold               %5d\n", game->gold);
+	line.y = sys->cursor_y * fs->h + sys->base_y;
+	SDL_FillRect(sys->screen, &line, 0xFFFFFF);
+
+	KB_iloc(stats.x, stats.y + (fs->h+2) * 4 + (fs->h/8));
+	KB_iprintf("Spell power        %5d\n", game->spell_power);
+	KB_iprintf("Max # of spells    %5d\n", game->max_spells);
+	line.y = sys->cursor_y * fs->h + sys->base_y;
+	SDL_FillRect(sys->screen, &line, 0xFFFFFF);
+
+	KB_iloc(stats.x, stats.y + (fs->h+2) * 6 + (fs->h/8));
+	KB_iprintf("Villains caught    %5d\n", player_captured(game));
+	KB_iprintf("Artifacts found    %5d\n", player_num_artifacts(game));
+	line.y = sys->cursor_y * fs->h + sys->base_y;
+	SDL_FillRect(sys->screen, &line, 0xFFFFFF);
+
+	KB_iloc(stats.x, stats.y + (fs->h+2) * 8 + (fs->h/8));
+	KB_iprintf("Castles garrisoned %5d\n", player_castles(game));
+	KB_iprintf("Followers killed   %5d\n", game->followers_killed);
+	KB_iprintf("Current score      %5d\n", player_score(game));
+
+	KB_TopBox("        Press 'ESC' to exit");
+
+	/* Draw artifacts (and maps) */
+	int i;
+
+#define BELT	4
+#define MAP_BELT 2
+
+#define EMPTY_SLOT (MAX_ARTIFACTS + MAX_CONTINENTS)
+#define EMPTY_MAP (MAX_ARTIFACTS + MAX_CONTINENTS + 1)
+
+	SDL_Rect inventory = { pos.x, pos.y + portrait->h, pos.w, items->h * 2 };	
+
+	SDL_Rect item = { 0, 0, pos.w / 6, items->h };
+
+	SDL_FillRect(sys->screen, &inventory, 0xFFFF00) ;
+
+	int x = 0, y = 0;
+	for (i = 0; i < MAX_ARTIFACTS; i++) {
+
+		SDL_Rect item_src = { item.w * i, 0, item.w, items->h };
+		SDL_Rect item_dst = { inventory.x + x * item.w, inventory.y + y * item.h, item.w, items->h };
+
+		if (!game->artifact_found[i]) item_src.x = item.w * EMPTY_SLOT; 
+
+		SDL_BlitSurface( items, &item_src, sys->screen, &item_dst);
+
+		x++;
+		if (x >= BELT) {
+			y++;
+			x = 0;
+		}
+	}
+
+	x = 0; y = 0;
+	inventory.x += ( BELT * item.w );
+	for (i = 0; i < MAX_CONTINENTS; i++) {
+
+		SDL_Rect item_src = { item.w * (i+ MAX_ARTIFACTS), 0, item.w, items->h };
+		SDL_Rect item_dst = { inventory.x + x * item.w, inventory.y + y * item.h, item.w, items->h };
+
+		if (!game->continent_found[i]) item_src.x = item.w * EMPTY_MAP;
+
+		SDL_BlitSurface( items, &item_src, sys->screen, &item_dst);
+
+		x++;
+		if (x >= MAP_BELT) {
+			y++;
+			x = 0;
+		}
+	}
+
+	SDL_Flip(sys->screen);
+
+	while (KB_event(&press_any_key) != 0xFF) 
+		{	}
+
+	SDL_FreeSurface(portrait);
+	SDL_FreeSurface(items);
+	free(top_frame);
+	free(left_frame);
+	free(right_frame);
+	free(bar_frame);
 }
 
 void view_army(KBgame *game) {
@@ -1540,7 +1727,7 @@ void view_army(KBgame *game) {
 	int frame = 0;
 	while (!done) {
 		int key = KB_event(&press_any_key_interactive);	
-		if (key == 1) done = key;
+		if (key == 0xFF) done = key;
 
 		if (key == 2) {
 			frame++;
@@ -1582,6 +1769,9 @@ void view_army(KBgame *game) {
 				KB_iprintf("Damage:%d-%d\n", troops[ troop_id ].melee_min * game->player_numbers[i], troops[ troop_id ].melee_max * game->player_numbers[i]);
 				KB_iprintf("G-Cost:%d\n", troops[ troop_id ].recruit_cost / 10 * game->player_numbers[i]);
 			}
+
+			KB_TopBox("        Press 'ESC' to exit");
+
 			SDL_Flip(sys->screen);
 			redraw = 0;
 		}
@@ -2480,7 +2670,7 @@ void display_overworld(KBgame *game) {
 	SDL_Rect *bar_frame  = RECT_LoadRESOURCE(RECT_UI, 4);
 
 	SDL_Rect *fs = &sys->font_size;
-	Uint32 *colors = KB_Resolve(COL_TEXT, 0);	
+	Uint32 *colors = KB_Resolve(COL_TEXT, 0);
 
 	SDL_Rect status_rect =  { left_frame->w, top_frame->h, screen->w - left_frame->w - right_frame->w, fs->h + 2 };
 	SDL_FillRect(screen, &status_rect, colors[0]);

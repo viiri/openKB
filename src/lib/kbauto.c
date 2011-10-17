@@ -698,6 +698,17 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 			row_frames = 14;
 		}
 		break;
+		case GR_PORTRAIT:	/* subId - class */
+		{
+			method = RAW_IMG;
+			middle_name = "knig";
+			suffix = bpp_names[mod->bpp];
+			ident = "#0";
+			if (sub_id == 1) middle_name = "pala";
+			if (sub_id == 2) middle_name = "sorc";
+			if (sub_id == 3) middle_name = "barb";
+		}
+		break;
 		case GR_LOCATION:	/* subId - 0 home 1 town 2 - 6 dwelling */
 		{
 			method = RAW_IMG;
