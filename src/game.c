@@ -235,8 +235,8 @@ void KB_imenu(KBgamestate *state, int id, int cols) {
 		RECT->y += HOST->y
 
 #define RECT_Center(RECT, HOST) \
-		RECT->x = (HOST->w - RECT->w) / 2, \
-		RECT->y = (HOST->h - RECT->h) / 2
+		(RECT)->x = ((HOST)->w - (RECT)->w) / 2, \
+		(RECT)->y = ((HOST)->h - (RECT)->h) / 2
 
 #define RECT_Right(RECT, HOST) \
 		RECT->x = (HOST->w - RECT->w)
@@ -1560,6 +1560,102 @@ void draw_location(int loc_id, int troop_id, int frame) {
 	free(bar_frame);
 }
 
+void view_contract(KBgame *game) {
+
+	SDL_Rect border;
+
+	SDL_Surface *screen = sys->screen;
+
+	SDL_Rect *fs = &sys->font_size;
+
+	RECT_Text((&border), 16, 36);
+	RECT_Center(&border, sys->screen);
+	
+	border.y += fs->h/2;
+
+	Uint32 *colors = KB_Resolve(COL_TEXT, 0);
+
+	SDL_Surface *tile = SDL_LoadRESOURCE(GR_PURSE, 0, 0);
+
+	SDL_TextRect(sys->screen, &border, colors[0], colors[1]);
+
+	SDL_Rect hdst = { border.x + fs->w, border.y + fs->h, tile->w, tile->h };
+
+	if (game->contract == 0xFF) {
+
+		SDL_Surface *sidebar = SDL_LoadRESOURCE(GR_UI, 0, 0);
+
+		KB_iloc(border.x + fs->w, border.y + fs->h);
+		KB_iprint("\n\n\n\n\n\n      You have no Contract!");
+
+		/* And a face */
+		/* Empty Contract */
+		SDL_Rect hsrc = { 8 * tile->w, 0, tile->w, sidebar->h };
+		SDL_BlitSurface( sidebar, &hsrc, screen, &hdst);
+
+		SDL_Flip(sys->screen);
+		
+		KB_Pause();
+
+		SDL_FreeSurface(sidebar);
+
+	} else {
+
+		byte villain_id = game->contract;
+
+		SDL_Surface *face = SDL_LoadRESOURCE(GR_VILLAIN, villain_id, 0);
+
+		int j;
+
+		int desc_line = villain_id * 14;
+
+		/* Print first 5 lines */
+		KB_iloc(border.x + fs->w + tile->w + fs->w, border.y + fs->h);
+		for (j = 0; j < 5; j++) {
+			char *text = KB_Resolve(STR_VDESC, desc_line + j);
+			KB_iprintf("%s\n", text);
+		}
+
+		/* Print the rest of the lines */
+		KB_iloc(border.x + fs->w + fs->w, border.y + (fs->h * 6));
+		for (j = 5; j < 14; j++) {
+			char *text = KB_Resolve(STR_VDESC, desc_line + j);
+			KB_iprintf("%s\n", text);
+		}
+
+		int done = 0;
+		int frame = 0;
+		int redraw = 1;
+		while (!done) {
+
+			int key = KB_event(&press_any_key_interactive);
+
+			if (key == 2) {
+				frame++;
+				if (frame > 3) {
+					frame = 0;
+				}
+				redraw = 1;
+			} else if (key) done = 1;
+
+			if (redraw) {
+
+				/* Blit face */
+				SDL_Rect hsrc = { frame * tile->w, 0, tile->w, sidebar->h };
+				SDL_BlitSurface( face, &hsrc, screen, &hdst);
+
+				SDL_Flip(sys->screen);
+				redraw = 0;
+			}
+		}
+
+		SDL_FreeSurface(face);
+	}
+
+
+	SDL_FreeSurface(tile);
+}
+
 void view_character(KBgame *game) {
 
 	SDL_Surface *portrait = SDL_LoadRESOURCE(GR_PORTRAIT, game->class, 0);
@@ -2242,9 +2338,7 @@ void visit_town(KBgame *game) {
 
 	int random_troop = rand() % MAX_TROOPS;
 
-	/* Status bar */
-	KB_iloc(0, 0);
-	KB_iprint("Press 'ESC' to exit");
+	KB_TopBox("        Press 'ESC' to exit");
 
 	int done = 0;
 	int frame = 0;
@@ -2323,8 +2417,9 @@ void visit_town(KBgame *game) {
 					game->last_contract = 0;
 
 				game->contract = game->last_contract;
-				char *name = KB_Resolve(STR_VNAME, game->contract);
-				KB_stdlog("Got new contract for: --%s--\n", name);
+
+				/* show contract on screen */
+				view_contract(game);
 			}
 			/** Rent/cancel Boat **/
 			if (key == 2) {
@@ -2733,6 +2828,10 @@ void display_overworld(KBgame *game) {
 				game->mount = KBMOUNT_RIDE;
 				redraw = 1;
 			}
+		}
+
+		if (key == KEY_ACT(VIEW_CONTRACT)) {
+			view_contract(game);
 		}
 
 		if (key == KEY_ACT(VIEW_MAP)) {

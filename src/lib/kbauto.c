@@ -846,6 +846,53 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 
 			return &buf[0];
 		}
+		break;
+		case STR_VDESC:
+		{
+			int villain = sub_id / 13;
+			int line = sub_id - (villain * 13);
+			return KB_strlist_ind(DOS_Resolve(mod, STRL_VDESCS, 0), sub_id);
+		}
+		break;
+		case STRL_VDESCS:
+		{
+			static char buf[24096];
+			static char pbuf[24096];
+
+	int segment = 0x15850;
+
+			int ptroff = 0x16bf4;
+			int off = 0x16edf;
+			int len = 0x18427- off;
+
+			KB_File *f;	int n;   
+
+			KB_debuglog(0,"? DOS EXE FILE: %s\n", "KB.EXE");
+			f = KB_fopen_with("kb.exe", "rb", mod);
+			if (f == NULL) return NULL;
+#if 1			
+			KB_fseek(f, ptroff, 0);
+			n = KB_fread(&pbuf[0], sizeof(char), len, f);
+#endif
+			KB_fseek(f, off, 0);
+			n = KB_fread(&buf[0], sizeof(char), len, f);
+			KB_fclose(f);
+
+			char *p = &pbuf[0];
+#if 1
+			int i, j;
+			for (i = 0; i < 17; i++) {
+				for (j = 0; j < 13; j ++) {
+					word soff;
+					soff = READ_WORD(p);
+					//printf("%02x [%04x - %08x] Splitting: '%s' %c %d \n", i, soff, soff + segment, &buf[soff + segment - off]);
+					//KB_fseek(f, segment + soff, 0);
+				}
+			}
+#endif
+
+			return &buf[0];
+		}
 		break;		
 		case RECT_MAP:
 		{
