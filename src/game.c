@@ -1489,6 +1489,11 @@ void draw_location(int loc_id, int troop_id, int frame) {
 	free(bar_frame);
 }
 
+void view_character(KBgame *game) {
+
+
+}
+
 void view_army(KBgame *game) {
 
 	SDL_Surface *troop[5];
@@ -1599,8 +1604,7 @@ void temp_death(KBgame *game) {
 	game->x = HOME_X;
 	game->y = HOME_Y - 1;
 
-	
-	game->gold += game->comission;
+	game->gold += game->commission;
 
 	//redraw screen somehow...
 
@@ -2555,6 +2559,10 @@ void display_overworld(KBgame *game) {
 
 		if (key == KEY_ACT(USE_MAGIC)) {
 			//choose_spell(game, 0);
+		}
+
+		if (key == KEY_ACT(VIEW_CHAR)) {
+			view_character(game);
 		}
 
 		if (key == KEY_ACT(END_WEEK)) {
