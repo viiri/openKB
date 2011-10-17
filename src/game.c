@@ -1369,6 +1369,17 @@ static int known_spells(KBgame *game) {
 	return spells;
 }
 
+/* Return total number of troops in player army */
+static int player_army(KBgame *game) {
+	int followers = 0;
+	int i;
+	for (i = 0; i < 5; i++) {
+		followers += game->player_numbers[i];
+	}
+	return followers;
+}
+
+
 int buy_troop(KBgame *game, byte troop_id, word number) {
 
 	int slot = -1;
@@ -1407,6 +1418,17 @@ int buy_troop(KBgame *game, byte troop_id, word number) {
 	return 0;
 }
 
+void dismiss_troop(KBgame *game, byte slot) {
+	int i;
+	for (i = slot; i < 4; i++) {
+		game->player_troops[i] = game->player_troops[i + 1];
+		game->player_numbers[i] = game->player_numbers[i + 1];
+	}
+	game->player_troops[4] = 0xFF;
+	game->player_numbers[4] = 0;
+}
+
+
 KBgamestate yes_no_question = {
 	{
 		{	{ 0 }, SDLK_y, 0, 0      	},
@@ -1424,7 +1446,7 @@ KBgamestate five_choices = {
 		{	{ 0 }, SDLK_d, 0, 0      	},
 		{	{ 0 }, SDLK_e, 0, 0      	},
 
-		{	{ SOFT_WAIT }, SDLK_SYN, 0, KFLAG_TIMER },
+		{	{ 60 }, SDLK_SYN, 0, KFLAG_TIMER },
 		0,
 	},
 	0
@@ -1467,6 +1489,186 @@ void draw_location(int loc_id, int troop_id, int frame) {
 	free(bar_frame);
 }
 
+void view_army(KBgame *game) {
+
+	SDL_Surface *troop[5];
+	SDL_Surface *tile;
+
+	SDL_Rect *fs = &sys->font_size;
+
+	SDL_Rect *left_frame = RECT_LoadRESOURCE(RECT_UI, 1);
+	SDL_Rect *top_frame = RECT_LoadRESOURCE(RECT_UI, 0);
+	SDL_Rect *bar_frame  = RECT_LoadRESOURCE(RECT_UI, 4);
+	SDL_Rect *right_frame  = RECT_LoadRESOURCE(RECT_UI, 2);
+
+	SDL_Rect pos;
+
+	//RECT_Size(&pos, bg);
+	pos.x = left_frame->w;
+	pos.y = top_frame->h + bar_frame->h + fs->h + 2;
+	
+	pos.w = sys->screen->w - left_frame->w - right_frame->w;
+
+	byte troop_morale[5] = { 0 };
+
+	int i, j;
+	for (i = 0; i < 5; i++) {
+		byte morale = MORALE_HIGH;
+		if (game->player_numbers[i] == 0) break;
+		byte troop_id = game->player_troops[i];
+		byte groupI = troops[ troop_id ].morale_group;
+		for (j = 0; j < 5; j++) {
+			if (game->player_numbers[j] == 0) break;
+			//if (i == j) continue;
+			byte ctroop_id = game->player_troops[j];
+			byte groupJ = troops[ ctroop_id ].morale_group;
+			byte nm = morale_chart[groupI][groupJ];
+			if (nm < morale) morale = nm;
+		}
+		troop_morale[i] = morale;
+		troop[i] = SDL_LoadRESOURCE(GR_TROOP, game->player_troops[i], 0);
+	}
+	tile = SDL_LoadRESOURCE(GR_TILE, 0, 0);
+
+	int done = 0;
+	int redraw = 1;
+	int frame = 0;
+	while (!done) {
+		int key = KB_event(&press_any_key_interactive);	
+		if (key == 1) done = key;
+
+		if (key == 2) {
+			frame++;
+			if (frame > 3) frame = 0;
+			redraw = 1;
+		}
+
+		if (redraw) {
+			for (i = 0; i < 5; i++) {
+				SDL_Rect dest = { pos.x, pos.y + i * tile->h, tile->w, tile->h };
+				SDL_Rect frm =  { frame * tile->w, 0, tile->w, tile->h };
+				SDL_BlitSurface(tile, NULL, sys->screen, &dest);
+				
+				SDL_Rect tbox =  { pos.x + tile->w, pos.y + i * tile->h, pos.w - tile->w, tile->h };
+				SDL_Rect tline =  { pos.x + tile->w, pos.y + (i+1) * tile->h - 2, pos.w - tile->w  - fs->w/2, 2 };
+				
+				SDL_FillRect(sys->screen, &tbox, 0);
+				if (i < 4)
+				SDL_FillRect(sys->screen, &tline, 0xFFFFFF);		
+
+				if (game->player_numbers[i] == 0) continue;
+				SDL_BlitSurface(troop[i], &frm, sys->screen, &dest);
+				
+				byte troop_id = game->player_troops[i];
+
+				KB_iloc(tbox.x, tbox.y + fs->h / 2);
+				KB_ilh(fs->h + 4);
+				KB_iprintf(" %-3d %s\n", game->player_numbers[i], troops[ troop_id ].name);
+				KB_iprintf(" SL:%2d MV:%2d\n", troops[ troop_id ].skill_level, troops[ troop_id ].move_rate);
+
+				if (army_leadership(game, troop_id) <= 0)
+					KB_iprint(" Out of control!");
+				else
+					KB_iprintf(" Morale:%s\n", morale_names[ troop_morale[i] ]);
+
+				KB_iloc(tbox.x + fs->w * 16, tbox.y + fs->h / 2);
+				KB_ilh(fs->h + 4);
+				KB_iprintf("HitPts:%d\n", troops[ troop_id ].hit_points * game->player_numbers[i]);
+				KB_iprintf("Damage:%d-%d\n", troops[ troop_id ].melee_min * game->player_numbers[i], troops[ troop_id ].melee_max * game->player_numbers[i]);
+				KB_iprintf("G-Cost:%d\n", troops[ troop_id ].recruit_cost / 10 * game->player_numbers[i]);
+			}
+			SDL_Flip(sys->screen);
+			redraw = 0;
+		}
+	}
+
+	for (i = 0; i < 5; i++) {
+		if (game->player_numbers[i] == 0) break;
+		SDL_FreeSurface(troop[i]);
+	}
+
+	SDL_FreeSurface(tile);
+	free(top_frame);
+	free(left_frame);
+	free(right_frame);
+	free(bar_frame);
+}
+
+void temp_death(KBgame *game) {
+	game->continent = HOME_CONTINENT;
+	game->x = HOME_X;
+	game->y = HOME_Y - 1;
+
+	
+	game->gold += game->comission;
+
+	//redraw screen somehow...
+
+	KB_BottomBox("After being disgraced...", "", 1);
+}
+
+void test_defeat(KBgame *game) {
+	if (player_army(game) == 0) {
+		temp_death(game);
+	}
+}
+
+void dismiss_army(KBgame *game) {
+
+	int i, max = 0;
+
+	SDL_Rect *fs = &sys->font_size;
+
+	SDL_Rect *text = KB_BottomBox("Dismiss which army", "", 0);
+
+	KB_iloc(text->x, text->y + fs->h + fs->h / 2);
+	KB_ilh(fs->h + fs->h / 8);
+
+	for (i = 0; i < 5; i++) {
+		if (game->player_troops[i] == 0xFF || game->player_numbers[i] == 0) break;
+
+		KB_imenu(&five_choices, i, 16);
+		KB_iprintf("  %c) %3d %s\n", 'A'+i, game->player_numbers[i], troops[ game->player_troops[i] ].name); 
+	}
+	max = i + 1;
+
+	const char *twirl = "\x1D" "\x05" "\x1F" "\x1C" ; /* stands for: | / - \ */  
+	byte twirl_pos = 0;
+
+	int done = 0;
+	int redraw = 1;
+	while (!done) {
+
+		int key = KB_event(&five_choices);
+
+		if (redraw) {
+			KB_iloc(text->x + fs->w * 19, text->y - fs->h / 4);
+			KB_iprintf("%c", twirl[twirl_pos]);
+
+			SDL_Flip(sys->screen);
+			redraw = 0;
+		}
+
+		if (key && key <= max) {
+			if (max == 1) {
+				printf("If you Dismiss your last\narmy, you will be sent back to the King in disgrace.\n");
+				printf("Dismiss last army (y/n)?/");
+			}
+		
+			dismiss_troop(game, key - 1);
+			done = 1;
+		}
+
+		if (key == 6) {
+			twirl_pos++;
+			if (twirl_pos > 3) twirl_pos = 0;
+			redraw = 1;
+		}		
+
+		if (key == 0xFF) done = 1;
+	}
+
+}
 
 KBgamestate throne_room_or_barracks = {
 	{
@@ -1480,20 +1682,21 @@ KBgamestate throne_room_or_barracks = {
 };
 
 void audience_with_king(KBgame *game) {
-
 	char message[128];
 
 	int captured = 0;
 	int needed = 0;
-	
+
 	int i;
-	
+
 	for (i = 0; i < MAX_VILLAINS; i++)
 		if (game->villain_caught[i]) captured++;
 
 	needed = classes[game->class][game->rank + 1].villains_needed - captured;
 
-	KB_BottomBox(NULL, "Trumpets announce your\narrival with regal fanfare.\n\n"
+	KB_BottomBox(NULL, 
+		"Trumpets announce your\n"
+		"arrival with regal fanfare.\n\n"
 		"King Maximus rises from his\n"
 		"throne to greet you and\n"
 		"proclaims:           (space)", 1);
@@ -1506,7 +1709,6 @@ void audience_with_king(KBgame *game) {
 	game->name, needed);
 
 	KB_BottomBox(message, "", 1);
-
 }
 
 void recruit_soldiers(KBgame *game) {
@@ -2022,17 +2224,14 @@ void visit_alcove(KBgame *game) {
 }
 
 int visit_telecave(KBgame *game, int force) {
-
 	int i;
-printf("VISIT TELECAVE [%d]\n", force);
 	/* See if it's a teleporting cave */
-	for (i = 0; i < 2; i++) {
+	for (i = 0; i < MAX_TELECAVES; i++) {
 		/* If it's one end of the teleport */
 		if (game->teleport_coords[game->continent][i][0] == game->x
 		&&	game->teleport_coords[game->continent][i][1] == game->y) {
 			/* Go to another end */
 			if (force) {
-				printf("WAL IT\n");
 				game->x = game->teleport_coords[game->continent][1 - i][0];
 				game->y = game->teleport_coords[game->continent][1 - i][1];
 			}
@@ -2314,19 +2513,65 @@ void display_overworld(KBgame *game) {
 
 	SDL_FreeSurface(tile);
 
+#define KEY_ACT(ACT) (ARROW_KEYS + 1 + KBACT_ ## ACT)
+
 	while (!done) {
 
 		key = KB_event(&adventure_state);
 
 		if (key == 0xFF) done = 1;
 
-		if (key == ARROW_KEYS + 3) {
-			game->mount = KBMOUNT_FLY;
+		if (key == KEY_ACT(VIEW_ARMY)) {
+			view_army(game);
 		}
 
-		if (key == ARROW_KEYS + 4 && game->mount == KBMOUNT_FLY) {
-			if (game->map[0][game->y][game->x] == 0)
+		if (key == KEY_ACT(VIEW_CONTROLS)) {
+			//view_controls(game);
+		}
+
+		if (key == KEY_ACT(FLY)) {
+			game->mount = KBMOUNT_FLY;
+			redraw = 1;
+		}
+
+		if (key == KEY_ACT(LAND) && game->mount == KBMOUNT_FLY) {
+			if (game->map[game->continent][game->y][game->x] == 0) {
 				game->mount = KBMOUNT_RIDE;
+				redraw = 1;
+			}
+		}
+
+		if (key == KEY_ACT(VIEW_MAP)) {
+			//view_minimap(game);
+		}
+
+		if (key == KEY_ACT(VIEW_PUZZLE)) {
+			//view_puzzle(game);
+		}
+
+		if (key == KEY_ACT(SEARCH)) {
+			//ask_search(game);
+		}
+
+		if (key == KEY_ACT(USE_MAGIC)) {
+			//choose_spell(game, 0);
+		}
+
+		if (key == KEY_ACT(END_WEEK)) {
+			//end_of_week(game);
+		}
+
+		if (key == KEY_ACT(SAVE_QUIT)) {
+
+		}
+		if (key == KEY_ACT(FAST_QUIT)) {
+
+		}
+
+		if (key == KEY_ACT(DISMISS_ARMY)) {
+			dismiss_army(game);
+			test_defeat(game);
+			redraw = 1;
 		}
 
 		if (key == SYN_EVENT) {
