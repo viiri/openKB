@@ -94,7 +94,7 @@ test_file "scale2x.c" "${REMOTE_NAME}" "${REMOTE_FILE}" "${REMOTE_URL}"
 
 REMOTE_NAME=SDL_inprint
 REMOTE_FILE=SDL_inprint
-REMOTE_URL="http://github.com/driedfruit/${REMOTE_NAME}.git"
+REMOTE_URL="git://github.com/driedfruit/${REMOTE_NAME}.git"
 DOWN_CALLBACK=download_git
 INST_CALLBACK=install_inprint
 test_file "inprint.c" "${REMOTE_NAME}" "${REMOTE_FILE}" "${REMOTE_URL}" 
