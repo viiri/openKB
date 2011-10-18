@@ -1641,7 +1641,7 @@ void view_contract(KBgame *game) {
 			if (redraw) {
 
 				/* Blit face */
-				SDL_Rect hsrc = { frame * tile->w, 0, tile->w, sidebar->h };
+				SDL_Rect hsrc = { frame * tile->w, 0, tile->w, tile->h };
 				SDL_BlitSurface( face, &hsrc, screen, &hdst);
 
 				SDL_Flip(sys->screen);
