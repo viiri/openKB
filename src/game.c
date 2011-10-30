@@ -1560,6 +1560,210 @@ void draw_location(int loc_id, int troop_id, int frame) {
 	free(bar_frame);
 }
 
+void view_puzzle(KBgame *game) {
+
+	SDL_Surface *artifacts = SDL_LoadRESOURCE(GR_VIEW, 0, 0);
+	
+	SDL_Surface *tile = SDL_LoadRESOURCE(GR_TILE, 0, 0);
+	
+	SDL_Surface *tileset = SDL_LoadRESOURCE(GR_TILESET, 0, 0);
+
+	SDL_Surface *faces[MAX_VILLAINS];
+
+
+	/*---*/
+	SDL_Rect *fs = &sys->font_size;
+	SDL_Rect pos;
+	SDL_Rect *left_frame = RECT_LoadRESOURCE(RECT_UI, 1);
+	SDL_Rect *top_frame = RECT_LoadRESOURCE(RECT_UI, 0);
+	SDL_Rect *bar_frame  = RECT_LoadRESOURCE(RECT_UI, 4);
+
+	//RECT_Size(&pos, bg); 
+	pos.x = left_frame->w;
+	pos.y = top_frame->h + bar_frame->h + fs->h + 2;
+	/*---*/
+
+	int i;	
+	
+	for (i = 0; i < MAX_VILLAINS; i++) {
+
+		faces[i] = SDL_LoadRESOURCE(GR_VILLAIN, i, 0);
+
+	}
+
+	SDL_Surface *screen = sys->screen;
+
+	int j;
+	
+	int border_x = game->scepter_x - 3;
+	int border_y = game->scepter_y - 3;
+
+	int frame = 0;
+	int done = 0;
+	int redraw = 1;
+	while (!done) {
+
+		int key = KB_event(&press_any_key_interactive);
+		
+		if (key == 0xFF) done = 1;
+		
+		if (key == 2) {
+			frame++;
+			if (frame > 3) frame = 0;
+			redraw = 1;
+		}
+
+		if (redraw) {
+			
+			for (j = 0; j < 5; j ++) {	
+				for (i = 0; i < 5; i ++) {
+
+					int id = puzzle_map[j][i];
+
+					SDL_Rect dst = { pos.x + i * tile->w, pos.y + j * tile->h, tile->w, tile->h };
+
+					if (id < 0) {
+
+						int artifact_id = -id - 1;
+						
+						if (game->artifact_found[artifact_id]) {
+						
+						
+						} else {
+
+							SDL_Rect src = { artifact_id * tile->w, 0, tile->w, tile->h };
+	
+							SDL_BlitSurface( artifacts, &src, screen, &dst);
+
+						}
+
+					} else {
+
+
+						if (game->villain_caught[id] ) {
+						
+						} else {
+							SDL_Rect src = { frame * tile->w, 0, tile->w, tile->h };
+	
+							SDL_BlitSurface( faces[id], &src, screen, &dst);
+						}
+					}
+				}
+			}
+
+			SDL_Flip(sys->screen);
+			redraw = 0;
+		}
+	}
+
+	
+
+	KB_Pause();
+}
+
+KBgamestate minimap_toggle = {
+	{
+		{	{ 0 }, SDLK_SPACE, 0, 0      	},
+		0
+	},
+	0
+};
+
+void view_minimap(KBgame *game) {
+	SDL_Rect border;
+
+	SDL_Surface *screen = sys->screen;
+
+	SDL_Rect *fs = &sys->font_size;
+
+	RECT_Text((&border), 19, 20);
+	RECT_Center(&border, sys->screen);
+
+	border.y += fs->h;
+	border.x -= fs->w * 3;
+
+	Uint32 *colors = KB_Resolve(COL_TEXT, 0);
+
+	Uint32 *map_colors = KB_Resolve(COL_MINIMAP, 0);
+
+	SDL_Surface *tile = SDL_LoadRESOURCE(GR_PURSE, 0, 0);
+
+	SDL_TextRect(sys->screen, &border, colors[0], colors[1]);
+
+	SDL_Rect map;
+
+	SDL_Rect pixel;
+
+	pixel.w = sys->zoom * 2;
+	pixel.h = sys->zoom * 2;
+
+	map.x = border.x + fs->w*2;
+	map.y = border.y + fs->h*2 - fs->h/2;
+	map.w = LEVEL_W * pixel.w;
+	map.h = LEVEL_H * pixel.h;
+
+	SDL_FillRect(sys->screen, &map, 0x112233);
+
+	KB_iloc(border.x + fs->w, border.y + fs->h/2);
+	KB_iprintf("   %s", continent_names[game->continent]);
+
+	KB_iloc(border.x + fs->w, border.y + map.h + (fs->h*2) - fs->h/2);
+	KB_iprintf("X=%d Position Y=%d", game->x, game->y);
+
+	int done = 0;
+	int redraw = 1;
+	int orb = 0;
+	int have_orb = 1;
+	while (!done) {
+	
+		int key = KB_event(&minimap_toggle);
+
+		if (key == 0xFF) done = 1;
+		else if (key) { /* Toggle orb */
+			if (game->orb_found[game->continent]) {
+				orb = 1 - orb;
+				redraw = 1;
+			}
+		}
+
+		if (redraw) {
+
+			int i;
+			int j;
+
+			if (!game->orb_found[game->continent])
+				KB_TopBox("        Press 'ESC' to exit");
+			else if (!orb)
+				KB_TopBox("  'ESC' to exit / 'SPC' whole map");
+			else
+				KB_TopBox("  'ESC' to exit / 'SPC' your map");
+
+			for (j = 0; j < LEVEL_H; j++) {
+				for (i = 0; i < LEVEL_W; i++) {
+		
+					Uint32 color = 0;
+		
+					pixel.x = map.x + (i * pixel.w);
+					pixel.y = map.y + ((LEVEL_H - j - 1) * pixel.h);
+		
+					if (orb || game->fog[game->continent][j][i]) { 
+						byte tile = game->map[game->continent][j][i];
+						color = map_colors[tile];
+					}
+					SDL_FillRect(screen, &pixel, color);
+				}
+				/* DOS aestetics: */
+				/**/SDL_Flip(sys->screen);
+				/**/SDL_Delay(10);
+			}
+
+			SDL_Flip(sys->screen);
+			redraw = 0;
+		}
+
+	}
+}
+
 void view_contract(KBgame *game) {
 
 	SDL_Rect border;
@@ -1605,23 +1809,49 @@ void view_contract(KBgame *game) {
 
 		SDL_Surface *face = SDL_LoadRESOURCE(GR_VILLAIN, villain_id, 0);
 
-		int j;
+		int j, continent = -1, castle = -1;
 
 		int desc_line = villain_id * 14;
+		
+		byte line_offsets[14] = {
+			7,
+			7,
+			7,
+			7,
+			10,
+			0,
+		};
 
-		/* Print first 5 lines */
-		KB_iloc(border.x + fs->w + tile->w + fs->w, border.y + fs->h);
-		for (j = 0; j < 5; j++) {
+		/* Find his castle */
+		for (j = 0; j < MAX_CASTLES; j++) {
+			if (game->castle_owner[j] == KBCASTLE_PLAYER
+			 || game->castle_owner[j] == KBCASTLE_MONSTERS) continue;
+			continent = game->continent;
+			if (game->castle_owner[j] & KBCASTLE_KNOWN)
+				castle = j;
+			else
+				break; /* No point in continuing from here, castle has been found */
+		}
+
+		/* Print all 14 lines */
+		KB_iloc(border.x + fs->w, border.y + fs->h);
+		for (j = 0; j < 14; j++) {
+			KB_icurs( line_offsets[j], j);
 			char *text = KB_Resolve(STR_VDESC, desc_line + j);
 			KB_iprintf("%s\n", text);
 		}
 
-		/* Print the rest of the lines */
-		KB_iloc(border.x + fs->w + fs->w, border.y + (fs->h * 6));
-		for (j = 5; j < 14; j++) {
-			char *text = KB_Resolve(STR_VDESC, desc_line + j);
-			KB_iprintf("%s\n", text);
-		}
+		/* Print known info (continent and castle of residence) */
+		KB_icurs(18, 3);
+		if (continent == -1)
+			KB_iprint("Unknown");
+		else
+			KB_iprint(continent_names[continent]);
+		KB_icurs(18, 4);
+		if (castle == -1)
+			KB_iprint("Unknown");
+		else
+			KB_iprint(castle_names[castle]);
 
 		int done = 0;
 		int frame = 0;
@@ -2835,11 +3065,11 @@ void display_overworld(KBgame *game) {
 		}
 
 		if (key == KEY_ACT(VIEW_MAP)) {
-			//view_minimap(game);
+			view_minimap(game);
 		}
 
 		if (key == KEY_ACT(VIEW_PUZZLE)) {
-			//view_puzzle(game);
+			view_puzzle(game);
 		}
 
 		if (key == KEY_ACT(SEARCH)) {

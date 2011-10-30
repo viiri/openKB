@@ -26,6 +26,10 @@
 #define KBMOUNT_FLY 	4
 #define KBMOUNT_RIDE	8
 
+#define KBCASTLE_KNOWN  	0x40
+#define KBCASTLE_PLAYER 	0xFF
+#define KBCASTLE_MONSTERS	0x7F
+
 #define MAX_CONTINENTS 4
 #define LEVEL_W	64
 #define LEVEL_H	64
@@ -260,5 +264,7 @@ extern char *continent_names[4];
 
 extern byte castle_coords[MAX_CASTLES][3];	/* [continent][x][y] */
 extern byte town_coords[MAX_CASTLES][3];
+
+extern signed char puzzle_map[5][5]; /* each piece is covered by villain face or artifact */
 
 #endif /* _OPENKB_BOUNTY_H */

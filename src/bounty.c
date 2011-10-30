@@ -373,3 +373,11 @@ byte town_coords[MAX_CASTLES][3] = {
 	{ 3, 58,48  },
 };
 
+/* values < 0 (-1,-2,-3,...) are artifacts, values >= 0 (0,1,2,...) are villains */
+signed char puzzle_map[5][5] = {
+	{ -1, 7, -2, 6, -3, },
+	{  5,15, 14,13,  4, },
+	{ -4,12, 16,11, -5, },
+	{  3,10,  9, 8,  2, },
+	{ -6, 1, -7, 0, -8, },
+};
