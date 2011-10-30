@@ -30,6 +30,7 @@ KBgame* KB_loadDAT(const char* filename) {
 	KBgame *game;
 	FILE *f;
 	int n, k, map_size;
+	int x, y;
 
 	f = fopen(filename, "rb");
 	if (f == NULL) return NULL;
@@ -135,11 +136,21 @@ KBgame* KB_loadDAT(const char* filename) {
 	game->scepter_x = READ_BYTE(p);
 	game->scepter_y = READ_BYTE(p);
 
-	/* Fog of war */
+	/* Unknown?? */
+	p += 1;
+
+	/* Fog of war (convert from 1-bit-per-tile to 1-byte-per-tile format) */
 	map_size = ( MAX_CONTINENTS * LEVEL_W * LEVEL_H );
-	n = map_size / 8 + 1; 
-	memcpy(game->fog, p, n);
-	p += n;
+	for (n = 0; n < MAX_CONTINENTS; n++) {
+		for (y = 0; y < LEVEL_H; y++)
+		for (x = 0; x < LEVEL_W; x += 8) {
+			char test_bits = READ_BYTE(p);
+			for (k = 0; k < 8; k++) {
+				char one_bit = ((test_bits & (0x01 << k)) >> k) & 0x01;
+				game->fog[n][y][x + 7 - k] = one_bit;
+			}
+		}
+	}
 
 	/* Castle garrison troops */
 	for (n = 0; n < MAX_CASTLES; n++)
