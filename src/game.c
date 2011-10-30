@@ -17,14 +17,14 @@
  *  You should have received a copy of the GNU General Public License
  *  along with openkb.  If not, see <http://www.gnu.org/licenses/>.
  */
+// For the meantime, use SDL directly, it if gets unwieldy, abstract it away 
+#include "SDL.h"
+
 #include "bounty.h"
 #include "lib/kbconf.h"
 #include "lib/kbres.h"
 #include "lib/kbauto.h"
 #include "lib/kbstd.h"
-
-// For the meantime, use SDL directly, it if gets unwieldy, abstract it away 
-#include "SDL.h"
 
 #include "../vendor/vendor.h" /* scale2x, inprint, etc */
 
@@ -57,7 +57,7 @@ typedef struct KBhotspot {
 		};
 	};
 
-	word	hot_key;
+	Uint32	hot_key;
 	byte	hot_mod;
 	byte	flag;
 
@@ -352,12 +352,12 @@ int KB_event(KBgamestate *state) {
 
 		if (event.type == SDL_KEYUP) {
 			SDL_keysym *kbd = &event.key.keysym;
-			kbd_state[kbd->sym] = 0;
+			kbd_state[kbd->scancode] = 0;
 		}
 
 		if (event.type == SDL_KEYDOWN) {
 			SDL_keysym *kbd = &event.key.keysym;
-			kbd_state[kbd->sym] = 1;
+			kbd_state[kbd->scancode] = 1;
 			for (i = 0; i < state->max_spots; i++) {
 				KBhotspot *sp = &state->spots[i];
 				if ((sp->flag & KFLAG_ANYKEY) || 
