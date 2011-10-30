@@ -74,6 +74,7 @@
 #define SN_TUNE		0x60	/* subId - tune index (0-10) */
 #define PAL_PALETTE	0x70	/* subId - undefined */
 #define COL_TEXT	0x71	/* subId - undefined */
+#define COL_MINIMAP	0x72	/* subId - undefined */
 
 #define DAT_WORLD	0x90	/* complete world map ; subId - undefined */
 #define DAT_LAND	0x91	/* map for specific continent ; subId - continent index */

@@ -721,7 +721,59 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 			if (sub_id == 4) middle_name = "cave";
 			if (sub_id == 5) middle_name = "dngn";
 		}
-		break;		
+		break;
+		case COL_MINIMAP:
+		{
+			enum {
+				SHALLOW_WATER,
+				DEEP_WATER,
+				GRASS,
+				DESERT,
+				ROCK,
+				TREE,
+				CASTLE,
+				MAP_OBJECT,
+			} tile_type;
+			Uint32 ega_minimap_index[8] = {
+				0x0000FF,
+				0x0000AA,
+				0x00FF00,
+				0xFFFF55,
+				0xAA5500,
+				0x00AA00,
+				0xFFFFFF,
+				0xFF0000,
+				0x999999,
+			};
+			static Uint32 colors[255];
+
+			byte tile;
+			for (tile = 0; tile < 255; tile++) {
+#define IS_GRASS(M) ((M) < 2 || (M) == 0x80)
+#define IS_WATER(M) ((M) >= 0x14 && (M) <= 0x20)
+#define IS_DESERT(M) ((M) >= 0x2e && (M) <= 0x3a)
+#define IS_INTERACTIVE(M) ((M) & 0x80)
+
+#define IS_ROCK(M) ((M) >= 59 && (M) <= 71)
+#define IS_TREE(M) ((M) >= 33 && (M) <= 45)
+#define IS_CASTLE(M) ((M) >= 0x02 && (M) <= 0x07)
+#define IS_MAPOBJECT(M) ((M) >= 10 && (M) <= 19)
+#define IS_DEEP_WATER(M) ((M) == 32)
+
+				if ( IS_GRASS(tile) ) tile_type = GRASS;
+				else if ( IS_DEEP_WATER(tile) ) tile_type = DEEP_WATER;
+				else if ( IS_WATER(tile) ) tile_type = SHALLOW_WATER;
+				else if ( IS_DESERT(tile) ) tile_type = DESERT;
+				else if ( IS_ROCK(tile) ) tile_type = ROCK;
+				else if ( IS_TREE(tile) ) tile_type = TREE;
+				else if ( IS_CASTLE(tile) ) tile_type = CASTLE;
+				else if ( IS_MAPOBJECT(tile) || IS_INTERACTIVE(tile)) tile_type = MAP_OBJECT;
+
+				colors[tile] = ega_minimap_index[tile_type];
+			}
+			return &colors;
+		}
+		break;
 		case COL_TEXT:
 		{
 			static Uint32 colors[16] = {
