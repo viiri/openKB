@@ -70,8 +70,6 @@ char* DOS_read_strings(KBmodule *mod, int off, int endoff) {
 	return buf;
 }
 
-char* DOS_read_strings(KBmodule *mod, int off, int endoff);
-
 char *DOS_troop_names[] = {
     "peas","spri","mili","wolf","skel","zomb","gnom","orcs","arcr","elfs",
     "pike","noma","dwar","ghos","kght","ogre","brbn","trol","cavl","drui",
