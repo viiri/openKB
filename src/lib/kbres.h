@@ -121,6 +121,9 @@ extern void put_color_pal(SDL_Surface *dest, Uint32 fore, Uint32 back);
 extern void DOS_BlitRAWIMG(SDL_Surface *surf, SDL_Rect *destrect, const char *buf, byte bpp, word mask_pos);
 extern void DOS_SetColors(SDL_Surface *surf, byte bpp);
 
+extern char* DOS_villain_names[];
+extern char* DOS_troop_names[];
+
 extern SDL_Surface* DOS_LoadRAWCH_BUF(char *buf, int len);
 extern SDL_Surface* DOS_LoadRAWIMG_BUF(char *buf, int len, byte bpp);
 extern SDL_Surface* DOS_LoadIMGROW_RW(SDL_RWops *rw, word first, word frames); 
