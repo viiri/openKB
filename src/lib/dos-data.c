@@ -375,55 +375,19 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 		break;
 		case STRL_SIGNS:
 		{
-			static char buf[4096];
-			static char pbuf[4096];
-
-	int segment = 0x15850;
-
-			int ptroff = 0x1844D;
-			int off = 0x191CB;
+			char *buf = DOS_read_strings(mod, 0x191CB, 0x19815);
+			//int ptroff = 0x1844D;
 			int len = 0x19815 - 0x191CB;
-			
-			KB_File *f;	int n;   
-
-			KB_debuglog(0,"? DOS EXE FILE: %s\n", "KB.EXE");
-			f = KB_fopen_with("kb.exe", "rb", mod);
-			if (f == NULL) return NULL;
-#if 0			
-			KB_fseek(f, ptroff, 0);
-			n = KB_fread(&pbuf[0], sizeof(char), len, f);
-#endif
-			KB_fseek(f, off, 0);
-			n = KB_fread(&buf[0], sizeof(char), len, f);
-			KB_fclose(f);
-			
-			char *p = &pbuf[0];
-			
-		
+			/* Signs need some extra work */
 			int i, j = 1;
-			for (i = 0; i < n - 1; i++)  {
+			for (i = 0; i < len - 1; i++)  {
 				if (buf[i] == '\0') {
 					if (j) buf[i] = '\n';
-					j=1-j;
+					j= 1 - j;
 				}
 			}
 
-#if 0			
-			//READ_WORD_BE(p);
-			//p+=2;
-			for (i = 1; i < 20; i++) {
-				word soff;
-				soff = READ_WORD_BE(p);
-				//p+=2;
-				buf[soff + segment - off - 1] = '\0';
-				printf("\n####");
-				printf("Splitting: '%s'\n", &buf[soff + segment - off]);
-				sleep(1);
-				//KB_fseek(f, segment + soff, 0);
-			}
-#endif
-
-			return &buf[0];
+			return buf;
 		}
 		break;
 		case STR_VNAME:
@@ -433,41 +397,8 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 		break;
 		case STRL_VNAMES:
 		{
-			static char buf[4096];
-			static char pbuf[4096];
-
-	int segment = 0x15850;
-
-			int ptroff = 0x1842C;
-			int off = 0x190A5;
-			int len = 0x191cb - off;
-
-			KB_File *f;	int n;   
-
-			KB_debuglog(0,"? DOS EXE FILE: %s\n", "KB.EXE");
-			f = KB_fopen_with("kb.exe", "rb", mod);
-			if (f == NULL) return NULL;
-#if 1			
-			KB_fseek(f, ptroff, 0);
-			n = KB_fread(&pbuf[0], sizeof(char), len, f);
-#endif
-			KB_fseek(f, off, 0);
-			n = KB_fread(&buf[0], sizeof(char), len, f);
-			KB_fclose(f);
-
-			char *p = &pbuf[0];
-
-#if 1		
-			int i;
-			for (i = 0; i < 17; i++) {
-				word soff;
-				soff = READ_WORD(p);
-				KB_debuglog(0, "%02x [%04x - %08x] Splitting: '%s' %c %d \n", i, soff, soff + segment, &buf[soff + segment - off]);
-				//KB_fseek(f, segment + soff, 0);
-			}
-#endif
-
-			return &buf[0];
+			return DOS_read_strings(mod, 0x190A5, 0x191cb);
+			//int ptroff = 0x1842C;
 		}
 		break;
 		case STR_VDESC:
@@ -479,42 +410,8 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 		break;
 		case STRL_VDESCS:
 		{
-			static char buf[24096];
-			static char pbuf[24096];
-
-	int segment = 0x15850;
-
-			int ptroff = 0x16bf4;
-			int off = 0x16edf;
-			int len = 0x18427- off;
-
-			KB_File *f;	int n;   
-
-			KB_debuglog(0,"? DOS EXE FILE: %s\n", "KB.EXE");
-			f = KB_fopen_with("kb.exe", "rb", mod);
-			if (f == NULL) return NULL;
-#if 1			
-			KB_fseek(f, ptroff, 0);
-			n = KB_fread(&pbuf[0], sizeof(char), len, f);
-#endif
-			KB_fseek(f, off, 0);
-			n = KB_fread(&buf[0], sizeof(char), len, f);
-			KB_fclose(f);
-
-			char *p = &pbuf[0];
-#if 1
-			int i, j;
-			for (i = 0; i < 17; i++) {
-				for (j = 0; j < 13; j ++) {
-					word soff;
-					soff = READ_WORD(p);
-					//printf("%02x [%04x - %08x] Splitting: '%s' %c %d \n", i, soff, soff + segment, &buf[soff + segment - off]);
-					//KB_fseek(f, segment + soff, 0);
-				}
-			}
-#endif
-
-			return &buf[0];
+			return DOS_read_strings(mod, 0x16edf, 0x18427);
+			//int ptroff = 0x16bf4;//17 * 13
 		}
 		break;
 		case STR_CREDIT:
@@ -526,7 +423,7 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 		{
 			return DOS_read_strings(mod, 0x16031, 0x160FF);
 		}
-		break;		
+		break;
 		case RECT_MAP:
 		{
 			return &DOS_frame_map;
