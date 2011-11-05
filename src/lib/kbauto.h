@@ -38,7 +38,7 @@ extern void register_module(KBconfig *conf, KBmodule *mod);
 //KBstd material?
 extern void name_split(const char *name, char *base, char *ext);
 
-KB_DIR  * KB_opendir_with(const char *filename, KBmodule *mod);
-KB_File * KB_fopen_with(const char *filename, char *mode, KBmodule *mod);
+extern KB_DIR  * KB_opendir_with(const char *filename, KBmodule *mod);
+extern KB_File * KB_fopen_with(const char *filename, char *mode, KBmodule *mod);
 
 #endif /* _OPENKB_LIBKB_AUTO */
