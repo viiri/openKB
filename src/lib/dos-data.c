@@ -84,6 +84,14 @@ char *DOS_villain_names[] = {
     "ragf","mahk","auri","czar","magu","urth","arec",
 };
 
+char *DOS_class_names[] = {
+	"knig","pala","sorc","barb"
+};
+
+char *DOS_location_names[] = {
+	"cstl","town","plai","frst","cave","dngn"
+};
+
 /* Border frame sizes in DOS layout, in pixels */
 SDL_Rect DOS_frame_ui[6] = {
 	{	0, 0, 320, 8 	}, /* Top */
@@ -96,6 +104,12 @@ SDL_Rect DOS_frame_ui[6] = {
 /* 'map viewscreen' position in DOS layout, in pixels */
 SDL_Rect DOS_frame_map =
 	{	16, 14 + 7, DOS_TILE_W * 5, DOS_TILE_H * 5	};
+
+/* Whatever static resources need run-time initialization - do it here */
+void DOS_PrepareStatic(KBmodule *mod) {
+
+
+}
 
 
 void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
@@ -193,8 +207,8 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 #define SDL_ClonePalette(DST, SRC) SDL_SetPalette((DST), SDL_LOGPAL | SDL_PHYSPAL, (SRC)->format->palette->colors, 0, (SRC)->format->palette->ncolors)
 			/* This one must be assembled */
 			int i;
-			SDL_Rect dst = { 0, 0, 48, 34 };
-			SDL_Rect src = { 0, 0, 48, 34 };
+			SDL_Rect dst = { 0, 0, DOS_TILE_W, DOS_TILE_H };
+			SDL_Rect src = { 0, 0, DOS_TILE_W, DOS_TILE_H };
 			SDL_Surface *ts = SDL_CreatePALSurface(8 * dst.w, 70/7 * dst.h);
 			for (i = 0; i < 72; i++) {
 				SDL_Surface *tile = DOS_Resolve(mod, GR_TILE, i);
@@ -272,25 +286,19 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 		case GR_PORTRAIT:	/* subId - class */
 		{
 			method = RAW_IMG;
-			middle_name = "knig";
 			suffix = bpp_names[mod->bpp];
 			ident = "#0";
-			if (sub_id == 1) middle_name = "pala";
-			if (sub_id == 2) middle_name = "sorc";
-			if (sub_id == 3) middle_name = "barb";
+			if (sub_id < 0 || sub_id > 3) sub_id = 0;
+			middle_name = DOS_class_names[sub_id];
 		}
 		break;
 		case GR_LOCATION:	/* subId - 0 home 1 town 2 - 6 dwelling */
 		{
 			method = RAW_IMG;
-			middle_name = "cstl";
 			suffix = bpp_names[mod->bpp];
 			ident = "#0";
-			if (sub_id == 1) middle_name = "town";
-			if (sub_id == 2) middle_name = "plai";
-			if (sub_id == 3) middle_name = "frst";
-			if (sub_id == 4) middle_name = "cave";
-			if (sub_id == 5) middle_name = "dngn";
+			if (sub_id < 0 || sub_id > 5) sub_id = 0;
+			middle_name = DOS_location_names[sub_id];
 		}
 		break;
 		case COL_MINIMAP:
@@ -314,7 +322,6 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 				0x00AA00,
 				0xFFFFFF,
 				0xFF0000,
-				0x999999,
 			};
 			static Uint32 colors[255];
 
@@ -431,6 +438,7 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 		break;
 		case RECT_UI:
 		{
+			if (sub_id < 0 || sub_id > 4) sub_id = 0;
 			return &DOS_frame_ui[sub_id];
 		}
 		break;
