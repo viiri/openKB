@@ -516,6 +516,8 @@ KB_File *KB_fopen_with(const char *filename, char *mode, KBmodule *mod) {
 	return f;
 }
 
+char* DOS_read_strings(KBmodule *mod, int off, int endoff);
+
 char *troop_names[] = {
     "peas","spri","mili","wolf","skel","zomb","gnom","orcs","arcr","elfs",
     "pike","noma","dwar","ghos","kght","ogre","brbn","trol","cavl","drui",
@@ -944,6 +946,16 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 #endif
 
 			return &buf[0];
+		}
+		break;
+		case STR_CREDIT:
+		{
+			return (void*)KB_strlist_ind(DOS_Resolve(mod, STRL_CREDITS, 0), sub_id);
+		}
+		break;
+		case STRL_CREDITS:
+		{
+			return DOS_read_strings(mod, 0x16031, 0x160FF);
 		}
 		break;		
 		case RECT_MAP:

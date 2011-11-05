@@ -941,22 +941,19 @@ void show_credits() {
 
 	KB_MessageColor(0x0000AA, 0xFFFFFF, 0xFFFF55);
 
-	max = KB_MessageBox(
-		"King's Bounty Designed By:    "
-		"  Jon Van Caneghem\n"
-		"\n"
-		"Programmed By:\n"
-		"  Mark Caldwell\n"
-		"  Andy Caldwell\n"
-		"\n"
-		"Graphics By:\n"
-		"  Kenneth L. Mayfield\n"
-		"  Vincent DeQuattro, Jr.\n"
-		"\n"
-		"      Copyright 1990-95\n"
-		"   New World Computing, Inc\n"
-		"     All Rights Reserved"
-		, 2);
+	char *credits = KB_Resolve(STRL_CREDITS, 0);
+	if (credits == NULL) return;
+	int i, j = 0, n = 10;
+	char *credit = credits;
+	for (i = 0; i < n; ) {
+		if (*credit == '\0') {
+			i++;
+			*credit = '\n';
+		}
+		credit++;
+	}
+	
+	max = KB_MessageBox(credits, 2);
 
 	SDL_Rect pos = { 0 };
 
