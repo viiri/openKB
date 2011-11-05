@@ -4,6 +4,9 @@
 
 #define DATA_SEGMENT 0x15850
 
+#define DOS_TILE_W 48
+#define DOS_TILE_H 34
+
 #if 0
 /* Another method of loading strings -- by appropriate offsets into DATA_SEGMENT */
 char* DOS_read_string_p(KBmodule *mod, int ptroff, int off, int endoff) {
@@ -80,6 +83,20 @@ char *DOS_villain_names[] = {
     "mury","hack","ammi","baro","drea","cane","mora","barr","barg","rina",
     "ragf","mahk","auri","czar","magu","urth","arec",
 };
+
+/* Border frame sizes in DOS layout, in pixels */
+SDL_Rect DOS_frame_ui[6] = {
+	{	0, 0, 320, 8 	}, /* Top */
+	{	0, 0, 16, 200	}, /* Left */
+	{	300, 0, 16, 200	}, /* Right */ 
+	{	0, 0, 320, 8	}, /* Bottom */
+	{	0, 17, 280, 5	}, /* Bar */
+};
+
+/* 'map viewscreen' position in DOS layout, in pixels */
+SDL_Rect DOS_frame_map =
+	{	16, 14 + 7, DOS_TILE_W * 5, DOS_TILE_H * 5	};
+
 
 void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 
@@ -512,45 +529,14 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 		break;		
 		case RECT_MAP:
 		{
-			static SDL_Rect map = {	16, 14 + 7, 48 * 5, 34 * 5	};
-			return &map;
+			return &DOS_frame_map;
 		}
 		break;
 		case RECT_UI:
-			switch (sub_id) {
-			case 0:		/* Top */
-			{
-				static SDL_Rect ui = {	0, 0, 320, 8 	};
-				return &ui;
-			}
-			break;
-			case 1:		/* Left */
-			{
-				static SDL_Rect ui = {	0, 0, 16, 200	};
-				return &ui;
-			}
-			break;
-			case 2:		/* Right */
-			{
-				static SDL_Rect ui = {	300, 0, 16, 200	};
-				return &ui;
-			}
-			break;
-			case 3:		/* Bottom */
-			{
-				static SDL_Rect ui = {	0, 0, 320, 8	};
-				return &ui;
-			}
-			break;
-			case 4:		/* Bar */
-			{
-				static SDL_Rect ui = {	0, 17, 280, 5	};
-				return &ui;
-			}
-			break;
-			default: break;
-			}
-		break;		
+		{
+			return &DOS_frame_ui[sub_id];
+		}
+		break;
 		default: break;
 	}
 
