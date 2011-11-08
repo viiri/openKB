@@ -51,7 +51,7 @@ extern void  KB_debuglog(int mod, char *fmt, ...);
 /*
  * Return Nth word in an asciiz-list
  */
-const char* KB_strlist_ind(const char *list, int id);
+extern char* KB_strlist_ind(const char *list, int id);
 
 /*
  * Match a string in an asciiz-list, return word_index+1 on success, 0 on failure

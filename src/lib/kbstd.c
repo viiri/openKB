@@ -71,7 +71,7 @@ void  KB_errlog(char *fmt, ...)
 	va_end(argptr);
 }
 
-const char* KB_strlist_ind(const char *list, int id)
+char* KB_strlist_ind(const char *list, int id)
 {
 	const char *match = list;
 	int w = 0;
@@ -87,7 +87,7 @@ const char* KB_strlist_ind(const char *list, int id)
 		}
 		list++;				
 	}
-	return match;
+	return (char*)match;
 }
 
 int KB_strlistcmp(const char *list, const char *needle)
