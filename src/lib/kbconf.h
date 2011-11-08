@@ -46,6 +46,8 @@ typedef struct KBmodule {
 	int bpp;
 	
 	int kb_family;
+	
+	void *cache;
 
 } KBmodule;
 

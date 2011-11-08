@@ -167,18 +167,36 @@ int verify_file(const char *name, const char *path) {
 	return id;
 }
 
+extern void DOS_Init(KBmodule *mod);
+
 void init_module(KBmodule *mod) {
-	int i;
+	switch (mod->kb_family) {
+//		case KBFAMILY_GNU: GNU_Init(mod); break;
+		case KBFAMILY_DOS: DOS_Init(mod); break;
+//		case KBFAMILY_MD:  MD_Init(mod); break;
+		default: break;
+	}
+}
+void init_modules(KBconfig *conf) {
+	int i, l;
+	i = conf->module;
+	l = (conf->num_modules * conf->fallback) + ((i+1) * (1-conf->fallback));
+	for (; i < l; i++) init_module(&conf->modules[i]);
 }
 
-void init_modules(KBconfig *conf) {
-	int i;
-}
 void stop_module(KBmodule *mod) {
-	int i;
+	switch (mod->kb_family) {
+//		case KBFAMILY_GNU: GNU_Stop(mod); break;
+		case KBFAMILY_DOS: DOS_Stop(mod); break;
+//		case KBFAMILY_MD:  MD_Stop(mod); break;
+		default: break;
+	}
 }
 void stop_modules(KBconfig *conf) {
-	int i;
+	int i, l;
+	i = conf->module;
+	l = (conf->num_modules * conf->fallback) + ((i+1) * (1-conf->fallback));
+	for (; i < l; i++) stop_module(&conf->modules[i]);
 }
 
 void wipe_module(KBmodule *mod) {
@@ -188,6 +206,7 @@ void wipe_module(KBmodule *mod) {
 	mod->slotA = NULL;
 	mod->slotB = NULL;
 	mod->slotC = NULL;
+	mod->cache = NULL;
 }
 
 void register_module(KBconfig *conf, KBmodule *mod) {
@@ -233,9 +252,9 @@ void add_module_aux(KBconfig *conf, const char *name, int family, int bpp, const
 	conf->modules[i].slotA = NULL;
 	conf->modules[i].slotB = NULL;
 	conf->modules[i].slotC = NULL;
-
 	conf->modules[i].kb_family = family;
 	conf->modules[i].bpp = bpp;
+	
 	conf->num_modules++;
 
 		KB_debuglog(1, "Module: %s\n", conf->modules[i].name);

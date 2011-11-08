@@ -4,8 +4,76 @@
 
 #define DATA_SEGMENT 0x15850
 
+#define MCGA_PALETTE_OFFSET	0x032D
+
 #define DOS_TILE_W 48
 #define DOS_TILE_H 34
+
+typedef struct DOS_Cache {
+
+	SDL_Color *vga_palette;
+
+} DOS_Cache;
+
+SDL_Color * DOS_ReadPalette_RW(SDL_RWops *rw) {
+	SDL_Color *pal;
+	KB_File *f;
+
+	char buf[768], *p;
+	int i, n;
+
+	SDL_RWseek(rw, MCGA_PALETTE_OFFSET, 0);
+
+	n = SDL_RWread(rw, &buf[0], sizeof(char), 768);
+	if (n != 768) return NULL;
+
+	pal = malloc(sizeof(SDL_Color) * 256);
+	if (pal == NULL) return NULL;
+
+	p = &buf[0];
+	for (i = 0; i < 256; i++) {
+		byte vga_r = READ_BYTE(p);
+		byte vga_g = READ_BYTE(p);
+		byte vga_b = READ_BYTE(p);
+		/* 6-bit VGA to 8-bit RGB: */
+		pal[i].r = (vga_r * 255) / 63;
+		pal[i].g = (vga_g * 255) / 63;
+		pal[i].b = (vga_b * 255) / 63;
+	}
+	return pal;
+}
+
+SDL_Color * DOS_ReadPalette_FD(KB_File *f) {
+	SDL_Color *pal = NULL;
+	SDL_RWops *rw = KBRW_open(f);
+	pal = DOS_ReadPalette_RW(rw);
+	KBRW_close(rw);
+	return pal;
+}
+
+SDL_Color * DOS_ReadPalette(KBmodule *mod, const char *filename) {
+	return DOS_ReadPalette_FD(KB_fopen_with(filename, "rb", mod));
+}
+
+void DOS_SetPalette(KBmodule *mod, SDL_Surface *dst, int bpp) {
+
+	DOS_Cache *ch = mod->cache;
+	if (ch) {
+		SDL_Color *pal = ch->vga_palette;
+
+		if (pal) {
+
+			SDL_SetColors(dst, pal, 0, 256);
+	
+			return;
+		}
+
+	}
+
+	DOS_SetColors(dst, bpp);
+
+}
+
 
 #if 0
 /* Another method of loading strings -- by appropriate offsets into DATA_SEGMENT */
@@ -48,7 +116,7 @@ char* DOS_read_strings(KBmodule *mod, int off, int endoff) {
 	char *buf;
 
 	int len = endoff - off;
-
+	
 	KB_File *f;	
 	int n;
 
@@ -104,6 +172,36 @@ SDL_Rect DOS_frame_ui[6] = {
 /* 'map viewscreen' position in DOS layout, in pixels */
 SDL_Rect DOS_frame_map =
 	{	16, 14 + 7, DOS_TILE_W * 5, DOS_TILE_H * 5	};
+
+SDL_Rect DOS_frame_tile =	/* Size of one tile */
+	{	0, 0, DOS_TILE_W, DOS_TILE_H };
+
+
+void DOS_Init(KBmodule *mod) {
+
+	DOS_Cache *cache = malloc(sizeof(DOS_Cache));
+
+	if (cache) { 
+		/* Init */
+		cache->vga_palette = NULL;
+		/* Set */
+		mod->cache = cache;
+		/* Pre-cache some things */
+		if (mod->bpp == 8) {
+			cache->vga_palette = DOS_ReadPalette(mod, "MCGA.DRV");
+		}
+	}
+
+}
+
+void DOS_Stop(KBmodule *mod) {
+
+	DOS_Cache *cache = mod->cache;
+	
+	free(cache->vga_palette);
+	free(mod->cache);
+
+}
 
 /* Whatever static resources need run-time initialization - do it here */
 void DOS_PrepareStatic(KBmodule *mod) {
@@ -436,11 +534,21 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 			return &DOS_frame_map;
 		}
 		break;
+		case RECT_TILE:
+		{
+			return &DOS_frame_tile;
+		}
+		break;
 		case RECT_UI:
 		{
 			if (sub_id < 0 || sub_id > 4) sub_id = 0;
 			return &DOS_frame_ui[sub_id];
 		}
+		case RECT_UITILE:
+		{
+			return &DOS_frame_tile;
+		}
+		break;
 		break;
 		default: break;
 	}
@@ -477,7 +585,8 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 
 					if (method == RAW_IMG) {
 						surf = DOS_LoadRAWIMG_BUF(&buf[0], n, bpp);
-						if (mod->bpp == 1) DOS_SetColors(surf, 1);
+						//if (mod->bpp == 1) DOS_SetColors(surf, 1);
+						DOS_SetPalette(mod, surf, mod->bpp);
 					}
 					else
 						surf = DOS_LoadRAWCH_BUF(&buf[0], n);
@@ -491,7 +600,8 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 					if (d == NULL) return NULL;				
 
 					surf = DOS_LoadIMGROW_DIR(d, row_start, row_frames);
-					if (mod->bpp == 1) DOS_SetColors(surf, 1);	
+					//if (mod->bpp == 1) DOS_SetColors(surf, 1);	
+					DOS_SetPalette(mod, surf, mod->bpp);
 					
 					KB_closedir(d);
 				}
