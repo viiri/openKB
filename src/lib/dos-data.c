@@ -1,3 +1,4 @@
+#include "kbauto.h"
 #include "kbconf.h"
 #include "kbfile.h"
 #include "kbres.h"
@@ -521,7 +522,7 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 		break;
 		case STR_CREDIT:
 		{
-			return (void*)KB_strlist_ind(DOS_Resolve(mod, STRL_CREDITS, 0), sub_id);
+			return KB_strlist_ind(DOS_Resolve(mod, STRL_CREDITS, 0), sub_id);
 		}
 		break;
 		case STRL_CREDITS:
@@ -609,7 +610,7 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 				default: break;
 			}
 
-			return (void*)surf;
+			return surf;
 		}
 		break;
 		default: break;
