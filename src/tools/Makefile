@@ -6,7 +6,7 @@ LFLAGS=
 SDL_CFLAGS=-g `sdl-config --cflags` -DHAVE_LIBSDL
 SDL_LFLAGS=`sdl-config --libs` -lSDL_image
 
-LIB_SOURCES=../lib/kbdir.c ../lib/kbfile.c ../lib/dos-img.c ../lib/dos-cc.c ../lib/kbstd.c ../lib/kbres.c ../lib/kbauto.c ../../vendor/strlcat.c ../../vendor/strlcpy.c
+LIB_SOURCES=../lib/kbdir.c ../lib/kbfile.c ../lib/dos-data.c ../lib/dos-img.c ../lib/dos-cc.c ../lib/kbstd.c ../lib/kbres.c ../lib/kbauto.c ../../vendor/strlcat.c ../../vendor/strlcpy.c
 
 all: kbcc kbview kbplay kbrowse
 
