@@ -81,6 +81,8 @@
 
 #define RECT_MAP	0xA0	/* SDL_Rect describing map area */
 #define RECT_UI 	0xA1	/* SDL_Rect describing ui border area; subId - element index */
+#define RECT_TILE 	0xA2	/* SDL_Rect describing one map tile */
+#define RECT_UITILE	0xA3	/* SDL_Rect describing sidebar button */
 
 #define STR_SIGN	0xE0	/* signpost text ; subId - signpost index */
 #define STR_TROOP	0xE1	/* troop name ; subId - troop index */
@@ -95,6 +97,12 @@
 #define STRL_VNAMES 0xF3	/* villains names ; subId - undefined */
 #define STRL_VDESCS 0xF4	/* villains descriptions ; subId - villain id */
 #define STRL_CREDITS 0xF5	/* credits ; subId - undefined */
+
+#define FRAME_TOP   	0
+#define FRAME_LEFT  	1
+#define FRAME_RIGHT 	2
+#define FRAME_BOTTOM	3
+#define FRAME_MIDDLE	4
 
 #ifdef HAVE_LIBSDL
 /* SDL flavor. */

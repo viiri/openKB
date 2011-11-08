@@ -36,6 +36,91 @@
 /* Global/main environment */
 KBenv *sys = NULL;
 
+struct {
+
+	SDL_Rect *frames[6];
+
+	SDL_Surface *border[6];
+
+	SDL_Rect map;
+	SDL_Rect status;
+	SDL_Rect side;
+
+	SDL_Rect *map_tile;
+	SDL_Rect *side_tile;
+
+	int boat_flip;
+	int hero_flip;
+
+} local = { NULL };
+
+void update_frames();
+
+void prepare_resources() {
+
+	int i;
+
+	for (i = 0; i < 5; i++) 
+		local.frames[i] = RECT_LoadRESOURCE(RECT_UI, i);
+
+	//local.border[0] = SDL_LoadRESOURCE(GR_UI, 0, 0);
+	//local.border[1] = SDL_LoadRESOURCE(GR_UI, 1, 0);
+	//local.border[2] = SDL_LoadRESOURCE(GR_UI, 2, 0);
+	//local.border[3] = SDL_LoadRESOURCE(GR_UI, 3, 0);
+
+	local.border[FRAME_MIDDLE] = SDL_LoadRESOURCE(GR_SELECT, 1, 0);
+
+	local.map_tile = RECT_LoadRESOURCE(RECT_TILE, 0);
+	local.side_tile = RECT_LoadRESOURCE(RECT_UITILE, 0);
+
+	update_frames();
+}
+
+void free_resources() {
+
+	int i;
+
+	free(local.frames[0]);
+	free(local.frames[1]);
+	free(local.frames[2]);
+	free(local.frames[3]);
+	free(local.frames[4]);
+
+	SDL_FreeSurface(local.border[FRAME_MIDDLE]);
+
+	free(local.map_tile);
+	free(local.side_tile);
+	
+	SDL_FreeCachedSurfaces();
+	
+}
+
+void update_frames() {
+
+	SDL_Surface *screen = sys->screen;
+	SDL_Rect *fs = &sys->font_size;
+
+	SDL_Rect *left_frame = local.frames[FRAME_LEFT];
+	SDL_Rect *right_frame = local.frames[FRAME_RIGHT];
+	SDL_Rect *top_frame = local.frames[FRAME_TOP];
+	SDL_Rect *bottom_frame = local.frames[FRAME_BOTTOM];
+	SDL_Rect *bar = local.frames[FRAME_MIDDLE];
+	
+	SDL_Rect *purse = local.side_tile;
+
+	local.status.x = left_frame->w;
+	local.status.y = top_frame->h;
+	local.status.w = screen->w - left_frame->w - right_frame->w;
+	local.status.h = fs->h + sys->zoom;
+
+	local.map.x = left_frame->w;
+	local.map.y = top_frame->h + local.status.h + bar->h;
+	local.map.w = screen->w - purse->w - right_frame->w - left_frame->w;
+	local.map.h = screen->h - top_frame->h - bar->h - local.status.h - bottom_frame->h;
+
+}
+
+
 /* TOH */
 KBgame* KB_loadDAT(const char* filename);
 int KB_saveDAT(const char* filename, KBgame *game);
@@ -620,11 +705,11 @@ SDL_Rect* KB_BottomFrame() {
 
 	SDL_Rect *fs = &sys->font_size;
 	
-	SDL_Rect *left_frame = RECT_LoadRESOURCE(RECT_UI, 1);
-	SDL_Rect *bottom_frame = RECT_LoadRESOURCE(RECT_UI, 3);
+	SDL_Rect *left_frame = local.frames[FRAME_LEFT];
+	SDL_Rect *bottom_frame = local.frames[FRAME_BOTTOM];
 
 	SDL_Rect border;
-	static SDL_Rect text;	
+	static SDL_Rect text;
 
 	/* Make a 30 x 8 border (+1 character on each side) */ 
 	RECT_Text((&border), 8, 30);
@@ -643,14 +728,10 @@ SDL_Rect* KB_BottomFrame() {
 	SDL_TextRect(screen, &border, ui, bg);
 	SDL_FillRect(screen, &text, 0x00FF00);
 
-	free(left_frame);
-	free(bottom_frame);
-
 	return &text;
 }
 
 SDL_Rect* KB_BottomBox(const char *header, const char *str, int wait) {
-	SDL_Surface *screen = sys->screen;
 
 	SDL_Rect *fs = &sys->font_size;
 
@@ -665,7 +746,7 @@ SDL_Rect* KB_BottomBox(const char *header, const char *str, int wait) {
 	if (header) KB_iprint("\n\n");	
 	KB_iprint(str);
 
-	SDL_Flip(screen);
+	SDL_Flip(sys->screen);
 
 	if (wait) KB_Pause();
 
@@ -674,30 +755,16 @@ SDL_Rect* KB_BottomBox(const char *header, const char *str, int wait) {
 
 SDL_Rect* KB_TopBox(const char *str) {
 
-	SDL_Rect *fs = &sys->font_size;
-
-	SDL_Rect *top_frame = RECT_LoadRESOURCE(RECT_UI, 0);
-	SDL_Rect *left_frame = RECT_LoadRESOURCE(RECT_UI, 1);
-	SDL_Rect *bottom_frame = RECT_LoadRESOURCE(RECT_UI, 3);
-	SDL_Rect *right_frame = RECT_LoadRESOURCE(RECT_UI, 2);
-	SDL_Rect *bar_frame  = RECT_LoadRESOURCE(RECT_UI, 4);
-
-	SDL_Surface *screen = sys->screen;
-
 	Uint32 *colors = KB_Resolve(COL_TEXT, 0);	
 
-	SDL_Rect status_rect =  { left_frame->w, top_frame->h, sys->screen->w - left_frame->w - right_frame->w, fs->h + 2 };
-	SDL_FillRect(sys->screen, &status_rect, colors[0]);
+	/* Clean line */
+	SDL_FillRect(sys->screen, &local.status, colors[0]);
 
-	/* Status bar */
-	KB_iloc(status_rect.x, status_rect.y + 1);
+	/* Print string */
+	KB_iloc(local.status.x, local.status.y + 1);
 	KB_iprint(str);
 
-	free(top_frame);
-	free(left_frame);
-	free(bottom_frame);
-	free(right_frame);
-	free(bar_frame);
+	return &local.status;
 }
 
 /* "create game" screen (pick name and difficulty) */
@@ -816,9 +883,6 @@ KBgame *load_game() {
 
 	SDL_Rect *fs = &sys->font_size;
 
-	SDL_Rect *top_frame = RECT_LoadRESOURCE(RECT_UI, 0);
-	SDL_Rect *left_frame = RECT_LoadRESOURCE(RECT_UI, 1);
-
 	KB_DIR *d = KB_opendir(conf->save_dir);
 	KB_Entry *e;
     while ((e = KB_readdir(d)) != NULL) {
@@ -919,7 +983,7 @@ KBgame *load_game() {
 			}
 
 	incolor(0xFFFFFF, 0x000000);
-	inprint(screen, " 'ESC' to exit \x18\x19 Return to Select  ", left_frame->w, top_frame->h);
+	inprint(screen, " 'ESC' to exit \x18\x19 Return to Select  ", local.status.x, local.status.y);
 
 	    	SDL_Flip( screen );
 
@@ -983,9 +1047,7 @@ KBgame *select_game(KBconfig *conf) {
 	int credits = 1;
 
 	KBgame *game = NULL;
-	
-	SDL_Rect *top_frame = RECT_LoadRESOURCE(RECT_UI, 0);
-	SDL_Rect *left_frame = RECT_LoadRESOURCE(RECT_UI, 1);
+
 	Uint32 *colors = KB_Resolve(COL_TEXT, 0);
 
 	SDL_Surface *title = SDL_LoadRESOURCE(GR_SELECT, 0, 0);
@@ -1003,7 +1065,7 @@ KBgame *select_game(KBconfig *conf) {
 			SDL_BlitSurface( title, NULL , screen, &pos );
 
 			if (!credits) {
-				KB_iloc(left_frame->w, top_frame->h);
+				KB_iloc(local.status.x, local.status.y);
 				KB_icolor(colors);
 				KB_iprint("Select Char A-D or L-Load saved game");
 			}
@@ -1038,14 +1100,12 @@ KBgame *select_game(KBconfig *conf) {
 		if (key == 0xFF) done = 1;
 	}
 
-	free(top_frame);
-	free(left_frame);
-	SDL_FreeSurface(title);
-
 	if (game) {
 		if (done == 1) KB_MessageBox("%s the %s,\n\nA new game is being created. Please wait while I perform godlike actions to make this game playable.",  0);
 		if (done == 2) KB_MessageBox("%s the %s,\n\nPlease wait while I prepare a suitable environment for your bountying enjoyment!",  0);
 	}
+
+	SDL_FreeSurface(title);
 
 	return game;
 }
@@ -1350,7 +1410,7 @@ KBgamestate five_choices = {
 
 void draw_location(int loc_id, int troop_id, int frame) {
 	SDL_Surface *bg = SDL_LoadRESOURCE(GR_LOCATION, loc_id, 0);
-	SDL_Surface *troop = SDL_LoadRESOURCE(GR_TROOP, troop_id, 0);
+	SDL_Surface *troop = SDL_LoadRESOURCE(GR_TROOP, troop_id, 1);
 
 	SDL_Rect pos;
 	SDL_Rect tpos;
@@ -1364,7 +1424,7 @@ void draw_location(int loc_id, int troop_id, int frame) {
 
 	RECT_Size(&pos, bg); 
 	pos.x = left_frame->w;
-	pos.y = top_frame->h + bar_frame->h + fs->h + 2;
+	pos.y = top_frame->h + bar_frame->h + fs->h + sys->zoom;
 
 	troop_frame.x = frame * troop_frame.w;
 
@@ -1404,7 +1464,7 @@ void view_puzzle(KBgame *game) {
 
 	//RECT_Size(&pos, bg); 
 	pos.x = left_frame->w;
-	pos.y = top_frame->h + bar_frame->h + fs->h + 2;
+	pos.y = top_frame->h + bar_frame->h + fs->h + sys->zoom;
 	/*---*/
 
 	int i;	
@@ -1712,17 +1772,17 @@ void view_contract(KBgame *game) {
 
 void view_character(KBgame *game) {
 
-	SDL_Surface *portrait = SDL_LoadRESOURCE(GR_PORTRAIT, game->class, 0);
-	SDL_Surface *items = SDL_LoadRESOURCE(GR_VIEW, 0, 0);
+	SDL_Surface *portrait = SDL_TakeSurface(GR_PORTRAIT, game->class, 0);
 
+	SDL_Surface *items = SDL_TakeSurface(GR_VIEW, 0, 0);
 	SDL_Rect *fs = &sys->font_size;
 
-	SDL_Rect *left_frame = RECT_LoadRESOURCE(RECT_UI, 1);
-	SDL_Rect *top_frame = RECT_LoadRESOURCE(RECT_UI, 0);
-	SDL_Rect *bar_frame  = RECT_LoadRESOURCE(RECT_UI, 4);
-	SDL_Rect *right_frame  = RECT_LoadRESOURCE(RECT_UI, 2);
+	SDL_Rect *left_frame = local.frames[FRAME_LEFT];
+	SDL_Rect *top_frame = local.frames[FRAME_TOP];
+	SDL_Rect *bar_frame  = local.frames[FRAME_MIDDLE];
+	SDL_Rect *right_frame  = local.frames[FRAME_RIGHT];
 
-	SDL_Rect pos = { left_frame->w, top_frame->h + bar_frame->h + fs->h + 2, sys->screen->w - left_frame->w - right_frame->w, 0 }; 
+	SDL_Rect pos = { left_frame->w, top_frame->h + bar_frame->h + fs->h + sys->zoom, sys->screen->w - left_frame->w - right_frame->w, 0 }; 
 
 	SDL_Rect dest = { pos.x, pos.y, portrait->w, portrait->h }; 
 
@@ -1737,31 +1797,31 @@ void view_character(KBgame *game) {
 	SDL_Rect line = { pos.x + portrait->w , pos.y + fs->h / 2, pos.w - portrait->w, fs->h / 8 };
 
 	KB_iloc(stats.x, stats.y);
-	KB_ilh(fs->h + 2);
+	KB_ilh(fs->h + sys->zoom);
 	KB_iprintf("%s the %s\n", game->name, classes[game->class][game->rank].title);
 	KB_iprintf("Leadership         %5d\n", game->leadership);
 	line.y = sys->cursor_y * fs->h + sys->base_y + fs->h / 8;
 	SDL_FillRect(sys->screen, &line, 0xFFFFFF);
 
-	KB_iloc(stats.x, stats.y + (fs->h+2) * 2 + (fs->h/8));
+	KB_iloc(stats.x, stats.y + (fs->h + sys->zoom) * 2 + (fs->h/8));
 	KB_iprintf("Commission/Week    %5d\n", player_commission(game));
 	KB_iprintf("Gold               %5d\n", game->gold);
 	line.y = sys->cursor_y * fs->h + sys->base_y;
 	SDL_FillRect(sys->screen, &line, 0xFFFFFF);
 
-	KB_iloc(stats.x, stats.y + (fs->h+2) * 4 + (fs->h/8));
+	KB_iloc(stats.x, stats.y + (fs->h + sys->zoom) * 4 + (fs->h/8));
 	KB_iprintf("Spell power        %5d\n", game->spell_power);
 	KB_iprintf("Max # of spells    %5d\n", game->max_spells);
 	line.y = sys->cursor_y * fs->h + sys->base_y;
 	SDL_FillRect(sys->screen, &line, 0xFFFFFF);
 
-	KB_iloc(stats.x, stats.y + (fs->h+2) * 6 + (fs->h/8));
+	KB_iloc(stats.x, stats.y + (fs->h + sys->zoom) * 6 + (fs->h/8));
 	KB_iprintf("Villains caught    %5d\n", player_captured(game));
 	KB_iprintf("Artifacts found    %5d\n", player_num_artifacts(game));
 	line.y = sys->cursor_y * fs->h + sys->base_y;
 	SDL_FillRect(sys->screen, &line, 0xFFFFFF);
 
-	KB_iloc(stats.x, stats.y + (fs->h+2) * 8 + (fs->h/8));
+	KB_iloc(stats.x, stats.y + (fs->h + sys->zoom) * 8 + (fs->h/8));
 	KB_iprintf("Castles garrisoned %5d\n", player_castles(game));
 	KB_iprintf("Followers killed   %5d\n", game->followers_killed);
 	KB_iprintf("Current score      %5d\n", player_score(game));
@@ -1823,31 +1883,25 @@ void view_character(KBgame *game) {
 	while (KB_event(&press_any_key) != 0xFF) 
 		{	}
 
-	SDL_FreeSurface(portrait);
-	SDL_FreeSurface(items);
-	free(top_frame);
-	free(left_frame);
-	free(right_frame);
-	free(bar_frame);
+
 }
 
 void view_army(KBgame *game) {
 
-	SDL_Surface *troop[5];
 	SDL_Surface *tile;
 
 	SDL_Rect *fs = &sys->font_size;
 
-	SDL_Rect *left_frame = RECT_LoadRESOURCE(RECT_UI, 1);
-	SDL_Rect *top_frame = RECT_LoadRESOURCE(RECT_UI, 0);
-	SDL_Rect *bar_frame  = RECT_LoadRESOURCE(RECT_UI, 4);
-	SDL_Rect *right_frame  = RECT_LoadRESOURCE(RECT_UI, 2);
+	SDL_Rect *left_frame = local.frames[FRAME_LEFT];
+	SDL_Rect *top_frame = local.frames[FRAME_TOP];
+	SDL_Rect *bar_frame  = local.frames[FRAME_MIDDLE];
+	SDL_Rect *right_frame  = local.frames[FRAME_RIGHT];
 
 	SDL_Rect pos;
 
 	//RECT_Size(&pos, bg);
 	pos.x = left_frame->w;
-	pos.y = top_frame->h + bar_frame->h + fs->h + 2;
+	pos.y = top_frame->h + bar_frame->h + fs->h + sys->zoom;
 	
 	pos.w = sys->screen->w - left_frame->w - right_frame->w;
 
@@ -1868,9 +1922,8 @@ void view_army(KBgame *game) {
 			if (nm < morale) morale = nm;
 		}
 		troop_morale[i] = morale;
-		troop[i] = SDL_LoadRESOURCE(GR_TROOP, game->player_troops[i], 0);
 	}
-	tile = SDL_LoadRESOURCE(GR_TILE, 0, 0);
+	tile = SDL_TakeSurface(GR_TILE, 0, 0);
 
 	int done = 0;
 	int redraw = 1;
@@ -1899,9 +1952,11 @@ void view_army(KBgame *game) {
 				SDL_FillRect(sys->screen, &tline, 0xFFFFFF);		
 
 				if (game->player_numbers[i] == 0) continue;
-				SDL_BlitSurface(troop[i], &frm, sys->screen, &dest);
 				
 				byte troop_id = game->player_troops[i];
+				SDL_Surface *troop = SDL_TakeSurface(GR_TROOP, troop_id, 1);
+
+				SDL_BlitSurface(troop, &frm, sys->screen, &dest);
 
 				KB_iloc(tbox.x, tbox.y + fs->h / 2);
 				KB_ilh(fs->h + 4);
@@ -1927,16 +1982,6 @@ void view_army(KBgame *game) {
 		}
 	}
 
-	for (i = 0; i < 5; i++) {
-		if (game->player_numbers[i] == 0) break;
-		SDL_FreeSurface(troop[i]);
-	}
-
-	SDL_FreeSurface(tile);
-	free(top_frame);
-	free(left_frame);
-	free(right_frame);
-	free(bar_frame);
 }
 
 
@@ -2181,7 +2226,7 @@ void visit_home_castle(KBgame *game) {
 	while (!done) {
 
 		int key = KB_event(&throne_room_or_barracks);
-	
+
 		if (key == 0xFF) done = 1;
 		if (key == 1) {
 			recruit_soldiers(game);
@@ -2466,8 +2511,6 @@ void visit_town(KBgame *game) {
 						msg_hold = 1;
 					} else {
 						int i, j;
-
-#define IS_WATER(M) ((M) >= 0x14 && (M) <= 0x20)						
 
 						redraw_menu = 1;
 
@@ -2776,6 +2819,162 @@ KBgamestate adventure_state = {
 	0
 };
 
+void draw_sidebar(KBgame *game, int tick) {
+	SDL_Surface *screen = sys->screen;
+
+	SDL_Rect *right_frame  = local.frames[FRAME_RIGHT];	
+
+	SDL_Surface *purse = SDL_TakeSurface(GR_PURSE, 0, 0);
+	SDL_Surface *sidebar = SDL_TakeSurface(GR_UI, 0, 0);
+
+	SDL_Rect *map = &local.map;
+
+	/** Draw siderbar UI **/
+	SDL_Rect hsrc = { 0, 0, purse->w, purse->h };
+	SDL_Rect hdst = { screen->w - right_frame->w - purse->w, map->y, hsrc.w, hsrc.h };
+
+	/* Contract */
+	hsrc.x = 8 * hsrc.w;
+	SDL_BlitSurface( sidebar, &hsrc, screen, &hdst);
+
+	/* Siege weapons */
+	hdst.y += hsrc.h;
+	hsrc.x = (game->siege_weapons ? tick * hsrc.w : 9 * hsrc.w);
+	SDL_BlitSurface( sidebar, &hsrc, screen, &hdst);
+	
+	/* Magic star */
+	hdst.y += hsrc.h;
+	game->knows_magic = 1;
+	hsrc.x = (game->knows_magic ? (tick + 4) * hsrc.w : 10 * hsrc.w);
+	SDL_BlitSurface( sidebar, &hsrc, screen, &hdst);
+
+	/* Puzzle map */
+	hdst.y += hsrc.h;
+	hsrc.x = 11 * hsrc.w;
+	SDL_BlitSurface( sidebar, &hsrc, screen, &hdst);
+
+	int i, j; /* puzzle pieces */
+	for (j = 0; j < 5; j++)
+	for (i = 0; i < 5; i++)
+	{
+		SDL_Rect mrect = { hdst.x + i * 9 + 2, hdst.y + j * 6 + 2, 9, 6 } ;
+		SDL_FillRect(screen, &mrect, 0x000000);
+		mrect.w -= 1; mrect.h -= 1;
+		SDL_FillRect(screen, &mrect, 0xAA0000);
+	}
+
+	/* Gold purse */
+	hdst.y += purse->h;
+	hsrc.x = 12 * hsrc.w;
+	SDL_BlitSurface( sidebar, &hsrc, screen, &hdst);
+}
+
+void draw_map(KBgame *game, int tick) {
+
+	SDL_Rect pos;
+	SDL_Rect src;
+
+	int i, j;
+
+	SDL_Surface *screen = sys->screen;
+	
+	SDL_Surface *tileset = SDL_TakeSurface(GR_TILESET, 0, 0);
+	SDL_Surface *hero = SDL_TakeSurface(GR_HERO, 0, 1);
+
+	SDL_Rect *tile = local.map_tile;
+
+	word perim_h = local.map.w / tile->w;
+	word perim_w = local.map.h / tile->h;
+	word radii_w = (perim_w - 1) / 2;
+	word radii_h = (perim_h - 1) / 2;
+
+	int border_y = game->y - radii_h;
+	int border_x = game->x - radii_w;
+
+	src.w = tile->w;
+	src.h = tile->h;
+
+	/** Draw map **/
+	pos.w = tile->w;
+	pos.h = tile->h;
+
+	SDL_FillRect( screen , &local.map, 0xFF0000);
+
+	for (j = 0; j < perim_h; j++)
+	for (i = 0; i < perim_w; i++) {
+		byte m;
+		
+		if (border_x + i > 63 || border_y + j > 63 || 
+			border_x + i < 0 || border_y + j < 0) m = 32;
+		else
+			m = game->map[0][border_y + j][border_x + i];
+
+		m &= 0x7F;
+
+		int th = m / 8;
+		int tw = m - (th * 8);
+
+		src.x = tw * src.w;
+		src.y = th * src.h;
+		pos.x = i * (pos.w) + local.map.x;
+		pos.y = (perim_h - 1 - j) * (pos.h) + local.map.y;
+
+		SDL_BlitSurface( tileset, &src , screen, &pos );
+	}
+
+	/** Draw boat **/
+	if (game->mount != KBMOUNT_SAIL && game->boat == game->continent)
+	{
+		int boat_lx = game->boat_x - game->x + radii_w;
+		int boat_ly = game->y - game->boat_y + (perim_w - 1 - radii_h);
+
+		if (boat_lx >= 0 && boat_ly >= 0 && boat_lx < perim_w && boat_ly < perim_h)
+		{
+			SDL_Rect hsrc = { 0, 0, src.w, src.h };
+			SDL_Rect hdst = { local.map.x + boat_lx * src.w, local.map.y + boat_ly * src.h, src.w, src.h };
+
+			hsrc.x += src.w * (0);
+			hsrc.y += src.h * (local.boat_flip);
+
+			SDL_BlitSurface( hero, &hsrc , screen, &hdst );
+		}
+	}
+
+}
+
+void draw_player(KBgame *game, int frame) {
+
+	SDL_Rect *tile = local.map_tile;
+
+	SDL_Surface *hero = SDL_TakeSurface(GR_HERO, 0, 0);
+
+	word perim_h = local.map.w / tile->w;
+	word perim_w = local.map.h / tile->h;
+	word radii_w = (perim_w - 1) / 2;
+	word radii_h = (perim_h - 1) / 2;
+
+	int border_y = game->y - radii_h;
+	int border_x = game->x - radii_w;
+
+	/** Draw player **/
+	{
+		SDL_Rect hsrc = { 0, 0, tile->w, tile->h };
+		SDL_Rect hdst = { 
+			local.map.x + radii_w * tile->w, 
+			local.map.y + (perim_h - 1 - radii_h) * tile->h, 
+			tile->w, 
+			tile->h 
+		};
+		
+		hsrc.x += tile->w * (game->mount + frame);
+		hsrc.y += tile->h * (local.hero_flip);
+
+		SDL_BlitSurface( hero, &hsrc , sys->screen, &hdst );
+	}
+
+
+}
+
 static signed char move_offset_x[9] = { -1, 0, 1, -1, 0, 1, -1,  0,  1 };
 static signed char move_offset_y[9] = {  1, 1, 1,  0, 0, 0, -1, -1, -1 };
 
@@ -2783,61 +2982,28 @@ static signed char move_offset_y[9] = {  1, 1, 1,  0, 0, 0, -1, -1, -1 };
 void display_overworld(KBgame *game) {
 
 	SDL_Surface *screen = sys->screen;
-	int filter = sys->conf->filter;
-	//sys->conf->filter = 0;
-	SDL_Surface *tile = SDL_LoadRESOURCE(GR_TILE, 0, 0);
-	SDL_Surface *ts = SDL_LoadRESOURCE(GR_TILESET, 0, 0);
-	SDL_Surface *hero = SDL_LoadRESOURCE(GR_CURSOR, 0, 1);
-	sys->conf->filter = filter;
 
-	SDL_Surface *purse = SDL_LoadRESOURCE(GR_PURSE, 0, 0);	/* single sidebar tile */
-	SDL_Surface *sidebar = SDL_LoadRESOURCE(GR_UI, 0, 0);
-
-	SDL_Surface *bar = SDL_LoadRESOURCE(GR_SELECT, 1, 0);
-	
-	SDL_Rect *top_frame  = RECT_LoadRESOURCE(RECT_UI, 0);	
-	SDL_Rect *left_frame  = RECT_LoadRESOURCE(RECT_UI, 1);
-	SDL_Rect *right_frame  = RECT_LoadRESOURCE(RECT_UI, 2);
-	SDL_Rect *bottom_frame  = RECT_LoadRESOURCE(RECT_UI, 3);	
-	SDL_Rect *bar_frame  = RECT_LoadRESOURCE(RECT_UI, 4);
-
-	SDL_Rect *fs = &sys->font_size;
 	Uint32 *colors = KB_Resolve(COL_TEXT, 0);
 
-	SDL_Rect status_rect =  { left_frame->w, top_frame->h, screen->w - left_frame->w - right_frame->w, fs->h + 2 };
-	SDL_FillRect(screen, &status_rect, colors[0]);
-	SDL_BlitSurface(bar, NULL, screen, bar_frame);
+	SDL_Rect status_rect = { local.status.x, local.status.y, local.status.w, local.status.h };
 
-	int tileset_pitch = ts->w / tile->w;
+	SDL_BlitSurface(local.border[FRAME_MIDDLE], NULL, screen, local.frames[FRAME_MIDDLE] );
 
-	SDL_Rect map = { left_frame->w, top_frame->h + status_rect.h + bar->h, screen->w - purse->w - right_frame->w - left_frame->w, screen->h - top_frame->h - bar->h - status_rect.h - bottom_frame->h};
-
-	word perim_h = map.w / tile->w;
-	word perim_w = map.h / tile->h;
-	word radii_w = (perim_w - 1) / 2;
-	word radii_h = (perim_h - 1) / 2;
-
-	status_rect.y++;
+	//int tileset_pitch = local.tileset->w / tile->w;
 
 	int key = 0;
 	int done = 0;
 	int redraw = 1;
 
 	int frame  = 0;
-	int flip = 0;
-	int boat_flip = 0;
+
+	local.hero_flip = 0;
+	local.boat_flip = 0;
 
 	int max_frame = 3;
 	int tick = 0;
 
 	int walk = 0;
-
-	SDL_Rect src = { 0 };
-	
-	src.w = tile->w;
-	src.h = tile->h;
-
-	SDL_FreeSurface(tile);
 
 #define KEY_ACT(ACT) (ARROW_KEYS + 1 + KBACT_ ## ACT)
 
@@ -2937,17 +3103,12 @@ void display_overworld(KBgame *game) {
 
 			byte m = game->map[game->continent][cursor_y][cursor_x];		
 
-#define IS_GRASS(M) ((M) < 2 || (M) == 0x80)
-#define IS_WATER(M) ((M) >= 0x14 && (M) <= 0x20)
-#define IS_DESERT(M) ((M) >= 0x2e && (M) <= 0x3a)
-#define IS_INTERACTIVE(M) ((M) & 0x80)
-
 			walk = 1;
 
-			if (ox == 1) flip = 0;
-			if (ox == -1) flip = 1;
+			if (ox == 1) local.hero_flip = 0;
+			if (ox == -1) local.hero_flip = 1;
 			if (game->mount == KBMOUNT_SAIL)
-				boat_flip = flip;
+				local.boat_flip = local.hero_flip;
 
 			if (!IS_GRASS(m) && game->mount != KBMOUNT_FLY) {
 
@@ -2999,62 +3160,10 @@ void display_overworld(KBgame *game) {
 			} 
 		}
 
-		SDL_Rect inpos = { 0 };
-
 		if (redraw) {
 
-			SDL_Rect pos;
+			draw_map(game, tick);
 
-			int i, j;
-
-			int border_y = game->y - radii_h;
-			int border_x = game->x - radii_w;
-
-			/** Draw map **/
-			pos.w = src.w;
-			pos.h = src.h;
-
-			SDL_FillRect( screen , &map, 0xFF0000);
-
-			for (j = 0; j < perim_h; j++)
-			for (i = 0; i < perim_w; i++) {
-				byte m;
-				
-				if (border_x + i > 63 || border_y + j > 63 || 
-					border_x + i < 0 || border_y + j < 0) m = 32;
-				else
-					m = game->map[0][border_y + j][border_x + i];
-
-				m &= 0x7F;
-
-				int th = m / 8;
-				int tw = m - (th * 8);
-
-				src.x = tw * src.w;
-				src.y = th * src.h;
-				pos.x = i * (pos.w) + map.x;
-				pos.y = (perim_h - 1 - j) * (pos.h) + map.y;
-
-				SDL_BlitSurface( ts, &src , screen, &pos );
-			}
-
-			/** Draw boat **/
-			if (game->mount != KBMOUNT_SAIL && game->boat == game->continent)
-			{
-				int boat_lx = game->boat_x - game->x + radii_w;
-				int boat_ly = game->y - game->boat_y + (perim_w - 1 - radii_h);
-
-				if (boat_lx >= 0 && boat_ly >= 0 && boat_lx < perim_w && boat_ly < perim_h)
-				{
-					SDL_Rect hsrc = { 0, 0, src.w, src.h };
-					SDL_Rect hdst = { map.x + boat_lx * src.w, map.y + boat_ly * src.h, src.w, src.h };
-
-					hsrc.x += src.w * (0);
-					hsrc.y += src.h * (boat_flip);
-
-					SDL_BlitSurface( hero, &hsrc , screen, &hdst );
-				}
-			}
 		}
 
 		if (walk) {
@@ -3099,70 +3208,19 @@ void display_overworld(KBgame *game) {
 
 		if (redraw) {
 
-			/** Draw player **/
-			{
-				SDL_Rect hsrc = { 0, 0, src.w, src.h };
-				SDL_Rect hdst = { map.x + radii_w * src.w, map.y + (perim_h - 1 - radii_h) * src.h, src.w, src.h };
-				
-				hsrc.x += src.w * (game->mount + frame);
-				hsrc.y += src.h * (flip);
+			draw_player(game, frame);
 
-				SDL_BlitSurface( hero, &hsrc , screen, &hdst );
-			}
-
-			/** Draw siderbar UI **/
-			{
-				SDL_Rect hsrc = { 0, 0, purse->w, purse->h };
-				SDL_Rect hdst = { screen->w - right_frame->w - purse->w, map.y, src.w, src.h };
-
-				/* Contract */
-				hsrc.x = 8 * hsrc.w;
-				SDL_BlitSurface( sidebar, &hsrc, screen, &hdst);
-
-				/* Siege weapons */
-				hdst.y += hsrc.h;
-				hsrc.x = (game->siege_weapons ? tick * hsrc.w : 9 * hsrc.w);
-				SDL_BlitSurface( sidebar, &hsrc, screen, &hdst);
-				
-				/* Magic star */
-				hdst.y += hsrc.h;
-				game->knows_magic = 1;
-				hsrc.x = (game->knows_magic ? (tick + 4) * hsrc.w : 10 * hsrc.w);
-				SDL_BlitSurface( sidebar, &hsrc, screen, &hdst);
-				
-				/* Puzzle map */
-				hdst.y += hsrc.h;
-				hsrc.x = 11 * hsrc.w;
-				SDL_BlitSurface( sidebar, &hsrc, screen, &hdst);
-
-				int i, j; /* puzzle pieces */
-				for (j = 0; j < 5; j++)
-				for (i = 0; i < 5; i++)
-				{
-					SDL_Rect mrect = { hdst.x + i * 9 + 2, hdst.y + j * 6 + 2, 9, 6 } ;
-					SDL_FillRect(screen, &mrect, 0x000000);
-					mrect.w -= 1; mrect.h -= 1;
-					SDL_FillRect(screen, &mrect, 0xAA0000);
-				}
-
-				/* Gold purse */
-				hdst.y += purse->h;
-				hsrc.x = 12 * hsrc.w;
-				SDL_BlitSurface( sidebar, &hsrc, screen, &hdst);
-			}
+			draw_sidebar(game, tick);
 
 			/* Status bar */
-			KB_iloc(status_rect.x, status_rect.y);
+			SDL_FillRect(screen, &status_rect, colors[0]);
+			KB_iloc(status_rect.x, status_rect.y + 1);
 			KB_printf(sys, " Options / Controls / Days Left:%d ", game->days_left);
 
 	    	SDL_Flip( screen );
 			redraw = 0;
 		}
 	}
-
-	SDL_FreeSurface(purse);
-	SDL_FreeSurface(sidebar);
-	SDL_FreeSurface(ts);
 }
 
 int run_game(KBconfig *conf) {
@@ -3192,8 +3250,14 @@ int run_game(KBconfig *conf) {
 		return -1;
 	}
 
+	/* Initialize module(s) */
+	init_modules(conf);
+
 	/* Load and use module font */
 	KB_setfont(sys, SDL_LoadRESOURCE(GR_FONT, 0, 0)); 
+
+	/* Preload all resources */
+	prepare_resources();
 
 	/* --- X X X --- */
 	display_logo();
@@ -3205,19 +3269,22 @@ int run_game(KBconfig *conf) {
 
 	//display_debug();//debug(game);
 
-	/* No game! Quit */
-	if (!game) {
-		KB_stdlog("No game selected.\n");
-		KB_stopENV(sys);
-		return 0;
+	/* See if a game was selected */
+	if (!game) KB_stdlog("No game selected.\n");
+	else {
+
+		/* Just for fun, output game name */
+		KB_stdlog("%s the %s (%d days left)\n", game->name, classes[game->class][game->rank].title, game->days_left);
+
+		/* PLAY THE GAME */
+		display_overworld(game);
 	}
 
-	/* PLAY THE GAME */
-	display_overworld(game);
+	/* Free resources */
+	free_resources();
 
-	/* Just for fun, output game name */
-	KB_stdlog("%s the %s (%d days left)\n", game->name, classes[game->class][game->rank].title, game->days_left);
-	sleep(2);
+	/* Kill modules */
+	stop_modules(conf);
 
 	/* Stop environment */
 	KB_stopENV(sys);

@@ -56,6 +56,12 @@
 
 #define FRIENDLY_FOLLOWERS 5
 
+#define IS_GRASS(M) ((M) < 2 || (M) == 0x80)
+#define IS_WATER(M) ((M) >= 0x14 && (M) <= 0x20)
+#define IS_DESERT(M) ((M) >= 0x2e && (M) <= 0x3a)
+#define IS_INTERACTIVE(M) ((M) & 0x80)
+
+
 typedef struct KBgame KBgame;
 
 struct KBgame {

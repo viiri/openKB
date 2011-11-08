@@ -89,6 +89,8 @@ void KB_stopENV(KBenv *env) {
 
 	if (env->font) SDL_FreeSurface(env->font);
 
+	SDL_FreeCachedSurfaces();
+
 	kill_inline_font();
 
 	free(env);
@@ -403,6 +405,35 @@ SDL_Surface *SDL_LoadRESOURCE(int id, int sub_id, int flip) {
 	}
 
 	return ret;
+}
+
+/*
+ * Same as SDL_LoadRESOURCE, but with a cache layer. 
+ */
+SDL_Surface *surf_cache[64][64] = { NULL };
+SDL_Surface *SDL_TakeSurface(int id, int sub_id, int flip) {
+	SDL_Surface *ret = NULL;
+	if (id < 64 && sub_id < 64) {
+		if (surf_cache[id][sub_id] != NULL)
+		{ 
+			return surf_cache[id][sub_id];
+		} 
+	}
+	ret = SDL_LoadRESOURCE(id, sub_id, flip);
+	if (id < 64 && sub_id < 64) {
+		surf_cache[id][sub_id] = ret;
+	}
+	return ret;
+}
+
+void SDL_FreeCachedSurfaces() {
+	int id, sub_id;
+	for (id = 0; id < 64; id++)
+	for (sub_id = 0; sub_id < 64; sub_id++) {
+		if (surf_cache[id][sub_id] != NULL) 
+			SDL_FreeSurface(surf_cache[id][sub_id]);
+		surf_cache[id][sub_id] = NULL; 
+	}
 }
 
 SDL_Rect* RECT_LoadRESOURCE(int id, int sub_id) {

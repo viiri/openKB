@@ -74,6 +74,10 @@ typedef struct KBwin {
 	int w;
 	int h;
 
+	int flags;
+
+	void *gamestate;
+	void *renderer;
 	void *udata;
 
 } KBwin;
@@ -102,5 +106,7 @@ extern SDL_Surface* KB_LoadIMG8(int id, int sub_id);
 extern SDL_Surface *SDL_LoadRESOURCE(int id, int sub_id, int flip);
 
 extern SDL_Rect* RECT_LoadRESOURCE(int id, int sub_id);
+
+extern SDL_Surface* SDL_TakeSurface(int id, int sub_id, int flip);
 
 #endif /* _OPENKB_ENV */
