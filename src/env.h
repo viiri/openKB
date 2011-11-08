@@ -109,4 +109,6 @@ extern SDL_Rect* RECT_LoadRESOURCE(int id, int sub_id);
 
 extern SDL_Surface* SDL_TakeSurface(int id, int sub_id, int flip);
 
+extern void SDL_FreeCachedSurfaces();
+
 #endif /* _OPENKB_ENV */
