@@ -30,6 +30,7 @@ KBgame* KB_loadDAT(const char* filename) {
 	KBgame *game;
 	FILE *f;
 	int n, k, map_size;
+	int x, y;
 
 	f = fopen(filename, "rb");
 	if (f == NULL) return NULL;
@@ -135,11 +136,21 @@ KBgame* KB_loadDAT(const char* filename) {
 	game->scepter_x = READ_BYTE(p);
 	game->scepter_y = READ_BYTE(p);
 
-	/* Fog of war */
+	/* Unknown?? */
+	p += 1;
+
+	/* Fog of war (convert from 1-bit-per-tile to 1-byte-per-tile format) */
 	map_size = ( MAX_CONTINENTS * LEVEL_W * LEVEL_H );
-	n = map_size / 8 + 1; 
-	memcpy(game->fog, p, n);
-	p += n;
+	for (n = 0; n < MAX_CONTINENTS; n++) {
+		for (y = 0; y < LEVEL_H; y++)
+		for (x = 0; x < LEVEL_W; x += 8) {
+			char test_bits = READ_BYTE(p);
+			for (k = 0; k < 8; k++) {
+				char one_bit = ((test_bits & (0x01 << k)) >> k) & 0x01;
+				game->fog[n][y][x + 7 - k] = one_bit;
+			}
+		}
+	}
 
 	/* Castle garrison troops */
 	for (n = 0; n < MAX_CASTLES; n++)
@@ -147,9 +158,11 @@ KBgame* KB_loadDAT(const char* filename) {
 			game->castle_troops[n][k] = READ_BYTE(p);
 
 	/* Read friendly followers' coords */
-	for (n = 0; n < 20; n++) {
-		game->follower_coords[n][0] = READ_BYTE(p);//X
-		game->follower_coords[n][1] = READ_BYTE(p);//Y	
+	for (n = 0; n < MAX_CONTINENTS; n++) {
+		for (k = 0; k < FRIENDLY_FOLLOWERS; k++) {
+			game->follower_coords[n][k][0] = READ_BYTE(p);//X
+			game->follower_coords[n][k][1] = READ_BYTE(p);//Y
+		}	
 	}
 
 	/* Map chests */
@@ -165,39 +178,55 @@ KBgame* KB_loadDAT(const char* filename) {
 	}
 
 	/* Teleporting caves */
-	for (n = 0; n < MAX_CONTINENTS * 2; n++) {
-		game->teleport_coords[n][0] = READ_BYTE(p);//X
-		game->teleport_coords[n][1] = READ_BYTE(p);//Y
+	for (n = 0; n < MAX_CONTINENTS; n++) {
+		for (k = 0; k < MAX_TELECAVES; k++) {
+			game->teleport_coords[n][k][0] = READ_BYTE(p);//X
+			game->teleport_coords[n][k][1] = READ_BYTE(p);//Y
+		}
 	}
 
 	/* Dwellings locations */
-	for (n = 0; n < MAX_DWELLINGS; n++) {
-		game->dwelling_coords[n][0] = READ_BYTE(p);//X
-		game->dwelling_coords[n][1] = READ_BYTE(p);//Y
+	for (n = 0; n < MAX_CONTINENTS; n++) {
+		for (k = 0; k < MAX_DWELLINGS; k++) {
+			game->dwelling_coords[n][k][0] = READ_BYTE(p);//X
+			game->dwelling_coords[n][k][1] = READ_BYTE(p);//Y
+		}
 	}
 
 	/* Read hostile followers' coords */
-	for (n = 20; n < MAX_FOLLOWERS; n++) {
-		game->follower_coords[n][0] = READ_BYTE(p);//X
-		game->follower_coords[n][1] = READ_BYTE(p);//Y	
+	for (n = 0; n < MAX_CONTINENTS; n++) {
+		for (k = FRIENDLY_FOLLOWERS; k < MAX_FOLLOWERS; k++) {
+			game->follower_coords[n][k][0] = READ_BYTE(p);//X
+			game->follower_coords[n][k][1] = READ_BYTE(p);//Y	
+		}
 	}
 
 	/* Read hostile followers' troops */
-	for (n = 20; n < MAX_FOLLOWERS; n++)
-		for (k = 0; k < 3; k++)
-			game->follower_troops[n][k] = READ_BYTE(p);
+	for (n = 0; n < MAX_CONTINENTS; n++) {	
+		for (k = FRIENDLY_FOLLOWERS; k < MAX_FOLLOWERS; k++) {
+			game->follower_troops[n][k][0] = READ_BYTE(p);
+			game->follower_troops[n][k][1] = READ_BYTE(p);
+			game->follower_troops[n][k][2] = READ_BYTE(p);
+		}
+	}
 
 	/* Read follower numbers */
-	for (n = 20; n < MAX_FOLLOWERS; n++)
-		for (k = 0; k < 3; k++)
-			game->follower_numbers[n][k] = READ_BYTE(p);
+	for (n = 0; n < MAX_CONTINENTS; n++) {	
+		for (k = FRIENDLY_FOLLOWERS; k < MAX_FOLLOWERS; k++) {
+			game->follower_numbers[n][k][0] = READ_BYTE(p);
+			game->follower_numbers[n][k][1] = READ_BYTE(p);
+			game->follower_numbers[n][k][2] = READ_BYTE(p);
+		}
+	}
 
 	/* Read dwelling troop type and population count */
-	for (n = 0; n < MAX_DWELLINGS; n++)
-			game->dwelling_troop[n] = READ_BYTE(p);	
+	for (n = 0; n < MAX_CONTINENTS; n++)	
+		for (k = 0; k < MAX_DWELLINGS; k++)
+			game->dwelling_troop[n][k] = READ_BYTE(p);	
 
-	for (n = 0; n < MAX_DWELLINGS; n++)
-			game->dwelling_population[n] = READ_BYTE(p);
+	for (n = 0; n < MAX_CONTINENTS; n++)	
+		for (k = 0; k < MAX_DWELLINGS; k++)
+			game->dwelling_population[n][k] = READ_BYTE(p);
 
 	/* Read scepter key and un-encrypt the coordinates */
 	game->scepter_key = READ_BYTE(p);

@@ -241,6 +241,9 @@ int KBRW_write( SDL_RWops *ctx, const void *ptr, int size, int num) {
 
 int KBRW_close( SDL_RWops *ctx) {
 	KB_File *file = (KB_File*)ctx->hidden.unknown.data1;
+
+	SDL_FreeRW(ctx);
+
 	file->ref_count--;
 	return KB_fclose( file );
 }

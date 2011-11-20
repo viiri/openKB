@@ -23,6 +23,7 @@
 #include "kbfile.h"
 
 #include "SDL.h"
+#include "SDL_image.h"
 
 inline SDL_Surface* SDL_CreatePALSurface(Uint32 width, Uint32 height)
 {
@@ -56,7 +57,7 @@ void SDL_BlitXBPP(const char *src, SDL_Surface *dest, SDL_Rect *dstrect, int bpp
 	}	
 }
 
-void SDL_BlitMASK(char *src, SDL_Surface *dest, SDL_Rect *dstrect)
+void SDL_BlitMASK(const char *src, SDL_Surface *dest, SDL_Rect *dstrect)
 {
 	/* 8 bits contain 8 pixels o_O */
 	dword j;

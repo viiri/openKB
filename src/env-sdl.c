@@ -50,10 +50,12 @@ KBenv *KB_startENV(KBconfig *conf) {
 	flags = SDL_SWSURFACE;
 
 	nsys->pan = 0;
+	nsys->zoom = 1;
 
 	if (conf->filter) {
 		width = 640;
 		height = 400;
+		nsys->zoom = 2;
 	}
 
 	if (conf->fullscreen) {
@@ -87,6 +89,8 @@ void KB_stopENV(KBenv *env) {
 
 	if (env->font) SDL_FreeSurface(env->font);
 
+	SDL_FreeCachedSurfaces();
+
 	kill_inline_font();
 
 	free(env);
@@ -94,11 +98,13 @@ void KB_stopENV(KBenv *env) {
 	SDL_Quit();
 }
 
+
 inline void KB_loc(KBenv *env, word base_x, word base_y) {
 	env->base_x = base_x;
 	env->base_y = base_y;
 	env->cursor_x = 0;
 	env->cursor_y = 0;
+	env->line_height = env->font_size.h;
 }
 
 inline void KB_curs(KBenv *env, word cursor_x, word cursor_y) {
@@ -106,11 +112,21 @@ inline void KB_curs(KBenv *env, word cursor_x, word cursor_y) {
 	env->cursor_y = cursor_y;
 }
 
+inline void KB_getpos(KBenv *env, word *x, word *y) {
+	*x = env->base_x + env->cursor_x * env->font_size.w;
+	*y = env->base_y + env->cursor_y * env->line_height;
+}
+
+inline void KB_lh(KBenv *env, byte h) {
+	env->line_height = (h == 0 ? env->font_size.h : h);
+}
+
 void KB_setfont(KBenv *env, SDL_Surface *surf) {
 	infont(surf);
 	env->font = surf;
 	env->font_size.w = surf->w / 16;
 	env->font_size.h = surf->h / 8;
+	env->line_height = env->font_size.h;
 }
 
 void KB_setcolor(KBenv *env, Uint32* colors) /* Colors must be in 0x00RRGGBB format ! */
@@ -125,28 +141,12 @@ void KB_setcolor(KBenv *env, Uint32* colors) /* Colors must be in 0x00RRGGBB for
 	SDL_SetColors(env->font, pal, 0, 4);
 }
 
-SDL_Rect *KB_fontsize(KBenv *env) {
-	static SDL_Rect size;
-	size.x = 0;
-	size.y = 0;
-	if (env->font) {
-		size.w = env->font->w / 16;
-		size.h = env->font->h / 8;
-	} else {
-		size.w = size.h = 8;
-	}
-	return &size;
-}
-
 void KB_print(KBenv *env, const char *str) { 
 	SDL_Rect dest = { 0 }, letter = { 0 };
 	int i, len;
 
-	dest.h = letter.w = env->font->w / 16;
-	dest.h = letter.h = env->font->h / 8;
-
-	dest.x = env->cursor_x * letter.w;
-	dest.y = env->cursor_y * letter.h;
+	dest.w = letter.w = env->font_size.w;
+	dest.h = letter.h = env->font_size.h;
 
 	len = strlen(str);
 	for (i = 0; i < len; i++) {
@@ -159,12 +159,11 @@ void KB_print(KBenv *env, const char *str) {
 			continue;
 		}
 		letter.x = col * letter.w;
-		letter.y = row * letter.w;
-		dest.x = env->base_x + env->cursor_x * letter.w;
-		dest.y = env->base_y + env->cursor_y * letter.h;		
+		letter.y = row * letter.h;
+		KB_getpos(env, &dest.x, &dest.y);
 		SDL_BlitSurface(env->font, &letter, env->screen, &dest);
 		env->cursor_x++;
-	}	
+	}
 }
 
 
@@ -406,6 +405,35 @@ SDL_Surface *SDL_LoadRESOURCE(int id, int sub_id, int flip) {
 	}
 
 	return ret;
+}
+
+/*
+ * Same as SDL_LoadRESOURCE, but with a cache layer. 
+ */
+SDL_Surface *surf_cache[64][64] = { NULL };
+SDL_Surface *SDL_TakeSurface(int id, int sub_id, int flip) {
+	SDL_Surface *ret = NULL;
+	if (id < 64 && sub_id < 64) {
+		if (surf_cache[id][sub_id] != NULL)
+		{ 
+			return surf_cache[id][sub_id];
+		} 
+	}
+	ret = SDL_LoadRESOURCE(id, sub_id, flip);
+	if (id < 64 && sub_id < 64) {
+		surf_cache[id][sub_id] = ret;
+	}
+	return ret;
+}
+
+void SDL_FreeCachedSurfaces() {
+	int id, sub_id;
+	for (id = 0; id < 64; id++)
+	for (sub_id = 0; sub_id < 64; sub_id++) {
+		if (surf_cache[id][sub_id] != NULL) 
+			SDL_FreeSurface(surf_cache[id][sub_id]);
+		surf_cache[id][sub_id] = NULL; 
+	}
 }
 
 SDL_Rect* RECT_LoadRESOURCE(int id, int sub_id) {

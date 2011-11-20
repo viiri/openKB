@@ -74,22 +74,35 @@
 #define SN_TUNE		0x60	/* subId - tune index (0-10) */
 #define PAL_PALETTE	0x70	/* subId - undefined */
 #define COL_TEXT	0x71	/* subId - undefined */
+#define COL_MINIMAP	0x72	/* subId - undefined */
 
 #define DAT_WORLD	0x90	/* complete world map ; subId - undefined */
 #define DAT_LAND	0x91	/* map for specific continent ; subId - continent index */
 
 #define RECT_MAP	0xA0	/* SDL_Rect describing map area */
 #define RECT_UI 	0xA1	/* SDL_Rect describing ui border area; subId - element index */
+#define RECT_TILE 	0xA2	/* SDL_Rect describing one map tile */
+#define RECT_UITILE	0xA3	/* SDL_Rect describing sidebar button */
 
 #define STR_SIGN	0xE0	/* signpost text ; subId - signpost index */
 #define STR_TROOP	0xE1	/* troop name ; subId - troop index */
 #define STR_MULTI	0xE2	/* troops name ; subId - troop index */
 #define STR_VNAME	0xE3	/* villain name ; subId - villain index */
+#define STR_VDESC	0xE4	/* villain description line ; subId - line (villain index * 14) */
+#define STR_CREDIT	0xE5	/* a line of credits ; subId - line */
 
 #define STRL_SIGNS	0xF0	/* signpost texts ; subId - undefined */
 #define STRL_TROOPS	0xF1	/* troop names ; subId - undefined */
 #define STRL_MULTIS	0xF2	/* troops names ; subId - undefined */
 #define STRL_VNAMES 0xF3	/* villains names ; subId - undefined */
+#define STRL_VDESCS 0xF4	/* villains descriptions ; subId - villain id */
+#define STRL_CREDITS 0xF5	/* credits ; subId - undefined */
+
+#define FRAME_TOP   	0
+#define FRAME_LEFT  	1
+#define FRAME_RIGHT 	2
+#define FRAME_BOTTOM	3
+#define FRAME_MIDDLE	4
 
 #ifdef HAVE_LIBSDL
 /* SDL flavor. */
@@ -98,6 +111,7 @@
 /* Provide usefull functions to modules */
 inline SDL_Surface* SDL_CreatePALSurface(Uint32 width, Uint32 height);
 extern void SDL_BlitXBPP(const char *src, SDL_Surface *dest, SDL_Rect *dstrect, int bpp);
+extern void SDL_BlitMASK(const char *src, SDL_Surface *dest, SDL_Rect *dstrect);
 extern void SDL_ReplaceIndex(SDL_Surface *dest, SDL_Rect *dstrect, byte search, byte replace);
 
 /* Simple palette manipulation */
@@ -114,6 +128,9 @@ extern void put_color_pal(SDL_Surface *dest, Uint32 fore, Uint32 back);
  */
 extern void DOS_BlitRAWIMG(SDL_Surface *surf, SDL_Rect *destrect, const char *buf, byte bpp, word mask_pos);
 extern void DOS_SetColors(SDL_Surface *surf, byte bpp);
+
+extern char* DOS_villain_names[];
+extern char* DOS_troop_names[];
 
 extern SDL_Surface* DOS_LoadRAWCH_BUF(char *buf, int len);
 extern SDL_Surface* DOS_LoadRAWIMG_BUF(char *buf, int len, byte bpp);

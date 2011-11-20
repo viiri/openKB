@@ -40,6 +40,7 @@ typedef struct KBenv {
 	word cursor_y;
 	word base_x;	/* Pixel offset */
 	word base_y;
+	byte line_height; /* Line size in pixels */
 	
 	SDL_Rect font_size;
 
@@ -49,7 +50,7 @@ typedef struct KBenv {
 	int bpp;
 
 	int fullscreen;
-	int filter;
+	int zoom;
 
 } KBenv;
 
@@ -73,6 +74,10 @@ typedef struct KBwin {
 	int w;
 	int h;
 
+	int flags;
+
+	void *gamestate;
+	void *renderer;
 	void *udata;
 
 } KBwin;
@@ -86,6 +91,8 @@ extern void KB_setfont(KBenv *env, SDL_Surface *surf);
 extern void KB_setcolor(KBenv *env, Uint32* colors); /* Colors must be in 0x00RRGGBB format ! */
 inline void KB_loc(KBenv *env, word base_x, word base_y);
 inline void KB_curs(KBenv *env, word cursor_x, word cursor_y);
+inline void KB_lh(KBenv *env, byte h);
+inline void KB_getpos(KBenv *env, word *x, word *y);
 
 
 extern void SDL_SBlitSurface(SDL_Surface *src, SDL_Rect *srcrect, SDL_Surface *dst, SDL_Rect *dstrect);
@@ -99,5 +106,9 @@ extern SDL_Surface* KB_LoadIMG8(int id, int sub_id);
 extern SDL_Surface *SDL_LoadRESOURCE(int id, int sub_id, int flip);
 
 extern SDL_Rect* RECT_LoadRESOURCE(int id, int sub_id);
+
+extern SDL_Surface* SDL_TakeSurface(int id, int sub_id, int flip);
+
+extern void SDL_FreeCachedSurfaces();
 
 #endif /* _OPENKB_ENV */

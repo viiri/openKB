@@ -75,7 +75,7 @@ install_inprint()
 	#${XBM} ${FONT_FILE} >> tmp1.c
 	#cat inprint.c > tmp2.c
 	#sed '/#include/d' tmp2.c >> tmp1.c
-	sed 's/inline_font.h/..\/src\/font.h/' ${WORKDIR}${DROP_NAME}/inprint.c > ${WORKDIR}${LAST_NAME}
+	sed 's/inline_font\.h/..\/src\/font.h/' ${WORKDIR}${DROP_NAME}/inprint.c > ${WORKDIR}${LAST_NAME}
 	#rm tmp2.c
 	#mv tmp1.c inprint.c
 }
@@ -94,7 +94,7 @@ test_file "scale2x.c" "${REMOTE_NAME}" "${REMOTE_FILE}" "${REMOTE_URL}"
 
 REMOTE_NAME=SDL_inprint
 REMOTE_FILE=SDL_inprint
-REMOTE_URL="http://github.com/driedfruit/${REMOTE_NAME}.git"
+REMOTE_URL="git://github.com/driedfruit/${REMOTE_NAME}.git"
 DOWN_CALLBACK=download_git
 INST_CALLBACK=install_inprint
 test_file "inprint.c" "${REMOTE_NAME}" "${REMOTE_FILE}" "${REMOTE_URL}" 

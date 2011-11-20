@@ -26,6 +26,10 @@
 #define KBMOUNT_FLY 	4
 #define KBMOUNT_RIDE	8
 
+#define KBCASTLE_KNOWN  	0x40
+#define KBCASTLE_PLAYER 	0xFF
+#define KBCASTLE_MONSTERS	0x7F
+
 #define MAX_CONTINENTS 4
 #define LEVEL_W	64
 #define LEVEL_H	64
@@ -34,11 +38,13 @@
 #define MAX_ARTIFACTS 8
 
 #define MAX_VILLAINS 17
-#define MAX_FOLLOWERS (40*4)
+#define MAX_FOLLOWERS 40
 
-#define MAX_DWELLINGS 44
+#define MAX_DWELLINGS 11
 #define MAX_CASTLES 26
 #define MAX_TOWNS 26
+
+#define MAX_TELECAVES 2
 
 #define HOME_CONTINENT 0
 #define HOME_X 11
@@ -47,6 +53,14 @@
 #define ALCOVE_CONTINENT 0
 #define ALCOVE_X 11
 #define ALCOVE_Y 19
+
+#define FRIENDLY_FOLLOWERS 5
+
+#define IS_GRASS(M) ((M) < 2 || (M) == 0x80)
+#define IS_WATER(M) ((M) >= 0x14 && (M) <= 0x20)
+#define IS_DESERT(M) ((M) >= 0x2e && (M) <= 0x3a)
+#define IS_INTERACTIVE(M) ((M) & 0x80)
+
 
 typedef struct KBgame KBgame;
 
@@ -95,11 +109,11 @@ struct KBgame {
 
 	byte town_spell[MAX_TOWNS]; /* Which spell is sold in town N ? */
 
-	byte teleport_coords[MAX_CONTINENTS][2];
+	byte teleport_coords[MAX_CONTINENTS][MAX_TELECAVES][2];
 
-	byte dwelling_coords[MAX_DWELLINGS][2];
-	byte dwelling_troop[MAX_DWELLINGS];	/* Which creature lives in dwelling N ? */ 
-	byte dwelling_population[MAX_DWELLINGS]; /* How much of those */
+	byte dwelling_coords[MAX_CONTINENTS][MAX_DWELLINGS][2];
+	byte dwelling_troop[MAX_CONTINENTS][MAX_DWELLINGS];	/* Which creature lives in dwelling N ? */ 
+	byte dwelling_population[MAX_CONTINENTS][MAX_DWELLINGS]; /* How much of those */
 
 	byte castle_owner[MAX_CASTLES]; /* 0x7F = no one, 0xFF = you, LOW 5 bits = villain */
 	byte castle_troops[MAX_CASTLES][5];	// creature types
@@ -108,9 +122,9 @@ struct KBgame {
 	byte map_coords[MAX_CONTINENTS][2];	/* Special chests  */
 	byte orb_coords[MAX_CONTINENTS][2];	/* 4 per continent */
 
-	byte follower_coords[MAX_FOLLOWERS][2];//0 is X and 1 is Y
-	byte follower_troops[MAX_FOLLOWERS][5];//creature types
-	word follower_numbers[MAX_FOLLOWERS][5];//their count
+	byte follower_coords[MAX_CONTINENTS][MAX_FOLLOWERS][2];//0 is X and 1 is Y
+	byte follower_troops[MAX_CONTINENTS][MAX_FOLLOWERS][5];//creature types
+	word follower_numbers[MAX_CONTINENTS][MAX_FOLLOWERS][5];//their count
 
 	byte steps_left;	/* You can make that much steps before day runs out */
 	word time_stop;
@@ -119,7 +133,7 @@ struct KBgame {
 	byte player_troops[5];	/* Player army (creature types)	*/
 	word player_numbers[5];	/* Player army (troop count) */
 
-	word followers_killed;
+	word followers_killed; /* Total number of friendly troops lost in combat */
 
 	word base_leadership; /* That much leadership * 1,3,5 is awarded on each level up */
 	word leadership;
@@ -183,8 +197,7 @@ typedef struct KBtroop {
 	byte	ranged_max;
 	byte	ranged_ammo;
 
-	word 	recruit_cost;
-	word	weekly_cost;
+	word 	recruit_cost;	/* In gold */
 
 	byte	abilities;		/* Bit-flags, see ABIL_ defines */
 
@@ -257,5 +270,7 @@ extern char *continent_names[4];
 
 extern byte castle_coords[MAX_CASTLES][3];	/* [continent][x][y] */
 extern byte town_coords[MAX_CASTLES][3];
+
+extern signed char puzzle_map[5][5]; /* each piece is covered by villain face or artifact */
 
 #endif /* _OPENKB_BOUNTY_H */
