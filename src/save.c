@@ -136,8 +136,8 @@ KBgame* KB_loadDAT(const char* filename) {
 	game->scepter_x = READ_BYTE(p);
 	game->scepter_y = READ_BYTE(p);
 
-	/* Unknown?? */
-	p += 1;
+	/* Skip 1 byte */
+	game->unknown3 = READ_BYTE(p);
 
 	/* Fog of war (convert from 1-bit-per-tile to 1-byte-per-tile format) */
 	map_size = ( MAX_CONTINENTS * LEVEL_W * LEVEL_H );
@@ -256,7 +256,7 @@ KBgame* KB_loadDAT(const char* filename) {
 	/* Score (unused) */
 	game->score = READ_WORD(p);
 
-	/* Skip 4 bytes */
+	/* Skip 2 bytes */
 	game->unknown1 = READ_BYTE(p);
 	game->unknown2 = READ_BYTE(p);
 

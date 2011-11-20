@@ -153,6 +153,7 @@ struct KBgame {
 
 	byte unknown1;	/* Unknown values from the original game */
 	byte unknown2;	/* We carry them over to maintain savefile compatibilitity */
+	byte unknown3;
 };
 
 #define MAX_TROOPS	25
