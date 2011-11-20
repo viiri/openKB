@@ -2741,17 +2741,47 @@ void take_artifact(KBgame *game, byte id) {
 
 }
 
-int attack_follower(KBgame *game) {
+int attack_foe(KBgame *game) {
+	int id = 0;
+	int i;
+	for (i = 0; i < MAX_FOLLOWERS; i++) {
+		if (game->follower_coords[game->continent][i][0] == game->x
+		 && game->follower_coords[game->continent][i][1] == game->y) {
+			id = i;
+			break;
+		 }
+	}
 
-	KB_BottomBox("Danger", "Attack? y/n", 0);
-	//KB_iloc(0, 0);
-	//KB_iprintf("Attack ? y / n\n", game->x, game->y);
+	if (id < FRIENDLY_FOLLOWERS) {
+
+	} else {
+
+	}
+
+	SDL_Rect *rect = KB_BottomBox("Your scouts have sighted:", "", 0);
+	SDL_Rect *fs = &sys->font_size;
+
+	KB_iloc(rect->x, rect->y + fs->h * 2 - fs->h / 8);
+	KB_ilh(fs->h + fs->h/8);
+	for (i = 0; i < 3; i++) {
+		byte troop_id = game->follower_troops[game->continent][id][i];
+		word troop_count = game->follower_numbers[game->continent][id][i];
+
+		KB_iprintf("  %s %s\n", number_name(troop_count), troops[troop_id].name);
+	}
+	KB_iloc(rect->x, rect->y + fs->h * 6 - fs->h / 4);
+	KB_iprint("               Attack (y/n)?\n");
 
 	SDL_Flip(sys->screen);
 
 	int key = 0;
 	while (!key) key = KB_event(&yes_no_question);
-	
+
+	/* "Yes" */
+	if (key == 1) {
+		//run_combat(game, 0, id);
+	}
+
 	return key - 1;
 }
 
@@ -3179,7 +3209,7 @@ void display_overworld(KBgame *game) {
 					case 0x8d:
 					case 0x8f:	visit_dwelling(game, m - 0x8c); walk = 0; break;
 					case 0x90:	read_signpost(game);		break;
-					case 0x91:	walk = !attack_follower(game);	break;
+					case 0x91:	walk = !attack_foe(game);	break;
 					case 0x92:
 					case 0x93:	take_artifact(game, m - 0x92);	break;
 					default:
