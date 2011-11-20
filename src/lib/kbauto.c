@@ -593,6 +593,19 @@ void* GNU_Resolve(KBmodule *mod, int id, int sub_id) {
 			image_suffix = ".png";
 		}
 		break;		
+		case GR_UI:
+		{
+			image_name = "sidebar";
+			image_suffix = ".png";
+			is_transparent = 0;
+		}
+		break;
+		case GR_PURSE:
+		{
+			SDL_Surface *ts = SDL_CreatePALSurface(48, 34);
+			return ts;
+		}
+		break;
 		case GR_COMTILES:
 		{
 			image_name = "comtiles";
