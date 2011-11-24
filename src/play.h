@@ -53,3 +53,6 @@ extern void fullfill_contract(KBgame *game, byte villain_id);
 extern void temp_death(KBgame *game);
 
 extern void test_defeat(KBgame *game);
+
+/** Spell effects **/
+extern void raise_control(KBgame *game);

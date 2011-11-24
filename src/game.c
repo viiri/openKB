@@ -2785,6 +2785,222 @@ int attack_foe(KBgame *game) {
 	return key - 1;
 }
 
+void no_spell_banner() {
+
+	SDL_Rect *fs = &sys->font_size;
+	SDL_Rect *text = KB_BottomFrame();
+
+	/* Adjust position */
+	KB_iloc(text->x, text->y + fs->h - fs->h/2);
+	KB_iprintf(
+		"You have not been trained in\n"
+		"the art of spellcasting yet.\n"
+		"Visit the Archmage Aurange\n"
+		"in %s at %2d,%2d for\n"
+		"this ability.", continent_names[ALCOVE_CONTINENT], ALCOVE_X, ALCOVE_Y);
+
+	KB_flip(sys);
+	KB_Pause();
+}
+
+KBgamestate seven_choices = {
+	{
+		{	{ 0 }, SDLK_a, 0, 0      	},
+		{	{ 0 }, SDLK_b, 0, 0      	},
+		{	{ 0 }, SDLK_c, 0, 0      	},
+		{	{ 0 }, SDLK_d, 0, 0      	},
+		{	{ 0 }, SDLK_e, 0, 0      	},
+		{	{ 0 }, SDLK_f, 0, 0      	},
+		{	{ 0 }, SDLK_g, 0, 0      	},
+
+		{	{ 60 }, SDLK_SYN, 0, KFLAG_TIMER },
+		0,
+	},
+	0
+};
+
+KBgamestate cross_choice = {
+	{
+		{	{ 0 }, SDLK_LEFT, 0, 0      	},
+		{	{ 0 }, SDLK_UP, 0, 0      	},
+		{	{ 0 }, SDLK_DOWN, 0, 0      	},
+		{	{ 0 }, SDLK_RIGHT, 0, 0      	},
+
+		0,
+	},
+	0
+};
+
+
+int build_bridge(KBgame *game) {
+
+	KB_TopBox("Build bridge in which direction <>ud");
+
+	KB_flip(sys);
+
+	int key = KB_event(&cross_choice);
+	
+	if (key == 0xFF) return 1;
+
+	KB_TopBox("Not a suitable location for a bridge");
+	KB_flip(sys);
+	KB_Pause();
+
+	KB_TopBox("What a waste of a good spell!");
+	KB_flip(sys);
+	KB_Pause();
+	
+	return 1;
+}
+
+int instant_army(KBgame *game) {
+
+	KB_BottomBox("A few Sprites", "have joined to your army.", 1);
+
+	return 0;
+}
+
+/* Mode 1 for adventure spells, mode 0 for combat spells */
+int choose_spell(KBgame *game, int mode) {
+
+	byte spell_id;
+
+	SDL_Rect border;
+
+	SDL_Surface *screen = sys->screen;
+
+	SDL_Rect *fs = &sys->font_size;
+
+	if (!game->knows_magic)
+	{
+		no_spell_banner();
+		return;	
+	}
+
+	RECT_Text((&border), 15, 36);
+	RECT_Center(&border, sys->screen);
+	
+	border.y -= fs->h;
+
+	Uint32 *colors = KB_Resolve(COL_TEXT, 0);
+
+	SDL_TextRect(sys->screen, &border, colors[0], colors[1]);
+
+	KB_TopBox("        Press 'ESC' to exit");
+
+	KB_iloc(border.x + fs->w, border.y + fs->h/2);
+	KB_iprint("              Spells\n\n");
+	KB_iprint("     Combat         Adventuring  \n");
+
+	KB_iloc(border.x + fs->w, border.y + fs->h*5 - fs->h/2);
+
+	int i, j;
+	int half = MAX_SPELLS / 2;
+	KB_ilh(fs->h + fs->h / 8);
+	for (i = 0; i < half; i++) {
+		j = i + half;
+		if (!mode)
+			KB_imenu(&seven_choices, i, 12);
+		KB_iprintf("%2d %-12s", game->spells[j], spell_names[i]);
+		KB_iprintf(" %c ", 'A' + i);
+		if (mode)
+			KB_imenu(&seven_choices, i, 12);
+		KB_iprintf("%-13s %2d\n", spell_names[j], game->spells[j]);
+	}
+
+	KB_iloc(border.x + fs->w, border.y + fs->h * 13 + fs->h/4);
+	KB_iprintf("Cast which %s spell (A-%c)?", (mode ? "Adventure" : "Combat"), 'A' + half);
+
+	const char *twirl = "\x1D" "\x05" "\x1F" "\x1C" ; /* stands for: | / - \ */  
+	byte twirl_pos = 0;
+
+	int done = 0;
+	int redraw = 1;
+	while (!done) {
+
+		int key = KB_event(&seven_choices);
+
+		if (key == 0xFF) done = 1;
+
+		if (key == 8) {
+			twirl_pos++;
+			if (twirl_pos > 3) twirl_pos = 0;
+			redraw = 1;
+		}
+
+		else if (key && key < 8) {
+
+			spell_id = key - 1 + (half * mode);
+
+			if (game->spells[spell_id] == 0) {
+
+				KB_iloc(border.x + fs->w * 34, border.y + fs->h * 13 + fs->h/4);
+				KB_iprintf("%c", 'A' + key - 1);
+
+				KB_TopBox("     You don't know that spell!");
+				KB_flip(sys);
+				KB_Pause();
+
+			} else {
+
+				switch (spell_id) {
+					case 0:
+						//clone
+					break;
+					case 1:
+						//teleport
+					break;
+					case 2:
+						//fireball
+					break;		
+					case 3:
+						//lightning
+					break;
+					case 4:
+						//freeze
+					break;
+					case 5:
+						//resurrect
+					break;
+					case 6:
+						//turn undead
+					break;
+					case 7:	build_bridge(game);	break;
+					case 8:
+						//time_stop(game)
+					break;
+					case 9:
+						//find vilain
+					break;
+					case 10:
+						//castle gate
+					break;
+					case 11:
+						//town gate
+					break;
+					case 12: instant_army(game);	break;
+					case 13: raise_control(game);	break;
+				}
+
+				/* Spend 1 spell */
+				game->spells[spell_id]--;
+			}
+
+			done = 1;
+		}
+
+		if (redraw) {
+			redraw = 0;
+
+			KB_iloc(border.x + fs->w * 34, border.y + fs->h * 13 + fs->h/4);
+			KB_iprintf("%c", twirl[twirl_pos]);
+
+			KB_flip(sys);
+		}
+	}
+
+	return spell_id;
+}
 
 #define ARROW_KEYS 18
 #define ACTION_KEYS 14
@@ -2874,7 +3090,6 @@ void draw_sidebar(KBgame *game, int tick) {
 	
 	/* Magic star */
 	hdst.y += hsrc.h;
-	game->knows_magic = 1;
 	hsrc.x = (game->knows_magic ? (tick + 4) * hsrc.w : 10 * hsrc.w);
 	SDL_BlitSurface( sidebar, &hsrc, screen, &hdst);
 
@@ -3080,7 +3295,7 @@ void display_overworld(KBgame *game) {
 		}
 
 		if (key == KEY_ACT(USE_MAGIC)) {
-			//choose_spell(game, 0);
+			choose_spell(game, 1);
 		}
 
 		if (key == KEY_ACT(VIEW_CHAR)) {

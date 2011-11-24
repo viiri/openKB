@@ -210,3 +210,10 @@ void test_defeat(KBgame *game) {
 		temp_death(game);
 	}
 }
+
+/** Spell effects **/
+
+void raise_control(KBgame *game) {
+	game->leadership += game->spell_power * 100;
+}
+
