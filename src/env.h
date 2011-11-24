@@ -85,6 +85,8 @@ typedef struct KBwin {
 extern KBenv *KB_startENV(KBconfig *conf);
 extern void KB_stopENV(KBenv *env);
 
+extern void KB_flip(KBenv *env);
+
 extern void KB_printf(KBenv *env, const char *fmt, ...);
 extern SDL_Rect *KB_fontsize(KBenv *env);
 extern void KB_setfont(KBenv *env, SDL_Surface *surf);

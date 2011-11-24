@@ -98,6 +98,10 @@ void KB_stopENV(KBenv *env) {
 	SDL_Quit();
 }
 
+inline void KB_flip(KBenv *env) {
+	SDL_Flip(env->screen);
+}
+
 
 inline void KB_loc(KBenv *env, word base_x, word base_y) {
 	env->base_x = base_x;
