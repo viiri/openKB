@@ -61,6 +61,8 @@
 #define IS_DESERT(M) ((M) >= 0x2e && (M) <= 0x3a)
 #define IS_INTERACTIVE(M) ((M) & 0x80)
 
+#define DAY_STEPS	40
+#define WEEK_DAYS	5
 
 typedef struct KBgame KBgame;
 

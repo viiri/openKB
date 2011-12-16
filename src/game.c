@@ -3002,6 +3002,61 @@ int choose_spell(KBgame *game, int mode) {
 	return spell_id;
 }
 
+void win_game(KBgame *game) {
+
+	KB_TopBox("Press 'ESC' to exit");
+
+	KB_Pause();
+
+}
+
+void lose_game(KBgame *game) {
+
+	KB_TopBox("Press 'ESC' to exit");
+
+	KB_Pause();
+
+}
+
+/* Returns 0 if the game was won, 1 if search was futile, 2 if search was cancelled */
+int ask_search(KBgame *game) {
+
+	int days = 10;
+
+	SDL_Rect *rect = KB_BottomBox("Search...", "", 0);
+	SDL_Rect *fs = &sys->font_size;
+
+	KB_iloc(rect->x, rect->y + fs->h * 2 );
+	KB_ilh(fs->h + fs->h/8);
+	KB_iprintf("It will take %d days to do a\nsearch of this area.", days);
+
+	KB_iloc(rect->x, rect->y + fs->h * 6 - fs->h / 4);
+	KB_iprint("               Search (y/n)?\n");
+
+	KB_flip(sys);
+
+	int key = 0;
+	while (!key) key = KB_event(&yes_no_question);
+
+	/* "No" */
+	if (key == 2) return 2;
+
+	/* "Yes" */
+	if (game->scepter_continent == game->continent
+	 && game->scepter_y == game->y
+	 && game->scepter_x == game->x) {
+
+		win_game(game);
+		return 0;
+
+	} else {
+		KB_BottomBox(NULL, "\n\nYour search of this area has\nrevealed nothing.", 1);
+		spend_days(game, days);
+	}
+
+	return 1;
+}
+
 #define ARROW_KEYS 18
 #define ACTION_KEYS 14
 
@@ -3217,7 +3272,6 @@ void draw_player(KBgame *game, int frame) {
 		SDL_BlitSurface( hero, &hsrc , sys->screen, &hdst );
 	}
 
-
 }
 
 static signed char move_offset_x[9] = { -1, 0, 1, -1, 0, 1, -1,  0,  1 };
@@ -3291,7 +3345,7 @@ void display_overworld(KBgame *game) {
 		}
 
 		if (key == KEY_ACT(SEARCH)) {
-			//ask_search(game);
+			if (!ask_search(game)) done = 1;
 		}
 
 		if (key == KEY_ACT(USE_MAGIC)) {
@@ -3303,7 +3357,7 @@ void display_overworld(KBgame *game) {
 		}
 
 		if (key == KEY_ACT(END_WEEK)) {
-			//end_of_week(game);
+			spend_week(game);
 		}
 
 		if (key == KEY_ACT(SAVE_QUIT)) {
@@ -3438,6 +3492,7 @@ void display_overworld(KBgame *game) {
 				walk = 1;
 			} else {
 				walk = 0;
+				game->steps_left -= 1;
 				/* Hitting shore */
 				if (!IS_WATER(m)) {
 					/* Leave ship */
@@ -3449,6 +3504,14 @@ void display_overworld(KBgame *game) {
 				}	
 			}
 			continue;
+		}
+
+		if (game->steps_left <= 0) {
+			end_day(game);
+		}
+		if (game->days_left == 0) {
+			lose_game(game);
+			done = 1;
 		}
 
 		if (redraw) {

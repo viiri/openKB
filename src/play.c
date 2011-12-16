@@ -37,6 +37,53 @@ KBgame *spawn_game(char *name, int pclass, int difficulty) {
 	return game;
 }
 
+/* Calculate how many days has passed by inverting the "days left" variable */
+word passed_days(KBgame *game) {
+	word max_days_diff[] = { 900, 600, 400, 200 };
+
+	word max_days = max_days_diff[game->difficulty];
+
+	word pass_days = max_days - game->days_left; 
+
+	return pass_days;
+}
+
+/* Calculate and return current week number */
+word week_id(KBgame *game) {
+
+	word w_id = passed_days(game) / WEEK_DAYS;
+
+	return w_id;
+}
+
+void end_week(KBgame *game) {
+	printf("END OF WEEK!\n");
+}
+
+void end_day(KBgame *game) {
+	game->days_left -= 1;
+	game->steps_left = DAY_STEPS;
+	if (!(game->days_left % WEEK_DAYS)) end_week(game);
+}
+
+/* Spend some ammount of game days */
+void spend_days(KBgame *game, word days) {
+	word i;
+	for (i = 0; i < days; i++) {
+		end_day(game);
+	}
+}
+
+/* Spend remaining days in the week */
+void spend_week(KBgame *game) {
+	word w_id = week_id(game); 
+	word pass_days = passed_days(game);
+
+	word week_days = pass_days - (w_id * WEEK_DAYS);
+	word end_week_days = WEEK_DAYS - week_days;
+
+	spend_days(game, end_week_days);
+}
 
 /* Close contract on villain */
 void fullfill_contract(KBgame *game, byte villain_id) {
