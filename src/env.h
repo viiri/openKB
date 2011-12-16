@@ -20,7 +20,7 @@
 #ifndef _OPENKB_ENV
 #define _OPENKB_ENV
 
-#include "SDL.h"
+#include <SDL.h>
 
 #include "lib/kbsys.h"
 #include "lib/kbconf.h"

@@ -18,7 +18,7 @@
  *  along with openkb.  If not, see <http://www.gnu.org/licenses/>.
  */
 // For the meantime, use SDL directly, it if gets unwieldy, abstract it away 
-#include "SDL.h"
+#include <SDL.h>
 
 #include "bounty.h"
 #include "play.h"

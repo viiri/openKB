@@ -223,7 +223,7 @@ int KB_fcloseF( KB_File * stream )
 }
 
 #ifdef HAVE_LIBSDL
-#include "SDL.h"
+#include <SDL.h>
 /* SDL_RWops interface */
 int KBRW_seek( SDL_RWops *ctx, int offset, int whence ) {
 	int r = KB_fseek( (KB_File*)ctx->hidden.unknown.data1, offset, whence );

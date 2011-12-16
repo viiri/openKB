@@ -106,7 +106,7 @@
 
 #ifdef HAVE_LIBSDL
 /* SDL flavor. */
-#include "SDL.h"
+#include <SDL.h>
 #include "kbdir.h" // for KB_DIR
 /* Provide usefull functions to modules */
 inline SDL_Surface* SDL_CreatePALSurface(Uint32 width, Uint32 height);

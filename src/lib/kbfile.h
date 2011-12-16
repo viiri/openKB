@@ -106,7 +106,7 @@ KB_FILE_IF_NAME_ADD(IMG);
 #undef KB_FILE_IF_NAME_ADD
 
 #ifdef HAVE_LIBSDL
-#include "SDL.h"
+#include <SDL.h>
 
 /* RWops interface to file */
 extern SDL_RWops* KBRW_open( KB_File *f );
