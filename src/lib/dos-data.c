@@ -352,7 +352,43 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 			suffix = bpp_names[mod->bpp];
 			ident = "#13";
 		}
-		break;		
+		break;
+		case GR_COINS:
+		{
+			/* coins */
+			method = IMG_ROW;
+			middle_name = "cursor";
+			suffix = bpp_names[mod->bpp];
+			ident = "";
+			row_start = 25;
+			row_frames = 3;
+		}
+		break;
+		case GR_COIN:	/* subId - coin index */
+		{
+			/* one coin */
+			method = RAW_IMG;
+			middle_name = "cursor";
+			suffix = bpp_names[mod->bpp];
+			ident = "#0";
+			if (sub_id == 1) ident = "#1";
+			if (sub_id == 2) ident = "#2";
+		}
+		break;
+		case GR_PIECE:
+		{
+			SDL_Surface *piece = SDL_CreatePALSurface(9, 6);
+			SDL_Rect mrect = { 0, 0, 9, 6 };
+			/* Black (color "0") outline */
+			SDL_FillRect(piece, &mrect, 0);
+			mrect.w -= 1; mrect.h -= 1;
+			/* Use color "4" (red) for EGA and above, color "2" (magenta) for CGA and below */
+			SDL_FillRect(piece, &mrect, (mod->bpp < 3 ? 2 : 4)); 
+			/* Use generic palette :( */
+			DOS_SetColors(piece, mod->bpp);
+			return piece;
+		}
+		break;
 		case GR_VILLAIN:	/* subId - villain index */
 		{
 			/* A villain (with animation) */
