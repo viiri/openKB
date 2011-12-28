@@ -3128,6 +3128,9 @@ void draw_sidebar(KBgame *game, int tick) {
 	SDL_Surface *purse = SDL_TakeSurface(GR_PURSE, 0, 0);
 	SDL_Surface *sidebar = SDL_TakeSurface(GR_UI, 0, 0);
 
+	SDL_Surface *coins = SDL_TakeSurface(GR_COINS, 0, 0);
+	SDL_Surface *piece = SDL_TakeSurface(GR_PIECE, 0, 0);
+
 	SDL_Rect *map = &local.map;
 
 	/** Draw siderbar UI **/
@@ -3157,16 +3160,35 @@ void draw_sidebar(KBgame *game, int tick) {
 	for (j = 0; j < 5; j++)
 	for (i = 0; i < 5; i++)
 	{
-		SDL_Rect mrect = { hdst.x + i * 9 + 2, hdst.y + j * 6 + 2, 9, 6 } ;
-		SDL_FillRect(screen, &mrect, 0x000000);
-		mrect.w -= 1; mrect.h -= 1;
-		SDL_FillRect(screen, &mrect, 0xAA0000);
+		/* Refrence table with negative artifact and positive villain indexes */
+		int id = puzzle_map[j][i]; 
+		if ((id < 0 && game->artifact_found[-id - 1])
+		|| (id >= 0 && game->villain_caught[id])) continue;
+
+		/* Draw puzzle piece */
+		SDL_Rect srect = { 0, 0, piece->w, piece->h };
+		SDL_Rect mrect = { hdst.x + i * piece->w + 4, hdst.y + j * piece->h + 4, piece->w, piece->h };
+		SDL_BlitSurface(piece, &srect, screen, &mrect);
 	}
 
 	/* Gold purse */
 	hdst.y += purse->h;
 	hsrc.x = 12 * hsrc.w;
 	SDL_BlitSurface( sidebar, &hsrc, screen, &hdst);
+	
+	int cval[3]; /* gold coins */
+	cval[0] = game->gold / 10000;
+	cval[1] = (game->gold - cval[0] * 10000) / 1000;
+	cval[2] = (game->gold - cval[0] * 10000 - cval[1] * 1000) / 100;
+	for (j = 0; j < 3; j++)
+	{
+		SDL_Rect sr = { (coins->w / 3) * j, 0, coins->w / 3, coins->h };
+		SDL_Rect dr = { hdst.x + sr.w * j, hdst.y + hdst.h - sr.h, sr.w, sr.h };
+		for (i = 0; i < cval[j]; i++) {
+			dr.y -= 2 * 2; /* zoom pixel */
+			SDL_BlitSurface(coins, &sr, screen, &dr);
+		}
+	}
 }
 
 void draw_map(KBgame *game, int tick) {
