@@ -3167,7 +3167,11 @@ void draw_sidebar(KBgame *game, int tick) {
 
 		/* Draw puzzle piece */
 		SDL_Rect srect = { 0, 0, piece->w, piece->h };
-		SDL_Rect mrect = { hdst.x + i * piece->w + 4, hdst.y + j * piece->h + 4, piece->w, piece->h };
+		SDL_Rect mrect = { 
+			hdst.x + i * piece->w + (2 * sys->zoom),
+			hdst.y + j * piece->h + (2 * sys->zoom),
+			piece->w,
+			piece->h };
 		SDL_BlitSurface(piece, &srect, screen, &mrect);
 	}
 
@@ -3185,7 +3189,7 @@ void draw_sidebar(KBgame *game, int tick) {
 		SDL_Rect sr = { (coins->w / 3) * j, 0, coins->w / 3, coins->h };
 		SDL_Rect dr = { hdst.x + sr.w * j, hdst.y + hdst.h - sr.h, sr.w, sr.h };
 		for (i = 0; i < cval[j]; i++) {
-			dr.y -= 2 * 2; /* zoom pixel */
+			dr.y -= (2 * sys->zoom);
 			SDL_BlitSurface(coins, &sr, screen, &dr);
 		}
 	}
