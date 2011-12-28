@@ -192,22 +192,13 @@ void KB_printf(KBenv *env, const char *fmt, ...) {
 #define SDL_ClonePalette(DST, SRC) SDL_SetPalette((DST), SDL_LOGPAL | SDL_PHYSPAL, (SRC)->format->palette->colors, 0, (SRC)->format->palette->ncolors) 
 
 void SDL_SizeX(SDL_Surface *surface, SDL_Surface *new_surface, Uint8 size) {
-	Uint32 x, y;
-	Uint8 bpp = surface->format->BytesPerPixel, cx, cy, p;
-	Uint8 *source, *dest;
-
-	source = (Uint8*)(surface->pixels);
-	dest = (Uint8*)(new_surface->pixels);
-
-	for(y = 0; y < surface->h; y++)
-	for(x = 0; x < surface->w; x++)
-		for (p = 0; p < bpp; p++)
-			for (cy = 0; cy < size; cy++)
-			for (cx = 0; cx < size; cx++)
-			{
-				dest[ (y * size + cy) * (new_surface->w * bpp) + ( (x * size + cx) * bpp) + p ] = 
-				source[ y * (surface->w * bpp) + (x * bpp) + p ];
-			}
+	SDL_Rect sr = { 0, 0, surface->w, surface->h };
+	SDL_Rect dr = { 0, 0, sr.w * size, sr.h * size };
+	SDL_SoftStretch(surface,
+                    &sr,
+                    new_surface,
+                    &dr);
+	return;
 }
 
 void SDL_BlitSurfaceFLIP(SDL_Surface *surface, SDL_Rect *src, SDL_Surface *new_surface, SDL_Rect *dst) {
