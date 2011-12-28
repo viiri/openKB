@@ -68,6 +68,8 @@ KBenv *KB_startENV(KBconfig *conf) {
 
     nsys->screen = SDL_SetVideoMode( width, height, 32, flags );
 
+	SDL_WM_SetCaption("openkb " PACKAGE_VERSION, "openkb " PACKAGE_VERSION);
+
     nsys->conf = conf;
 
 	nsys->font = NULL;

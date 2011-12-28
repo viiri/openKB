@@ -3606,8 +3606,15 @@ int run_game(KBconfig *conf) {
 	/* See if a game was selected */
 	if (!game) KB_stdlog("No game selected.\n");
 	else {
+		/* Put character name into window title bar */
+		char buffer[1024];
+		KB_strcpy(buffer, game->name);
+		KB_strcat(buffer, " the ");  
+		KB_strcat(buffer, classes[game->class][game->rank].title);
+		KB_strcat(buffer, " - openkb " PACKAGE_VERSION);
+		SDL_WM_SetCaption(buffer, buffer);
 
-		/* Just for fun, output game name */
+		/* And log it into stdout */
 		KB_stdlog("%s the %s (%d days left)\n", game->name, classes[game->class][game->rank].title, game->days_left);
 
 		/* PLAY THE GAME */
