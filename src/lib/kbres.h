@@ -62,6 +62,7 @@
 #define GR_PURSE	0x26	/* subId - undefined */
 #define GR_COIN		0x27	/* subId - coin index (0-3) */
 #define GR_COINS	0x28	/* subId - undefined */
+#define GR_PIECE 	0x29	/* subId - undefined */
 
 #define GR_VIEW 	0x30	/* artifacts, maps, empty slot, empty map ; subId - undefined */
 #define GR_ARTIFACTS 0x31	/* artifacts ; subId - undefined */
