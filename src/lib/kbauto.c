@@ -606,6 +606,13 @@ void* GNU_Resolve(KBmodule *mod, int id, int sub_id) {
 			return ts;
 		}
 		break;
+		case GR_VIEW:
+		{
+			image_name = "view";
+			image_suffix = ".png";
+			is_transparent = 0;
+		}
+		break;		
 		case GR_COMTILES:
 		{
 			image_name = "comtiles";
