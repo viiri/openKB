@@ -359,7 +359,10 @@ SDL_Surface *SDL_LoadRESOURCE(int id, int sub_id, int flip) {
 		else {
 			KB_stdlog("Warning: A %d-bpp image\n", surf->format->BitsPerPixel);
 		}
-		SDL_SetColorKey(bigsurf, SDL_SRCCOLORKEY, 0xFF);
+
+		if (surf->flags & SDL_SRCCOLORKEY) { /* Use same colorkey */
+			SDL_SetColorKey(bigsurf, SDL_SRCCOLORKEY, 0xFF);
+		}
 
 		if (zoom > 1) { /* Zoom-copy */
 
