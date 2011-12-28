@@ -612,7 +612,19 @@ void* GNU_Resolve(KBmodule *mod, int id, int sub_id) {
 			image_suffix = ".png";
 			is_transparent = 0;
 		}
-		break;		
+		break;
+		case GR_COINS:
+		{
+			image_name = "coins";
+			image_suffix = ".png";
+		}
+		break;
+		case GR_PIECE:
+		{
+			image_name = "piece";
+			image_suffix = ".png";
+		}
+		break;
 		case GR_COMTILES:
 		{
 			image_name = "comtiles";
