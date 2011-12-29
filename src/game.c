@@ -18,7 +18,7 @@
  *  along with openkb.  If not, see <http://www.gnu.org/licenses/>.
  */
 // For the meantime, use SDL directly, it if gets unwieldy, abstract it away 
-#include "SDL.h"
+#include <SDL.h>
 
 #include "bounty.h"
 #include "play.h"
@@ -2741,20 +2741,321 @@ void take_artifact(KBgame *game, byte id) {
 
 }
 
-int attack_follower(KBgame *game) {
+int attack_foe(KBgame *game) {
+	int id = 0;
+	int i;
+	for (i = 0; i < MAX_FOLLOWERS; i++) {
+		if (game->follower_coords[game->continent][i][0] == game->x
+		 && game->follower_coords[game->continent][i][1] == game->y) {
+			id = i;
+			break;
+		 }
+	}
 
-	KB_BottomBox("Danger", "Attack? y/n", 0);
-	//KB_iloc(0, 0);
-	//KB_iprintf("Attack ? y / n\n", game->x, game->y);
+	if (id < FRIENDLY_FOLLOWERS) {
+
+	} else {
+
+	}
+
+	SDL_Rect *rect = KB_BottomBox("Your scouts have sighted:", "", 0);
+	SDL_Rect *fs = &sys->font_size;
+
+	KB_iloc(rect->x, rect->y + fs->h * 2 - fs->h / 8);
+	KB_ilh(fs->h + fs->h/8);
+	for (i = 0; i < 3; i++) {
+		byte troop_id = game->follower_troops[game->continent][id][i];
+		word troop_count = game->follower_numbers[game->continent][id][i];
+
+		KB_iprintf("  %s %s\n", number_name(troop_count), troops[troop_id].name);
+	}
+	KB_iloc(rect->x, rect->y + fs->h * 6 - fs->h / 4);
+	KB_iprint("               Attack (y/n)?\n");
 
 	SDL_Flip(sys->screen);
 
 	int key = 0;
 	while (!key) key = KB_event(&yes_no_question);
-	
+
+	/* "Yes" */
+	if (key == 1) {
+		//run_combat(game, 0, id);
+	}
+
 	return key - 1;
 }
 
+void no_spell_banner() {
+
+	SDL_Rect *fs = &sys->font_size;
+	SDL_Rect *text = KB_BottomFrame();
+
+	/* Adjust position */
+	KB_iloc(text->x, text->y + fs->h - fs->h/2);
+	KB_iprintf(
+		"You have not been trained in\n"
+		"the art of spellcasting yet.\n"
+		"Visit the Archmage Aurange\n"
+		"in %s at %2d,%2d for\n"
+		"this ability.", continent_names[ALCOVE_CONTINENT], ALCOVE_X, ALCOVE_Y);
+
+	KB_flip(sys);
+	KB_Pause();
+}
+
+KBgamestate seven_choices = {
+	{
+		{	{ 0 }, SDLK_a, 0, 0      	},
+		{	{ 0 }, SDLK_b, 0, 0      	},
+		{	{ 0 }, SDLK_c, 0, 0      	},
+		{	{ 0 }, SDLK_d, 0, 0      	},
+		{	{ 0 }, SDLK_e, 0, 0      	},
+		{	{ 0 }, SDLK_f, 0, 0      	},
+		{	{ 0 }, SDLK_g, 0, 0      	},
+
+		{	{ 60 }, SDLK_SYN, 0, KFLAG_TIMER },
+		0,
+	},
+	0
+};
+
+KBgamestate cross_choice = {
+	{
+		{	{ 0 }, SDLK_LEFT, 0, 0      	},
+		{	{ 0 }, SDLK_UP, 0, 0      	},
+		{	{ 0 }, SDLK_DOWN, 0, 0      	},
+		{	{ 0 }, SDLK_RIGHT, 0, 0      	},
+
+		0,
+	},
+	0
+};
+
+
+int build_bridge(KBgame *game) {
+
+	KB_TopBox("Build bridge in which direction <>ud");
+
+	KB_flip(sys);
+
+	int key = KB_event(&cross_choice);
+	
+	if (key == 0xFF) return 1;
+
+	KB_TopBox("Not a suitable location for a bridge");
+	KB_flip(sys);
+	KB_Pause();
+
+	KB_TopBox("What a waste of a good spell!");
+	KB_flip(sys);
+	KB_Pause();
+	
+	return 1;
+}
+
+int instant_army(KBgame *game) {
+
+	KB_BottomBox("A few Sprites", "have joined to your army.", 1);
+
+	return 0;
+}
+
+/* Mode 1 for adventure spells, mode 0 for combat spells */
+int choose_spell(KBgame *game, int mode) {
+
+	byte spell_id;
+
+	SDL_Rect border;
+
+	SDL_Surface *screen = sys->screen;
+
+	SDL_Rect *fs = &sys->font_size;
+
+	if (!game->knows_magic)
+	{
+		no_spell_banner();
+		return;	
+	}
+
+	RECT_Text((&border), 15, 36);
+	RECT_Center(&border, sys->screen);
+	
+	border.y -= fs->h;
+
+	Uint32 *colors = KB_Resolve(COL_TEXT, 0);
+
+	SDL_TextRect(sys->screen, &border, colors[0], colors[1]);
+
+	KB_TopBox("        Press 'ESC' to exit");
+
+	KB_iloc(border.x + fs->w, border.y + fs->h/2);
+	KB_iprint("              Spells\n\n");
+	KB_iprint("     Combat         Adventuring  \n");
+
+	KB_iloc(border.x + fs->w, border.y + fs->h*5 - fs->h/2);
+
+	int i, j;
+	int half = MAX_SPELLS / 2;
+	KB_ilh(fs->h + fs->h / 8);
+	for (i = 0; i < half; i++) {
+		j = i + half;
+		if (!mode)
+			KB_imenu(&seven_choices, i, 12);
+		KB_iprintf("%2d %-12s", game->spells[j], spell_names[i]);
+		KB_iprintf(" %c ", 'A' + i);
+		if (mode)
+			KB_imenu(&seven_choices, i, 12);
+		KB_iprintf("%-13s %2d\n", spell_names[j], game->spells[j]);
+	}
+
+	KB_iloc(border.x + fs->w, border.y + fs->h * 13 + fs->h/4);
+	KB_iprintf("Cast which %s spell (A-%c)?", (mode ? "Adventure" : "Combat"), 'A' + half);
+
+	const char *twirl = "\x1D" "\x05" "\x1F" "\x1C" ; /* stands for: | / - \ */  
+	byte twirl_pos = 0;
+
+	int done = 0;
+	int redraw = 1;
+	while (!done) {
+
+		int key = KB_event(&seven_choices);
+
+		if (key == 0xFF) done = 1;
+
+		if (key == 8) {
+			twirl_pos++;
+			if (twirl_pos > 3) twirl_pos = 0;
+			redraw = 1;
+		}
+
+		else if (key && key < 8) {
+
+			spell_id = key - 1 + (half * mode);
+
+			if (game->spells[spell_id] == 0) {
+
+				KB_iloc(border.x + fs->w * 34, border.y + fs->h * 13 + fs->h/4);
+				KB_iprintf("%c", 'A' + key - 1);
+
+				KB_TopBox("     You don't know that spell!");
+				KB_flip(sys);
+				KB_Pause();
+
+			} else {
+
+				switch (spell_id) {
+					case 0:
+						//clone
+					break;
+					case 1:
+						//teleport
+					break;
+					case 2:
+						//fireball
+					break;		
+					case 3:
+						//lightning
+					break;
+					case 4:
+						//freeze
+					break;
+					case 5:
+						//resurrect
+					break;
+					case 6:
+						//turn undead
+					break;
+					case 7:	build_bridge(game);	break;
+					case 8:
+						//time_stop(game)
+					break;
+					case 9:
+						//find vilain
+					break;
+					case 10:
+						//castle gate
+					break;
+					case 11:
+						//town gate
+					break;
+					case 12: instant_army(game);	break;
+					case 13: raise_control(game);	break;
+				}
+
+				/* Spend 1 spell */
+				game->spells[spell_id]--;
+			}
+
+			done = 1;
+		}
+
+		if (redraw) {
+			redraw = 0;
+
+			KB_iloc(border.x + fs->w * 34, border.y + fs->h * 13 + fs->h/4);
+			KB_iprintf("%c", twirl[twirl_pos]);
+
+			KB_flip(sys);
+		}
+	}
+
+	return spell_id;
+}
+
+void win_game(KBgame *game) {
+
+	KB_TopBox("Press 'ESC' to exit");
+
+	KB_Pause();
+
+}
+
+void lose_game(KBgame *game) {
+
+	KB_TopBox("Press 'ESC' to exit");
+
+	KB_Pause();
+
+}
+
+/* Returns 0 if the game was won, 1 if search was futile, 2 if search was cancelled */
+int ask_search(KBgame *game) {
+
+	int days = 10;
+
+	SDL_Rect *rect = KB_BottomBox("Search...", "", 0);
+	SDL_Rect *fs = &sys->font_size;
+
+	KB_iloc(rect->x, rect->y + fs->h * 2 );
+	KB_ilh(fs->h + fs->h/8);
+	KB_iprintf("It will take %d days to do a\nsearch of this area.", days);
+
+	KB_iloc(rect->x, rect->y + fs->h * 6 - fs->h / 4);
+	KB_iprint("               Search (y/n)?\n");
+
+	KB_flip(sys);
+
+	int key = 0;
+	while (!key) key = KB_event(&yes_no_question);
+
+	/* "No" */
+	if (key == 2) return 2;
+
+	/* "Yes" */
+	if (game->scepter_continent == game->continent
+	 && game->scepter_y == game->y
+	 && game->scepter_x == game->x) {
+
+		win_game(game);
+		return 0;
+
+	} else {
+		KB_BottomBox(NULL, "\n\nYour search of this area has\nrevealed nothing.", 1);
+		spend_days(game, days);
+	}
+
+	return 1;
+}
 
 #define ARROW_KEYS 18
 #define ACTION_KEYS 14
@@ -2844,7 +3145,6 @@ void draw_sidebar(KBgame *game, int tick) {
 	
 	/* Magic star */
 	hdst.y += hsrc.h;
-	game->knows_magic = 1;
 	hsrc.x = (game->knows_magic ? (tick + 4) * hsrc.w : 10 * hsrc.w);
 	SDL_BlitSurface( sidebar, &hsrc, screen, &hdst);
 
@@ -2972,7 +3272,6 @@ void draw_player(KBgame *game, int frame) {
 		SDL_BlitSurface( hero, &hsrc , sys->screen, &hdst );
 	}
 
-
 }
 
 static signed char move_offset_x[9] = { -1, 0, 1, -1, 0, 1, -1,  0,  1 };
@@ -3046,11 +3345,11 @@ void display_overworld(KBgame *game) {
 		}
 
 		if (key == KEY_ACT(SEARCH)) {
-			//ask_search(game);
+			if (!ask_search(game)) done = 1;
 		}
 
 		if (key == KEY_ACT(USE_MAGIC)) {
-			//choose_spell(game, 0);
+			choose_spell(game, 1);
 		}
 
 		if (key == KEY_ACT(VIEW_CHAR)) {
@@ -3058,7 +3357,7 @@ void display_overworld(KBgame *game) {
 		}
 
 		if (key == KEY_ACT(END_WEEK)) {
-			//end_of_week(game);
+			spend_week(game);
 		}
 
 		if (key == KEY_ACT(SAVE_QUIT)) {
@@ -3179,7 +3478,7 @@ void display_overworld(KBgame *game) {
 					case 0x8d:
 					case 0x8f:	visit_dwelling(game, m - 0x8c); walk = 0; break;
 					case 0x90:	read_signpost(game);		break;
-					case 0x91:	walk = !attack_follower(game);	break;
+					case 0x91:	walk = !attack_foe(game);	break;
 					case 0x92:
 					case 0x93:	take_artifact(game, m - 0x92);	break;
 					default:
@@ -3193,6 +3492,7 @@ void display_overworld(KBgame *game) {
 				walk = 1;
 			} else {
 				walk = 0;
+				game->steps_left -= 1;
 				/* Hitting shore */
 				if (!IS_WATER(m)) {
 					/* Leave ship */
@@ -3204,6 +3504,14 @@ void display_overworld(KBgame *game) {
 				}	
 			}
 			continue;
+		}
+
+		if (game->steps_left <= 0) {
+			end_day(game);
+		}
+		if (game->days_left == 0) {
+			lose_game(game);
+			done = 1;
 		}
 
 		if (redraw) {

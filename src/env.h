@@ -20,7 +20,7 @@
 #ifndef _OPENKB_ENV
 #define _OPENKB_ENV
 
-#include "SDL.h"
+#include <SDL.h>
 
 #include "lib/kbsys.h"
 #include "lib/kbconf.h"
@@ -84,6 +84,8 @@ typedef struct KBwin {
 
 extern KBenv *KB_startENV(KBconfig *conf);
 extern void KB_stopENV(KBenv *env);
+
+extern void KB_flip(KBenv *env);
 
 extern void KB_printf(KBenv *env, const char *fmt, ...);
 extern SDL_Rect *KB_fontsize(KBenv *env);

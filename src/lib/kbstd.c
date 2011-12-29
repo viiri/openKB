@@ -41,7 +41,7 @@ void KB_debuglog(int mod, char *fmt, ...)
 	va_start(argptr, fmt);
 
 	level += mod;
-	for (i = 0; i < level; i++) fprintf(stdout, " "); 
+	for (i = 0; i < level; i++) fputc(' ', stdout); 
 	vfprintf(stdout, fmt, argptr);
 
 	va_end(argptr);

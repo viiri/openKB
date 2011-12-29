@@ -22,8 +22,8 @@
 
 #include "kbfile.h"
 
-#include "SDL.h"
-#include "SDL_image.h"
+#include <SDL.h>
+#include <SDL_image.h>
 
 inline SDL_Surface* SDL_CreatePALSurface(Uint32 width, Uint32 height)
 {

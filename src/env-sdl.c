@@ -17,7 +17,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with openkb.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "SDL.h"
+#include <SDL.h>
 
 #include "lib/kbconf.h"
 #include "lib/kbres.h"
@@ -96,6 +96,10 @@ void KB_stopENV(KBenv *env) {
 	free(env);
 
 	SDL_Quit();
+}
+
+inline void KB_flip(KBenv *env) {
+	SDL_Flip(env->screen);
 }
 
 

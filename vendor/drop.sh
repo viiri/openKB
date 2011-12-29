@@ -85,6 +85,14 @@ download_git()
 	git clone ${FILE_URL} ${WORKDIR}${DROP_NAME}
 }
 
+install_sha256()
+{
+	tar xzf ${WORKDIR}${FILE_NAME} --directory ${WORKDIR}
+
+	cp ${WORKDIR}${DROP_NAME}/${LAST_NAME} ${WORKDIR}${LAST_NAME}
+#	cp ${WORKDIR}${DROP_NAME}/sha2-1.0.1/sha2.h ${WORKDIR}sha2.h
+}
+
 REMOTE_NAME=scale2x-2.4
 REMOTE_FILE=${REMOTE_NAME}.tar.gz
 REMOTE_URL="http://downloads.sourceforge.net/scale2x/${REMOTE_FILE}?download"
@@ -98,5 +106,13 @@ REMOTE_URL="git://github.com/driedfruit/${REMOTE_NAME}.git"
 DOWN_CALLBACK=download_git
 INST_CALLBACK=install_inprint
 test_file "inprint.c" "${REMOTE_NAME}" "${REMOTE_FILE}" "${REMOTE_URL}" 
+
+REMOTE_NAME=sha2-1.0.1
+REMOTE_FILE=${REMOTE_NAME}.tgz
+REMOTE_URL="http://www.aarongifford.com/computers/${REMOTE_FILE}"
+DOWN_CALLBACK=download_wget
+INST_CALLBACK=install_sha256
+test_file "sha2.c" "${REMOTE_NAME}" "${REMOTE_FILE}" "${REMOTE_URL}"
+test_file "sha2.h" "${REMOTE_NAME}" "${REMOTE_FILE}" "${REMOTE_URL}"
 
 exit 0
