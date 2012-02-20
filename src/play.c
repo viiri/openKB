@@ -189,7 +189,17 @@ int player_commission(KBgame *game) {
 
 /* Calculate and return player's score */
 int player_score(KBgame *game) {
-	return 9999;
+	int difficulty_modifier[5] = { 0, 1, 2, 4, 8 };
+	int score = 
+	((player_captured(game) * 500) 
+	+ (player_num_artifacts(game) * 250)
+	+ (player_castles(game) * 100) 
+	- (game->followers_killed * 1));
+	if (!game->difficulty)	/* to avoid float math */
+		score /= 2;
+	else
+		score *= difficulty_modifier[game->difficulty];
+	return score;
 }
 
 int buy_troop(KBgame *game, byte troop_id, word number) {
