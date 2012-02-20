@@ -866,14 +866,6 @@ void combat_wait() {
 }
 
 
-void reset_turn() {
-		int i, j;
-		for (j = 0; j < 2; j++)
-		for (i = 0; i < 5; i++) {
-			base.units[j][i].acted = 0;
-		}
-}
-
 int turn_callback(const char *data) {
 
 	if (MyRole == Client) {
@@ -881,7 +873,7 @@ int turn_callback(const char *data) {
 		base.your_turn = 1 - base.your_turn;
 		base.side = 1 - base.side;
 		
-		reset_turn();
+		reset_turn(&base);
 
 		base.unit_id = next_unit(base.side, -1);
 	
@@ -917,7 +909,7 @@ int pass_callback(const char *data) {
 		if (t == -1) {
 			base.side = 0;
 			base.your_turn = 1;
-			reset_turn();
+			reset_turn(&base);
 			send_data(PKT_TURN, 0);
 			base.unit_id = next_unit(base.side, -1);
 		} else {
@@ -945,7 +937,7 @@ void combat_pass(int troop_id) {
 	if (t == -1) {
 		base.side = 1;
 		base.your_turn = 0;
-		reset_turn();
+		reset_turn(&base);
 		send_data(PKT_TURN, 0);
 		base.unit_id = next_unit(1, -1);
 	} else {
@@ -955,32 +947,10 @@ void combat_pass(int troop_id) {
 }
 
 
-void reset_match() {
+void net_reset_match() {
 
-	int j;
-	int i;
-	for (j = 0; j < MAX_SIDES; j++) 
-	for (i = 0; i < MAX_UNITS; i++)
-	{ 
-		KBunit *u = &base.units[j][i];
-		if (!u->count) continue;
-		printf("Unit: %d, %d, ID: %d\n", u->x, u->y, (j * 5) + i + 1);
-		base.umap[u->y][u->x] = (j * 5) + i + 1;
-	}
+	int i, j;
 
-	if (MyRole == Server)
-	{
-		/* Each tile has a 1 in 20 chance of having an obstacle in it
-		 * A) That IS NOT how it was done in original KB
-		 * B) That has a FAIR CHANCE of flooding whole level
-		 * //TODO: Fixit ofcourse.
-		 */
-		for (j = 0; j < CLEVEL_H; j++)
-		for (i = 1; i < CLEVEL_W - 2; i++)
-			if (!(rand()%10))
-				base.omap[j][i] = rand()%3 + 1;
-	}
-	
 	base.your_turn = 0;
 	base.side = 1;
 	base.unit_id = 0;
@@ -996,8 +966,6 @@ void reset_match() {
 			if (base.omap[j][i])
 				send_data(PKT_GRID, j, i, base.omap[j][i]);
 	}
-	
-	reset_turn();
 }
 
 int run_match(KBcombat *war) {
@@ -1006,6 +974,7 @@ int run_match(KBcombat *war) {
 	int done = 0;
 
 	reset_match();
+	net_reset_match();
 	base.unit_id = next_unit(base.side, -1);
 
 	SDL_Surface *comtiles = SDL_LoadRESOURCE(GR_COMTILES, 0, 0);

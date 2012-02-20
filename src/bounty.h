@@ -224,7 +224,7 @@ typedef struct KBclass {
 } KBclass;
 
 #define CLEVEL_H 5
-#define CLEVEL_W 8
+#define CLEVEL_W 6
 
 #define MAX_SIDES 2
 #define MAX_UNITS 5
