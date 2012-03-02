@@ -189,7 +189,17 @@ int player_commission(KBgame *game) {
 
 /* Calculate and return player's score */
 int player_score(KBgame *game) {
-	return 9999;
+	int difficulty_modifier[5] = { 0, 1, 2, 4, 8 };
+	int score = 
+	((player_captured(game) * 500) 
+	+ (player_num_artifacts(game) * 250)
+	+ (player_castles(game) * 100) 
+	- (game->followers_killed * 1));
+	if (!game->difficulty)	/* to avoid float math */
+		score /= 2;
+	else
+		score *= difficulty_modifier[game->difficulty];
+	return score;
 }
 
 int buy_troop(KBgame *game, byte troop_id, word number) {
@@ -201,7 +211,6 @@ int buy_troop(KBgame *game, byte troop_id, word number) {
 	int cost = troops[troop_id].recruit_cost * number;
 	
 	if (cost > game->gold) {
-		KB_BottomBox("\n\n\nYou don't have enough gold!", "", 1);
 		return 1;
 	}
 	
@@ -218,8 +227,7 @@ int buy_troop(KBgame *game, byte troop_id, word number) {
 	}
 
 	if (slot == -1) {
-		KB_BottomBox("", "No troop slots left!", 1);
-		return;
+		return 2;
 	}
 
 	game->player_troops[slot] = troop_id;
@@ -248,8 +256,8 @@ void temp_death(KBgame *game) {
 	game->gold += game->commission;
 
 	//redraw screen somehow...
-
-	KB_BottomBox("After being disgraced...", "", 1);
+	//KB_BottomBox("After being disgraced...", "", 1);
+	//TODO
 }
 
 void test_defeat(KBgame *game) {
@@ -264,3 +272,98 @@ void raise_control(KBgame *game) {
 	game->leadership += game->spell_power * 100;
 }
 
+/** Combat **/
+
+void prepare_units_player(KBcombat *war, int side, KBgame *game) {
+	int i;
+	for (i = 0; i < MAX_UNITS; i++)
+	{
+		war->units[side][i].troop_id = game->player_troops[i];
+		war->units[side][i].count = game->player_numbers[i];
+		war->units[side][i].y = i;
+		war->units[side][i].x = side * (CLEVEL_W - 1);
+	}
+} 
+
+void prepare_units_foe(KBcombat *war, int side, KBgame *game, int continent_id, int foe_id) {
+	int i;
+	int max_troops = MAX_UNITS;
+	if (max_troops > 3) max_troops = 3;
+	for (i = 0; i < max_troops; i++)
+	{
+		war->units[side][i].troop_id = game->follower_troops[continent_id][foe_id][i];
+		war->units[side][i].count = game->follower_numbers[continent_id][foe_id][i];
+		war->units[side][i].y = i;
+		war->units[side][i].x = side * (CLEVEL_W - 1);
+	}
+} 
+
+void prepare_units_castle(KBcombat *war, int side, KBgame *game, int castle_id) {
+	int i;
+	for (i = 0; i < MAX_UNITS; i++)
+	{
+		war->units[side][i].troop_id = game->castle_troops[castle_id][i];
+		war->units[side][i].count = game->castle_numbers[castle_id][i];
+		war->units[side][i].y = i;
+		war->units[side][i].x = 0;
+	}
+} 
+
+void accept_units_player(KBgame *game, int side, KBcombat *war) {
+	int i;
+	for (i = 0; i < MAX_UNITS; i++)
+	{
+		game->player_troops[i] = war->units[side][i].troop_id;
+		game->player_numbers[i] = war->units[side][i].count;
+	}
+}
+
+void reset_turn(KBcombat *war) {
+	int i, j;
+	for (j = 0; j < MAX_SIDES; j++)
+	for (i = 0; i < MAX_UNITS; i++) {
+		war->units[j][i].acted = 0;
+	}
+} 
+
+void wipe_battlefield(KBcombat *war) {
+	int i, j;
+	for (j = 0; j < CLEVEL_H; j++)
+	for (i = 0; i < CLEVEL_W; i++)
+			war->omap[j][i] = 0;
+		
+}
+
+void reset_match(KBcombat *war) {
+
+	int i, j;
+
+	/* Place units */
+	for (j = 0; j < MAX_SIDES; j++) 
+	for (i = 0; i < MAX_UNITS; i++)
+	{
+		KBunit *u = &war->units[j][i];
+		if (!u->count) continue;
+		KB_debuglog(0, "Unit: %d, %d, ID: %d\n", u->x, u->y, (j * MAX_UNITS) + i + 1);
+		war->umap[u->y][u->x] = (j * MAX_UNITS) + i + 1;
+	}
+
+	wipe_battlefield(war);
+
+	/* Generate obstacles */
+	{
+		/* Each tile has a 1 in 20 chance of having an obstacle in it
+		 * A) That IS NOT how it was done in original KB
+		 * B) That has a FAIR CHANCE of flooding whole level
+		 * //TODO: Fixit ofcourse.
+		 */
+		for (j = 0; j < CLEVEL_H; j++)
+		for (i = 1; i < CLEVEL_W - 2; i++)
+			war->omap[j][i] = 0; 
+			if (!(rand()%10))
+				war->omap[j][i] = rand()%3 + 1;
+	}
+
+	/* Also reset turn */
+	reset_turn(war);
+}

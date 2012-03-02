@@ -2181,11 +2181,16 @@ void recruit_soldiers(KBgame *game) {
 
 			if (enter == NULL) { whom = 0; }
 			else {
+				int result;
 				int number = atoi(enter);
 				if (number > max) number = max;
 
 				/* BUY troop */
-				buy_troop(game, home_troops[whom-1], number);
+				result = buy_troop(game, home_troops[whom-1], number);
+
+				/* Display error if any */
+				if (result == 2) KB_BottomBox("\n\n\nYou don't have enough gold!", "", 1);
+				else if (result == 1) KB_BottomBox("", "No troop slots left!", 1);//verify this one
 
 				/* Calculate new "MAX YOU CAN HANDLE" number based on leadership (and troop hp?) */
 				max = army_leadership(game, home_troops[whom-1]) / troops [ home_troops[whom-1] ].hit_points;
@@ -2689,14 +2694,20 @@ void visit_dwelling(KBgame *game, byte rtype) {
 
 		if (enter == NULL) { done = 1; }
 		else {
+			int result;
 			int number = atoi(enter);
 			if (number > max) continue;
 			if (number > game->dwelling_population[game->continent][id]) continue;
 
 			/* BUY troop */
-			if (!buy_troop(game, troop_id, number))
+			result = buy_troop(game, troop_id, number); 
+			if (!result) /* Success */
 				/* Reduce dwelling population */
 				game->dwelling_population[game->continent][id] -= number;
+
+			/* Display error if any */
+			else if (result == 2) KB_BottomBox("\n\n\nYou don't have enough gold!", "", 1);
+			else if (result == 1) KB_BottomBox("", "No troop slots left!", 1);//verify this one
 
 			/* Calculate new "MAX YOU CAN HANDLE" number based on leadership (and troop hp?) */
 			max = army_leadership(game, troop_id) / troops [ troop_id ].hit_points;
@@ -2741,6 +2752,28 @@ void take_artifact(KBgame *game, byte id) {
 
 }
 
+/* TOH: */ void combat_loop(KBgame *game, KBcombat *combat);
+int run_combat(KBgame *game, int mode, int id) {
+
+	KBcombat combat = { 0 };
+
+	switch (mode) {
+
+		case 0: /* Player VS Foe (id) */
+		default:
+
+			prepare_units_player(&combat, 0, game);
+			prepare_units_foe(&combat, 1, game, game->continent, id);
+
+		break;
+
+	}
+
+	combat_loop(game, &combat);
+
+	return 0;
+}
+
 int attack_foe(KBgame *game) {
 	int id = 0;
 	int i;
@@ -2779,7 +2812,7 @@ int attack_foe(KBgame *game) {
 
 	/* "Yes" */
 	if (key == 1) {
-		//run_combat(game, 0, id);
+		run_combat(game, 0, id);
 	}
 
 	return key - 1;
@@ -3057,6 +3090,47 @@ int ask_search(KBgame *game) {
 	return 1;
 }
 
+KBgamestate combat_state = {
+	{
+		{	{ SOFT_WAIT }, SDLK_HOME, 0, KFLAG_SOFTKEY     	},
+		{	{ SOFT_WAIT }, SDLK_7, 0, KFLAG_SOFTKEY      	},
+		{	{ SOFT_WAIT }, SDLK_UP, 0, KFLAG_SOFTKEY      	},
+		{	{ SOFT_WAIT }, SDLK_8, 0, KFLAG_SOFTKEY      	},
+		{	{ SOFT_WAIT }, SDLK_PAGEUP, 0, KFLAG_SOFTKEY   	},
+		{	{ SOFT_WAIT }, SDLK_9, 0, KFLAG_SOFTKEY      	},
+		{	{ SOFT_WAIT }, SDLK_LEFT, 0, KFLAG_SOFTKEY     	},
+		{	{ SOFT_WAIT }, SDLK_4, 0, KFLAG_SOFTKEY      	},
+		{	{ SOFT_WAIT }, SDLK_RIGHT, 0, KFLAG_SOFTKEY    	},
+		{	{ SOFT_WAIT }, SDLK_6, 0, KFLAG_SOFTKEY      	},
+		{	{ SOFT_WAIT }, SDLK_END, 0, KFLAG_SOFTKEY    	},
+		{	{ SOFT_WAIT }, SDLK_1, 0, KFLAG_SOFTKEY      	},
+		{	{ SOFT_WAIT }, SDLK_DOWN, 0, KFLAG_SOFTKEY     	},
+		{	{ SOFT_WAIT }, SDLK_2, 0, KFLAG_SOFTKEY      	},
+		{	{ SOFT_WAIT }, SDLK_PAGEDOWN, 0, KFLAG_SOFTKEY 	},
+		{	{ SOFT_WAIT }, SDLK_3, 0, KFLAG_SOFTKEY      	},
+
+		{	{ 0 }, SDLK_a, 0, 0      	},
+		{	{ 0 }, SDLK_c, 0, 0      	},
+		{	{ 0 }, SDLK_f, 0, 0      	},
+		{	{ 0 }, SDLK_l, 0, 0      	},
+		{	{ 0 }, SDLK_i, 0, 0      	},
+		{	{ 0 }, SDLK_m, 0, 0      	},
+		{	{ 0 }, SDLK_p, 0, 0      	},
+		{	{ 0 }, SDLK_s, 0, 0      	},
+		{	{ 0 }, SDLK_u, 0, 0      	},
+		{	{ 0 }, SDLK_v, 0, 0      	},
+		{	{ 0 }, SDLK_w, 0, 0      	},
+		{	{ 0 }, SDLK_q, 0, 0      	},
+
+		{	{ 0 }, SDLK_q, KMOD_CTRL, 0	},
+		{	{ 0 }, SDLK_d, 0, 0      	},
+
+		{	{ SOFT_WAIT }, SDLK_SYN, 0, KFLAG_TIMER },
+		0,
+	},
+	0
+};
+
 #define ARROW_KEYS 18
 #define ACTION_KEYS 14
 
@@ -3167,7 +3241,11 @@ void draw_sidebar(KBgame *game, int tick) {
 
 		/* Draw puzzle piece */
 		SDL_Rect srect = { 0, 0, piece->w, piece->h };
-		SDL_Rect mrect = { hdst.x + i * piece->w + 4, hdst.y + j * piece->h + 4, piece->w, piece->h };
+		SDL_Rect mrect = { 
+			hdst.x + i * piece->w + (2 * sys->zoom),
+			hdst.y + j * piece->h + (2 * sys->zoom),
+			piece->w,
+			piece->h };
 		SDL_BlitSurface(piece, &srect, screen, &mrect);
 	}
 
@@ -3185,7 +3263,7 @@ void draw_sidebar(KBgame *game, int tick) {
 		SDL_Rect sr = { (coins->w / 3) * j, 0, coins->w / 3, coins->h };
 		SDL_Rect dr = { hdst.x + sr.w * j, hdst.y + hdst.h - sr.h, sr.w, sr.h };
 		for (i = 0; i < cval[j]; i++) {
-			dr.y -= 2 * 2; /* zoom pixel */
+			dr.y -= (2 * sys->zoom);
 			SDL_BlitSurface(coins, &sr, screen, &dr);
 		}
 	}
@@ -3296,11 +3374,95 @@ void draw_player(KBgame *game, int frame) {
 
 }
 
+void draw_combat(KBcombat *war) {
+
+	SDL_Rect *tile = local.map_tile;
+	
+	SDL_Surface *comtiles = SDL_TakeSurface(GR_COMTILES, 0, 0);
+	
+	/** Draw combat **/
+	{
+		int i, j;
+
+		/* Draw obstacles */
+		for (j = 0; j < CLEVEL_H; j++)
+		for (i = 0; i < CLEVEL_W; i++) {
+
+			SDL_Rect src = { war->omap[j][i] * tile->w, 0, tile->w, tile->h };
+			SDL_Rect dst = { i * tile->w, j * tile->h, tile->w, tile->h };
+
+			SDL_BlitSurface(comtiles, &src, sys->screen, &dst);
+		}
+
+		/* Draw units */
+		for (j = 0; j < MAX_SIDES; j++) {
+			for (i = 0; i < MAX_UNITS; i++) {
+
+				KBunit *u = &war->units[j][i];
+
+				if (u->count == 0) continue;
+
+				SDL_Rect src = { u->frame * tile->w, j * tile->h, tile->w, tile->h };
+				SDL_Rect dst = { 0, 0, tile->w, tile->h };
+
+				dst.x = u->x * tile->w;
+				dst.y = u->y * tile->h;
+
+				SDL_Surface *troop = SDL_TakeSurface(GR_TROOP, u->troop_id, j); /* j -- side */
+
+				SDL_BlitSurface(troop, &src, sys->screen, &dst);
+			}
+		}
+	}
+
+}
+
 static signed char move_offset_x[9] = { -1, 0, 1, -1, 0, 1, -1,  0,  1 };
 static signed char move_offset_y[9] = {  1, 1, 1,  0, 0, 0, -1, -1, -1 };
 
+/* Main combat loop (combat screen) */
+void combat_loop(KBgame *game, KBcombat *combat) {
+	
+	reset_match(combat);
+
+	int key = 0;
+	int done = 0;
+	int redraw = 1;
+
+	int frame = 0;
+	int max_frame = 3;
+
+	int ai_turn = 0;
+	int ai_think = 2;
+
+	while (!done) {
+		key = KB_event(&combat_state);
+
+		if (key == 0xFF) done = 1;
+
+		if (key == SYN_EVENT) {
+			frame++;
+			if (frame > max_frame) {
+				frame = 0;
+				max_frame = 2;
+			}
+			redraw = 1;
+		}
+
+		if (redraw) {
+
+			draw_combat(combat);
+
+			KB_flip(sys);
+			redraw = 0;
+		}
+
+	}
+
+}
+
 /* Main game loop (adventure screen) */
-void display_overworld(KBgame *game) {
+void adventure_loop(KBgame *game) {
 
 	SDL_Surface *screen = sys->screen;
 
@@ -3602,12 +3764,19 @@ int run_game(KBconfig *conf) {
 	/* See if a game was selected */
 	if (!game) KB_stdlog("No game selected.\n");
 	else {
+		/* Put character name into window title bar */
+		char buffer[1024];
+		KB_strcpy(buffer, game->name);
+		KB_strcat(buffer, " the ");  
+		KB_strcat(buffer, classes[game->class][game->rank].title);
+		KB_strcat(buffer, " - openkb " PACKAGE_VERSION);
+		SDL_WM_SetCaption(buffer, buffer);
 
-		/* Just for fun, output game name */
+		/* And log it into stdout */
 		KB_stdlog("%s the %s (%d days left)\n", game->name, classes[game->class][game->rank].title, game->days_left);
 
 		/* PLAY THE GAME */
-		display_overworld(game);
+		adventure_loop(game);
 	}
 
 	/* Free resources */

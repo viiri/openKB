@@ -43,7 +43,7 @@ GAME_BINARY=openkb
 
 GAME_DIST=$(DESTDIR)$(GAME_BINARY)-$(VERSION)
 
-GAME2_SOURCES=src/combat.c src/bounty.c src/env-sdl.c
+GAME2_SOURCES=src/combat.c src/bounty.c src/play.c src/env-sdl.c
 GAME2_BINARY=netkb
 
 MAN_SOURCES=docs/openkb.man docs/netkb.man
