@@ -3547,9 +3547,9 @@ void draw_combat_statusbar(KBcombat *war) {
 	if (war->side) return;
 
 	KB_iloc(local.status.x, local.status.y + 1);
-	KB_iprint(sys, " ");
-	KB_iprint(sys, "Options");
-	KB_iprint(sys, " / ");
+	KB_iprint(" ");
+	KB_iprint("Options");
+	KB_iprint(" / ");
 	if (war->side == 0) {
 		KBunit *u = &war->units[war->side][war->unit_id];
 		KB_iprintf("%s M%d", troops[u->troop_id].name, u->moves);
