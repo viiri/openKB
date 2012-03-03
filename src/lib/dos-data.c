@@ -405,6 +405,7 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 			middle_name = "comtiles";
 			suffix = bpp_names[mod->bpp];
 			ident = "";	
+			row_frames = 15;
 		}
 		break;
 		case GR_VIEW:	/* subId - undefined */
