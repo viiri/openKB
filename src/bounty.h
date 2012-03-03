@@ -229,6 +229,8 @@ typedef struct KBclass {
 #define MAX_SIDES 2
 #define MAX_UNITS 5
 
+#define MAX_PHASES 2
+
 typedef struct KBunit {
 	byte troop_id;
 	word count;
@@ -237,6 +239,9 @@ typedef struct KBunit {
 
 	word health;
 	byte acted;
+
+	byte moves;
+	byte shots;
 
 	byte y;
 	byte x;
@@ -249,6 +254,9 @@ typedef struct KBcombat {
 	byte umap[CLEVEL_H + 1][CLEVEL_W + 1];
 
 	int your_turn;//TODO: replace with a macro
+
+	byte turn;		/* Turn counter, not really used */
+	byte phase;		/* Each player/AI turn might take up to 2 phases */
 
 	byte side;		/* Indexes into units array */
 	byte unit_id;	/* units[side][unit_id], obviously */

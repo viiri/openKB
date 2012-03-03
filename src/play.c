@@ -260,11 +260,6 @@ void temp_death(KBgame *game) {
 	//TODO
 }
 
-void test_defeat(KBgame *game) {
-	if (player_army(game) == 0) {
-		temp_death(game);
-	}
-}
 
 /** Spell effects **/
 
@@ -273,6 +268,23 @@ void raise_control(KBgame *game) {
 }
 
 /** Combat **/
+
+/* Return 0 when player is out of his army, 1 otherwise */
+int test_defeat(KBgame *game, KBcombat *war) {
+	if (player_army(game) == 0) {
+		return 0;
+	}
+	return 1;
+}
+/* Return 0 when computer is out of his army, 1 otherwise */
+int test_victory(KBcombat *war) {
+	int i;
+	int side = 1;
+	for (i = 0; i < MAX_UNITS; i++) {
+		if (war->units[1][i].count) return 1;
+	}
+	return 0;
+}
 
 void prepare_units_player(KBcombat *war, int side, KBgame *game) {
 	int i;
@@ -323,7 +335,9 @@ void reset_turn(KBcombat *war) {
 	for (j = 0; j < MAX_SIDES; j++)
 	for (i = 0; i < MAX_UNITS; i++) {
 		war->units[j][i].acted = 0;
+		war->units[j][i].moves = troops[war->units[j][i].troop_id].move_rate;
 	}
+	war->phase = 0;
 } 
 
 void wipe_battlefield(KBcombat *war) {
@@ -344,6 +358,7 @@ void reset_match(KBcombat *war) {
 	{
 		KBunit *u = &war->units[j][i];
 		if (!u->count) continue;
+		war->units[j][i].shots = troops[war->units[j][i].troop_id].ranged_ammo;
 		KB_debuglog(0, "Unit: %d, %d, ID: %d\n", u->x, u->y, (j * MAX_UNITS) + i + 1);
 		war->umap[u->y][u->x] = (j * MAX_UNITS) + i + 1;
 	}
@@ -367,3 +382,69 @@ void reset_match(KBcombat *war) {
 	/* Also reset turn */
 	reset_turn(war);
 }
+
+/* Switch sides */
+int next_turn(KBcombat *war) {
+	int i, ok = 0;
+	war->turn++;
+	reset_turn(war);
+	for (i = 0; i < MAX_UNITS; i++) {
+		KBunit *u = &war->units[war->side][i];
+		if (u->count) {
+			war->unit_id = i;
+			war->side = 1 - war->side;
+			ok = 1;
+			break;
+		}
+	}
+	return ok;
+}
+
+/* Find next suitable unit */
+int next_unit(KBcombat *war) {
+
+	int i;
+	for (i = war->unit_id + 1; i < MAX_UNITS; i++) {
+		KBunit *u = &war->units[war->side][i];
+		if (!u->count) continue;
+		if (u->acted) continue;
+		return i;
+	}
+	war->phase++;
+	for (i = 0; i < MAX_UNITS; i++) {
+		KBunit *u = &war->units[war->side][i];
+		if (!u->count) continue;
+		if (u->acted) continue;
+		return i;
+	}
+
+	return -1;
+}
+
+/* Returns 1 if unit "other_id" is touching unit "side/id", 0 otherwise */
+int unit_touching(KBcombat *war, int side, int id, int other_id) {
+
+	KBunit *u = &war->units[side][id];
+	KBunit *other = &war->units[1 - side][other_id];
+
+	int diff_x = u->x - other->x;
+	int diff_y = u->y - other->y;
+	/* Poor man's abs() */
+	if (diff_x < 0) diff_x = -diff_x;
+	if (diff_y < 0) diff_y = -diff_y;
+	/* Too far */
+	if (diff_y > 2 || diff_x > 2) return 0; 
+
+	return 1;
+}
+
+/* See if any enemy units are touching this one */
+int unit_surrounded(KBcombat *war, int side, int id) {
+	int i;
+	for (i = 0; i < MAX_UNITS; i++) {
+		if (!war->units[1-side][i].count) continue;
+		if (unit_touching(war, side, id, i)) return 1;
+	}
+	return 0;
+}
+

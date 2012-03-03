@@ -767,6 +767,33 @@ SDL_Rect* KB_TopBox(const char *str) {
 	return &local.status;
 }
 
+void KB_status_message(char *fmt, ...) 
+{ 
+	Uint32 *colors;
+	char msg[1024];
+
+	/* Prepare message string */
+	va_list argptr;
+	va_start(argptr, fmt);
+	sprintf(msg, fmt, argptr);
+	va_end(argptr);
+
+	/* Get colors :( Not like this tho! */
+	colors = KB_Resolve(COL_TEXT, 0); //YUCK
+
+	/* Fill status bar area */
+	SDL_FillRect(sys->screen, &local.status, colors[0]);
+
+	/* Move cursor there, and print the message */
+	KB_iloc(local.status.x, local.status.y + 1);
+	KB_iprint(" ");
+	KB_iprint(msg);
+
+	/* Update screen and wait ~1.5 seconds */
+	SDL_Flip(sys->screen);
+	SDL_Delay(1500);
+}
+
 /* "create game" screen (pick name and difficulty) */
 KBgame *create_game(int pclass) {
 
@@ -2752,6 +2779,54 @@ void take_artifact(KBgame *game, byte id) {
 
 }
 
+void move_unit(KBcombat *war, int side, int id, int ox, int oy) {
+	KBunit *u = &war->units[side][id];
+
+	int nx = u->x + ox;
+	int ny = u->y + oy;
+
+	/* Screen border */
+	if (nx < 0 || nx > CLEVEL_W - 1
+	 || ny < 0 || ny > CLEVEL_H - 1) return;
+
+	/* Obstacle */
+	if (war->omap[ny][nx]) return;
+
+	/* An other troop ... */
+	if (war->umap[ny][nx]) {
+
+		/* Left side */
+		if (side == 0) {
+			/* Meets left side! -- Friendly troop */
+			if (war->umap[ny][nx] >= 1 && war->umap[ny][nx] <= MAX_UNITS) return;
+			/* Otherwise -- Hostile troop */
+
+			KB_status_message("PC Unit attacks!");
+		}
+		/* Right side */
+		else {
+			/* Meets right sie! -- Friendly troop */
+			if (war->umap[ny][nx] >= (MAX_UNITS+1) && war->umap[ny][nx] <= (MAX_UNITS*2)) return;
+			/* Otherwise -- Hostile troop */
+			
+			KB_status_message("NPC Unit attacks!");
+		}
+
+		return;
+	}
+
+	/* Actually move */
+	war->umap[u->y][u->x] = 0;
+	war->umap[ny][nx] = (side * MAX_UNITS) + id + 1;
+
+	u->x = nx;
+	u->y = ny;
+
+	/* Spend 1 move point */
+	u->moves--;
+	if (!u->moves) u->acted = 1;
+}
+
 /* TOH: */ void combat_loop(KBgame *game, KBcombat *combat);
 int run_combat(KBgame *game, int mode, int id) {
 
@@ -3090,6 +3165,54 @@ int ask_search(KBgame *game) {
 	return 1;
 }
 
+#define TARGET_ARROW_KEYS 16
+
+#define TARGET_CONFIRM_EVENT (TARGET_ARROW_KEYS + 1)
+#define TARGET_SYN_EVENT (TARGET_ARROW_KEYS + 2)
+
+KBgamestate target_state = {
+	{
+		{	{ SOFT_WAIT }, SDLK_HOME, 0, KFLAG_SOFTKEY     	},
+		{	{ SOFT_WAIT }, SDLK_7, 0, KFLAG_SOFTKEY      	},
+		{	{ SOFT_WAIT }, SDLK_UP, 0, KFLAG_SOFTKEY      	},
+		{	{ SOFT_WAIT }, SDLK_8, 0, KFLAG_SOFTKEY      	},
+		{	{ SOFT_WAIT }, SDLK_PAGEUP, 0, KFLAG_SOFTKEY   	},
+		{	{ SOFT_WAIT }, SDLK_9, 0, KFLAG_SOFTKEY      	},
+		{	{ SOFT_WAIT }, SDLK_LEFT, 0, KFLAG_SOFTKEY     	},
+		{	{ SOFT_WAIT }, SDLK_4, 0, KFLAG_SOFTKEY      	},
+		{	{ SOFT_WAIT }, SDLK_RIGHT, 0, KFLAG_SOFTKEY    	},
+		{	{ SOFT_WAIT }, SDLK_6, 0, KFLAG_SOFTKEY      	},
+		{	{ SOFT_WAIT }, SDLK_END, 0, KFLAG_SOFTKEY    	},
+		{	{ SOFT_WAIT }, SDLK_1, 0, KFLAG_SOFTKEY      	},
+		{	{ SOFT_WAIT }, SDLK_DOWN, 0, KFLAG_SOFTKEY     	},
+		{	{ SOFT_WAIT }, SDLK_2, 0, KFLAG_SOFTKEY      	},
+		{	{ SOFT_WAIT }, SDLK_PAGEDOWN, 0, KFLAG_SOFTKEY 	},
+		{	{ SOFT_WAIT }, SDLK_3, 0, KFLAG_SOFTKEY      	},
+
+		{	{ 0 }, SDLK_RETURN, 0, 0      	},
+
+		{	{ SOFT_WAIT }, SDLK_SYN, 0, KFLAG_TIMER },
+		0,
+	},
+	0
+};
+
+
+#define COMBAT_ARROW_KEYS 16
+#define COMBAT_ACTION_KEYS 9
+
+#define COMBAT_SYN_EVENT (COMBAT_ACTION_KEYS + COMBAT_ARROW_KEYS + 1)
+
+#define COMBAT_VIEW_ARMY    	0
+#define COMBAT_VIEW_CONTROLS	1 
+#define COMBAT_FLY          	2
+#define COMBAT_GIVE_UP      	3
+#define COMBAT_SHOOT        	4
+#define COMBAT_USE_MAGIC    	5
+#define COMBAT_VIEW_CHAR    	6
+#define COMBAT_WAIT         	7
+#define COMBAT_PASS         	8
+
 KBgamestate combat_state = {
 	{
 		{	{ SOFT_WAIT }, SDLK_HOME, 0, KFLAG_SOFTKEY     	},
@@ -3112,18 +3235,12 @@ KBgamestate combat_state = {
 		{	{ 0 }, SDLK_a, 0, 0      	},
 		{	{ 0 }, SDLK_c, 0, 0      	},
 		{	{ 0 }, SDLK_f, 0, 0      	},
-		{	{ 0 }, SDLK_l, 0, 0      	},
-		{	{ 0 }, SDLK_i, 0, 0      	},
-		{	{ 0 }, SDLK_m, 0, 0      	},
-		{	{ 0 }, SDLK_p, 0, 0      	},
+		{	{ 0 }, SDLK_g, 0, 0      	},
 		{	{ 0 }, SDLK_s, 0, 0      	},
 		{	{ 0 }, SDLK_u, 0, 0      	},
 		{	{ 0 }, SDLK_v, 0, 0      	},
 		{	{ 0 }, SDLK_w, 0, 0      	},
-		{	{ 0 }, SDLK_q, 0, 0      	},
-
-		{	{ 0 }, SDLK_q, KMOD_CTRL, 0	},
-		{	{ 0 }, SDLK_d, 0, 0      	},
+		{	{ 0 }, SDLK_SPACE, 0, 0      	},
 
 		{	{ SOFT_WAIT }, SDLK_SYN, 0, KFLAG_TIMER },
 		0,
@@ -3390,6 +3507,9 @@ void draw_combat(KBcombat *war) {
 
 			SDL_Rect src = { war->omap[j][i] * tile->w, 0, tile->w, tile->h };
 			SDL_Rect dst = { i * tile->w, j * tile->h, tile->w, tile->h };
+			
+			dst.x += local.map.x;
+			dst.y += local.map.y;
 
 			SDL_BlitSurface(comtiles, &src, sys->screen, &dst);
 		}
@@ -3405,8 +3525,8 @@ void draw_combat(KBcombat *war) {
 				SDL_Rect src = { u->frame * tile->w, j * tile->h, tile->w, tile->h };
 				SDL_Rect dst = { 0, 0, tile->w, tile->h };
 
-				dst.x = u->x * tile->w;
-				dst.y = u->y * tile->h;
+				dst.x = u->x * tile->w + local.map.x;
+				dst.y = u->y * tile->h + local.map.y;
 
 				SDL_Surface *troop = SDL_TakeSurface(GR_TROOP, u->troop_id, j); /* j -- side */
 
@@ -3416,6 +3536,187 @@ void draw_combat(KBcombat *war) {
 	}
 
 }
+
+void draw_combat_statusbar(KBcombat *war) {
+
+	Uint32 *colors = KB_Resolve(COL_TEXT, 0); //YUCK
+
+	/* Status bar */
+	SDL_FillRect(sys->screen, &local.status, colors[0]);
+
+	if (war->side) return;
+
+	KB_iloc(local.status.x, local.status.y + 1);
+	KB_iprint(sys, " ");
+	KB_iprint(sys, "Options");
+	KB_iprint(sys, " / ");
+	if (war->side == 0) {
+		KBunit *u = &war->units[war->side][war->unit_id];
+		KB_iprintf("%s M%d", troops[u->troop_id].name, u->moves);
+		if (troops[u->troop_id].ranged_ammo) {
+			KB_iprintf(",S%d", u->shots);
+		}
+	}
+}
+
+void draw_defeat() {
+
+}
+
+static signed char target_move_offset_x[9] = { -1, 0, 1, -1, 1, -1, 0, 1 };
+static signed char target_move_offset_y[9] = { -1,-1,-1,  0, 0,  1, 1, 1 };
+
+int pick_target(KBcombat *war, int *x, int *y) {
+
+	int confirmed = 0; 
+	int done = 0;
+	int redraw = 1;
+
+	int key = 0;
+
+	int frame = 0;
+	int max_frame = 3;
+
+	int _x = *x;
+	int _y = *y;
+	
+	SDL_Rect *tile = local.map_tile;
+	SDL_Surface *comtiles = SDL_TakeSurface(GR_COMTILES, 0, 0);
+
+	while (!done) {
+
+		key = KB_event(&target_state);
+		
+		if (key == 0xFF) done = 1;
+
+		if (key == TARGET_CONFIRM_EVENT) {
+			done = 1;
+			confirmed = 1;
+		}
+
+		if (key >= 1 && key <= TARGET_ARROW_KEYS) {
+			int ox = target_move_offset_x[(key-1)/2];
+			int oy = target_move_offset_y[(key-1)/2];
+
+			_x += ox;
+			_y += oy;
+		}
+
+		if (key == TARGET_SYN_EVENT) {
+			frame++;
+			if (frame > max_frame) {
+				frame = 0;
+			}
+			redraw = 1;
+		}
+
+		if (redraw) {
+
+			draw_combat(war);
+
+			/** Draw cursor **/
+			{
+				SDL_Rect src = { (frame+11) * tile->w, 0, tile->w, tile->h };
+				SDL_Rect dst = { _x * tile->w, _y * tile->h, tile->w, tile->h };
+
+				dst.x += local.map.x;
+				dst.y += local.map.y;
+
+				SDL_BlitSurface(comtiles, &src, sys->screen, &dst);
+			}
+
+			KB_flip(sys);
+			redraw = 0;
+		}
+
+	}
+
+	*x = _x;
+	*y = _y;
+
+	return confirmed;
+}
+
+void unit_try_shoot(KBcombat *war) {
+
+	int x, y;
+	int other_id;
+
+	if (unit_surrounded(war, war->side, war->unit_id)) return;
+
+	x = war->units[war->side][war->unit_id].x;
+	y = war->units[war->side][war->unit_id].y; 
+
+	pick_target(war, &x, &y);
+
+}
+
+int ai_pick_target(KBcombat *combat, int nearby) {
+
+	int side = 1 - combat->side;
+	int pick = -1;
+	int i;
+	for (i = 0; i < MAX_UNITS; i++) {
+		KBunit *u = &combat->units[side][i];
+		if (!u->count) continue;
+
+		if (nearby && unit_touching(combat, side, i, combat->unit_id)) continue; 
+
+		if (pick != -1) {
+			KBunit *picked = &combat->units[side][pick];
+			/* Units that shoot has higher priority */
+			if (picked->shots) {
+				if (!u->shots) continue;
+				/* If both shoot, pick one with higher damage */
+				if (troops[u->troop_id].ranged_max < troops[picked->troop_id].ranged_max) continue; 
+			} else {
+				/* Pick one with higher melee */
+				if (troops[u->troop_id].melee_max < troops[picked->troop_id].melee_max) continue;
+			}
+		}
+		/* Save new one */
+		pick = i;
+	}
+
+	return pick;
+}
+
+void ai_unit_think(KBcombat *combat) {
+
+	KBunit *u = &combat->units[combat->side][combat->unit_id];
+	KBtroop *t = &troops[u->troop_id];
+
+	int close_target = ai_pick_target(combat, 1);
+
+	if (t->abilities & ABIL_FLY) {
+
+		int far_target = ai_pick_target(combat, 0);
+
+		//draw_status("Unitia fly");
+		KB_flip(sys);
+		SDL_Delay(300);
+
+	}
+
+	if (u->shots) {
+
+		/* Must not be blocked */
+		if (close_target == -1) {
+
+			int far_target = ai_pick_target(combat, 0);
+			if (far_target != -1) {
+				KBunit *target = &combat->units[1-combat->side][far_target];
+				//shoot_projectile(combat, far_target);
+			}
+
+		}
+
+	}
+
+}
+
+static signed char combat_move_offset_x[9] = { -1, 0, 1, -1, 1, -1, 0, 1 };
+static signed char combat_move_offset_y[9] = { -1,-1,-1,  0, 0,  1, 1, 1 };
 
 static signed char move_offset_x[9] = { -1, 0, 1, -1, 0, 1, -1,  0,  1 };
 static signed char move_offset_y[9] = {  1, 1, 1,  0, 0, 0, -1, -1, -1 };
@@ -3435,12 +3736,52 @@ void combat_loop(KBgame *game, KBcombat *combat) {
 	int ai_turn = 0;
 	int ai_think = 2;
 
+#define KEY_ACT(ACT) (COMBAT_ARROW_KEYS + 1 + COMBAT_ ## ACT)
+
 	while (!done) {
 		key = KB_event(&combat_state);
 
 		if (key == 0xFF) done = 1;
 
-		if (key == SYN_EVENT) {
+		switch (key) {
+			case KEY_ACT(VIEW_ARMY):	view_army(game);    	break;
+			case KEY_ACT(VIEW_CONTROLS):
+
+			break;
+			case KEY_ACT(FLY):
+
+			break;
+			case KEY_ACT(GIVE_UP):
+
+			break;
+			case KEY_ACT(SHOOT):		unit_try_shoot(combat);	break;
+			case KEY_ACT(USE_MAGIC):
+
+				choose_spell(game, 0);
+
+			break;
+			case KEY_ACT(VIEW_CHAR):	view_character(game);	break;
+			case KEY_ACT(WAIT):
+
+			break;
+			case KEY_ACT(PASS):
+				KB_status_message("Unitia pass"); 
+			break;
+			default: break;
+		}
+
+		if (key > 0 && key < COMBAT_ARROW_KEYS) {
+			int ox = combat_move_offset_x[(key-1)/2];
+			int oy = combat_move_offset_y[(key-1)/2];
+			
+			move_unit(combat, 0, combat->unit_id, ox, oy);
+		}
+
+		if (key == COMBAT_SYN_EVENT) {
+
+			if (++combat->units[combat->side][combat->unit_id].frame > 3)
+				combat->units[combat->side][combat->unit_id].frame = 0;
+
 			frame++;
 			if (frame > max_frame) {
 				frame = 0;
@@ -3449,16 +3790,42 @@ void combat_loop(KBgame *game, KBcombat *combat) {
 			redraw = 1;
 		}
 
+		if (combat->units[combat->side][combat->unit_id].acted) {
+
+			if (!test_defeat(game, combat)) {
+
+				done = 2; 
+				break;
+
+			} else if (!test_victory(combat)) {
+
+				done = 1;
+				break;
+
+			} else {
+
+				int next = next_unit(combat);
+				if (next == -1) next_turn(combat);
+				else
+					combat->unit_id = next;
+
+			}
+
+			redraw = 1;
+		}
+
 		if (redraw) {
 
 			draw_combat(combat);
+
+			draw_combat_statusbar(combat);
 
 			KB_flip(sys);
 			redraw = 0;
 		}
 
 	}
-
+#undef KEY_ACT
 }
 
 /* Main game loop (adventure screen) */
@@ -3553,7 +3920,10 @@ void adventure_loop(KBgame *game) {
 
 		if (key == KEY_ACT(DISMISS_ARMY)) {
 			dismiss_army(game);
-			test_defeat(game);
+			if (!test_defeat(game, NULL)) {
+				temp_death(game);
+				draw_defeat();
+			}
 			redraw = 1;
 		}
 
@@ -3713,6 +4083,7 @@ void adventure_loop(KBgame *game) {
 			redraw = 0;
 		}
 	}
+#undef KEY_ACT
 }
 
 int run_game(KBconfig *conf) {
