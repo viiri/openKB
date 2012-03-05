@@ -767,7 +767,7 @@ SDL_Rect* KB_TopBox(const char *str) {
 	return &local.status;
 }
 
-void KB_status_message(char *fmt, ...) 
+void KB_status_message(const char *fmt, ...) 
 { 
 	Uint32 *colors;
 	char msg[1024];
