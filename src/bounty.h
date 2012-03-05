@@ -242,6 +242,7 @@ typedef struct KBunit {
 
 	byte moves;
 	byte shots;
+	byte flights;
 
 	byte y;
 	byte x;

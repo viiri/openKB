@@ -3699,11 +3699,45 @@ int pick_target(KBcombat *war, int *x, int *y, int filter) {
 	return confirmed;
 }
 
+void unit_try_fly(KBcombat *war) {
+
+	int nx, ny;
+	int ok;
+
+	KBunit *u = &war->units[war->side][war->unit_id];
+	KBtroop *t = &troops[u->troop_id];
+
+	if (!(t->abilities & ABIL_FLY)) {
+		KB_status_message("Can't Fly");
+		return;
+	}
+
+	nx = u->x;
+	ny = u->y;
+
+	ok = pick_target(war, &nx, &ny, 1);
+
+	if (ok) {
+		/* Actually move */
+		war->umap[u->y][u->x] = 0;
+		war->umap[ny][nx] = (war->side * MAX_UNITS) + war->unit_id + 1;
+
+		u->x = nx;
+		u->y = ny;
+
+		/* Spend 1 flight point */
+		u->flights--;
+		if (!u->flights) u->acted = 1;
+	} 
+}
+
 void unit_try_shoot(KBcombat *war) {
 
 	int x, y;
 	int other_id, other_side;
 	int ok, kills;
+
+	// TODO: display "Can't Shoot" message for units that can't shoot
 
 	if (unit_surrounded(war, war->side, war->unit_id)) return;
 
@@ -3835,13 +3869,11 @@ void combat_loop(KBgame *game, KBcombat *combat) {
 			case KEY_ACT(VIEW_CONTROLS):
 
 			break;
-			case KEY_ACT(FLY):
-
-			break;
+			case KEY_ACT(FLY):      	unit_try_fly(combat);	break;
 			case KEY_ACT(GIVE_UP):
 
 			break;
-			case KEY_ACT(SHOOT):		unit_try_shoot(combat);	break;
+			case KEY_ACT(SHOOT):    	unit_try_shoot(combat);	break;
 			case KEY_ACT(USE_MAGIC):
 
 				choose_spell(game, 0);

@@ -336,6 +336,9 @@ void reset_turn(KBcombat *war) {
 	for (i = 0; i < MAX_UNITS; i++) {
 		war->units[j][i].acted = 0;
 		war->units[j][i].moves = troops[war->units[j][i].troop_id].move_rate;
+		war->units[j][i].flights = 0;
+		if (troops[war->units[j][i].troop_id].abilities & ABIL_FLY)
+			war->units[j][i].flights = 2;
 	}
 	war->phase = 0;
 } 
