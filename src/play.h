@@ -77,3 +77,4 @@ extern int next_turn(KBcombat *war);
 extern int next_unit(KBcombat *war);
 extern int unit_touching(KBcombat *war, int side, int id, int other_id);
 extern int unit_surrounded(KBcombat *war, int side, int id);
+extern int unit_ranged_shot(KBcombat *war, int side, int id, int other_side, int other_id);

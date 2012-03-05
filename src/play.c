@@ -448,3 +448,14 @@ int unit_surrounded(KBcombat *war, int side, int id) {
 	return 0;
 }
 
+/* Calculate and deal "ranged" damage, return number of kills */
+int unit_ranged_shot(KBcombat *war, int side, int id, int other_side, int other_id) {
+	int damage = 0, kills = 0;
+	KBunit *u = &war->units[side][id];
+	KBunit *other = &war->units[other_side][other_id];
+
+
+	kills = damage / troops[other->troop_id].hit_points;
+
+	return kills;	
+}

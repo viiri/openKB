@@ -3537,6 +3537,27 @@ void draw_combat(KBcombat *war) {
 
 }
 
+void draw_damage(KBcombat *war, KBunit *u) {
+
+	SDL_Rect *tile = local.map_tile;
+	SDL_Surface *comtiles = SDL_TakeSurface(GR_COMTILES, 0, 0);
+
+	int frame = 0;
+	int _x, _y;
+
+	/** Draw "damage" **/
+	{
+		SDL_Rect src = { (frame+4) * tile->w, 0, tile->w, tile->h };
+		SDL_Rect dst = { u->x * tile->w, u->y * tile->h, tile->w, tile->h };
+
+		dst.x += local.map.x;
+		dst.y += local.map.y;
+
+		SDL_BlitSurface(comtiles, &src, sys->screen, &dst);
+	}
+}
+
+
 void draw_combat_statusbar(KBcombat *war) {
 
 	Uint32 *colors = KB_Resolve(COL_TEXT, 0); //YUCK
@@ -3550,9 +3571,20 @@ void draw_combat_statusbar(KBcombat *war) {
 	KB_iprint(" ");
 	KB_iprint("Options");
 	KB_iprint(" / ");
+
+	/* Unit info */
 	if (war->side == 0) {
 		KBunit *u = &war->units[war->side][war->unit_id];
-		KB_iprintf("%s M%d", troops[u->troop_id].name, u->moves);
+		KBtroop *t = &troops[u->troop_id];
+
+		KB_iprintf("%s ", t->name);
+
+		if (t->abilities & ABIL_FLY) {
+			KB_iprint("F,");
+		}
+
+		KB_iprintf("M%d", u->moves);
+
 		if (troops[u->troop_id].ranged_ammo) {
 			KB_iprintf(",S%d", u->shots);
 		}
@@ -3566,7 +3598,15 @@ void draw_defeat() {
 static signed char target_move_offset_x[9] = { -1, 0, 1, -1, 1, -1, 0, 1 };
 static signed char target_move_offset_y[9] = { -1,-1,-1,  0, 0,  1, 1, 1 };
 
-int pick_target(KBcombat *war, int *x, int *y) {
+/* Shows a target cursor and allows player to move over the battlefield using arrow keys.
+ *  The "filter" argument should be:
+ *   0 - no filter, accept any tile, not too usefull
+ *	 1 - tile unoccupied
+ *   2 - tile with a unit on it
+ *   3 - friendly unit
+ *   4 - enemy unit
+ */
+int pick_target(KBcombat *war, int *x, int *y, int filter) {
 
 	int confirmed = 0; 
 	int done = 0;
@@ -3590,13 +3630,35 @@ int pick_target(KBcombat *war, int *x, int *y) {
 		if (key == 0xFF) done = 1;
 
 		if (key == TARGET_CONFIRM_EVENT) {
-			done = 1;
-			confirmed = 1;
+			int accept = 0;
+			/* If there's a filter, verify tile is acceptable. See above for "filter" values */
+			if (!filter) accept = 1;
+			else if (filter == 1) {
+				accept = (!war->umap[_y][_x] && !war->omap[_y][_x] ? 1 : 0); 
+			} else if (filter >= 2) {
+				if (war->umap[_y][_x]) {
+					int side = (war->umap[_y][_x] <= MAX_UNITS ? 0 : 1);
+					if (filter == 3) accept = (side == 0 ? 1 : 0);
+					else if (filter == 4) accept = (side == 1 ? 1 : 0);
+					else accept = 1;
+				}
+			}
+			/* We're done */
+			if (accept) {
+				done = 1;
+				confirmed = 1;
+				redraw = 1;
+			}
 		}
 
+		/* Cursor is being moved */
 		if (key >= 1 && key <= TARGET_ARROW_KEYS) {
 			int ox = target_move_offset_x[(key-1)/2];
 			int oy = target_move_offset_y[(key-1)/2];
+
+			/* Do not allow moving past screen border */
+			if (_x + ox < 0 || _x + ox > CLEVEL_W - 1) ox = 0;
+			if (_y + oy < 0 || _y + oy > CLEVEL_H - 1) oy = 0;
 
 			_x += ox;
 			_y += oy;
@@ -3615,7 +3677,7 @@ int pick_target(KBcombat *war, int *x, int *y) {
 			draw_combat(war);
 
 			/** Draw cursor **/
-			{
+			if (!done) {
 				SDL_Rect src = { (frame+11) * tile->w, 0, tile->w, tile->h };
 				SDL_Rect dst = { _x * tile->w, _y * tile->h, tile->w, tile->h };
 
@@ -3640,14 +3702,39 @@ int pick_target(KBcombat *war, int *x, int *y) {
 void unit_try_shoot(KBcombat *war) {
 
 	int x, y;
-	int other_id;
+	int other_id, other_side;
+	int ok, kills;
 
 	if (unit_surrounded(war, war->side, war->unit_id)) return;
 
 	x = war->units[war->side][war->unit_id].x;
 	y = war->units[war->side][war->unit_id].y; 
 
-	pick_target(war, &x, &y);
+	ok = pick_target(war, &x, &y, 4);
+
+	if (ok) {
+
+		other_id = war->umap[y][x] - 1;
+		other_side = 0;
+		if (other_id >= MAX_UNITS) {
+			other_id -= MAX_UNITS;
+			other_side = 1;
+		}
+
+		kills = unit_ranged_shot(war, war->side, war->unit_id, other_side, other_id);
+
+		KBunit *u = &war->units[war->side][war->unit_id];
+		KBunit *victim = &war->units[other_side][other_id];
+
+		draw_damage(war, victim);
+
+		KB_status_message("%s shoot %s killing %d", troops[u->troop_id].name, troops[victim->troop_id].name, kills);
+
+		//unit_apply_damage(war, victim);
+
+		/* A turn well spent */
+		u->acted = 1;
+	}
 
 }
 
