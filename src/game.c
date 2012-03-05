@@ -775,7 +775,7 @@ void KB_status_message(char *fmt, ...)
 	/* Prepare message string */
 	va_list argptr;
 	va_start(argptr, fmt);
-	sprintf(msg, fmt, argptr);
+	vsprintf(msg, fmt, argptr);
 	va_end(argptr);
 
 	/* Get colors :( Not like this tho! */
