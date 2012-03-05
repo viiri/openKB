@@ -3699,6 +3699,26 @@ int pick_target(KBcombat *war, int *x, int *y, int filter) {
 	return confirmed;
 }
 
+int unit_try_wait(KBcombat *war) {
+	KBunit *u = &war->units[war->side][war->unit_id];
+	KBtroop *t = &troops[u->troop_id];
+
+	if (war->phase) u->acted = 1;
+
+	KB_status_message("%s wait", t->name);
+
+	return 1;
+}
+
+void unit_try_pass(KBcombat *war) {
+	KBunit *u = &war->units[war->side][war->unit_id];
+	KBtroop *t = &troops[u->troop_id];
+
+	u->acted = 1;
+
+	KB_status_message("%s pass", t->name);
+}
+
 void unit_try_fly(KBcombat *war) {
 
 	int nx, ny;
@@ -3856,6 +3876,7 @@ void combat_loop(KBgame *game, KBcombat *combat) {
 
 	int ai_turn = 0;
 	int ai_think = 2;
+	int pass = 0;
 
 #define KEY_ACT(ACT) (COMBAT_ARROW_KEYS + 1 + COMBAT_ ## ACT)
 
@@ -3880,12 +3901,8 @@ void combat_loop(KBgame *game, KBcombat *combat) {
 
 			break;
 			case KEY_ACT(VIEW_CHAR):	view_character(game);	break;
-			case KEY_ACT(WAIT):
-
-			break;
-			case KEY_ACT(PASS):
-				KB_status_message("Unitia pass"); 
-			break;
+			case KEY_ACT(WAIT):     	pass = unit_try_wait(combat); 	break;
+			case KEY_ACT(PASS):     	unit_try_pass(combat); 	break;
 			default: break;
 		}
 
@@ -3909,7 +3926,9 @@ void combat_loop(KBgame *game, KBcombat *combat) {
 			redraw = 1;
 		}
 
-		if (combat->units[combat->side][combat->unit_id].acted) {
+		if (pass || combat->units[combat->side][combat->unit_id].acted) {
+
+			combat->units[combat->side][combat->unit_id].frame = 0;
 
 			if (!test_defeat(game, combat)) {
 
@@ -3931,6 +3950,7 @@ void combat_loop(KBgame *game, KBcombat *combat) {
 			}
 
 			redraw = 1;
+			pass = 0;
 		}
 
 		if (redraw) {
