@@ -60,7 +60,21 @@ extern void fullfill_contract(KBgame *game, byte villain_id);
 
 extern void temp_death(KBgame *game);
 
-extern void test_defeat(KBgame *game);
-
 /** Spell effects **/
 extern void raise_control(KBgame *game);
+
+/** Combat **/
+extern int test_defeat(KBgame *game, KBcombat *war);
+extern int test_victory(KBcombat *war);
+extern void prepare_units_player(KBcombat *war, int side, KBgame *game);
+extern void prepare_units_foe(KBcombat *war, int side, KBgame *game, int continent_id, int foe_id);
+extern void prepare_units_castle(KBcombat *war, int side, KBgame *game, int castle_id);
+extern void accept_units_player(KBgame *game, int side, KBcombat *war);
+extern void reset_turn(KBcombat *war);
+extern void wipe_battlefield(KBcombat *war);
+extern void reset_match(KBcombat *war);
+extern int next_turn(KBcombat *war);
+extern int next_unit(KBcombat *war);
+extern int unit_touching(KBcombat *war, int side, int id, int other_id);
+extern int unit_surrounded(KBcombat *war, int side, int id);
+extern int unit_ranged_shot(KBcombat *war, int side, int id, int other_side, int other_id);

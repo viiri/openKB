@@ -629,7 +629,7 @@ void* GNU_Resolve(KBmodule *mod, int id, int sub_id) {
 		{
 			image_name = "comtiles";
 			image_suffix = ".png";
-			is_transparent = 0;
+			is_transparent = 1;
 		}
 		break;
 		case GR_TILEROW:	/* subId - row index */
