@@ -610,6 +610,15 @@ char *text_input(int max_len, int numbers_only, int x, int y) {
 	return (done == -1 ? NULL : &entered_name[0]);	
 }
 
+/* Wait for ~1.5 seconds or a keypress */
+inline void KB_Wait() { 
+ 	Uint32 delay = 1500;
+ 	while (!KB_event(&press_any_key) && delay) {
+ 		delay -= 10;
+ 		SDL_Delay(10);
+ 	}
+}
+
 /* Wait for a keypress */
 inline void KB_Pause() { 
  	while (!KB_event(&press_any_key)) SDL_Delay(10);
@@ -2816,11 +2825,7 @@ void move_unit(KBcombat *war, int side, int id, int ox, int oy) {
 	}
 
 	/* Actually move */
-	war->umap[u->y][u->x] = 0;
-	war->umap[ny][nx] = (side * MAX_UNITS) + id + 1;
-
-	u->x = nx;
-	u->y = ny;
+	unit_relocate(war, side, id, nx, ny);
 
 	/* Spend 1 move point */
 	u->moves--;
@@ -2968,10 +2973,69 @@ int instant_army(KBgame *game) {
 	return 0;
 }
 
-/* Mode 1 for adventure spells, mode 0 for combat spells */
-int choose_spell(KBgame *game, int mode) {
+int clone_army(KBgame *game, KBcombat *war) {
 
-	byte spell_id;
+	int ok, x, y, unit_id, clones;
+
+	KBunit *u = &war->units[war->side][war->unit_id];
+
+	KB_TopBox("     Select your army to Clone");// CENTERED
+
+	x = u->x;
+	y = u->y;
+
+	ok = pick_target(war, &x, &y, 3);
+
+	if (ok) {
+
+		unit_id = war->umap[y][x];
+
+		clones = clone_troop(game, war, unit_id);
+
+		KB_status_message("%d %s cloned", clones, troops[u->troop_id].name);
+
+	}
+
+}
+
+int teleport_army(KBgame *game, KBcombat *war) {
+
+	int ok, x, y, side, unit_id;
+
+	KBunit *u = &war->units[war->side][war->unit_id];
+
+	KB_TopBox("     Select army to Teleport");// CENTERED
+
+	x = u->x;
+	y = u->y;
+
+	ok = pick_target(war, &x, &y, 2);
+
+	if (ok) {
+
+		side = 0;
+		unit_id = war->umap[y][x] - 1;
+		if (unit_id > 4) { side = 1; unit_id -= 5; }
+
+		KB_TopBox("     Select new location");// CENTERED
+
+		ok = pick_target(war, &x, &y, 1);
+
+		if (ok) {
+			/* Relocate unit */
+			unit_relocate(war, side, unit_id, x, y);
+		}
+
+	}
+
+	return ok;
+}
+
+
+/* Pass "combat" pointer for combat spells, NULL for adventure spells */
+int choose_spell(KBgame *game, KBcombat *combat) {
+
+	byte spell_id = 0xFF;
 
 	SDL_Rect border;
 
@@ -2984,6 +3048,16 @@ int choose_spell(KBgame *game, int mode) {
 		no_spell_banner();
 		return;	
 	}
+
+	if (combat && combat->spells)
+	{
+		KB_TopBox("     Only 1 spell per round!");
+		KB_flip(sys);
+		KB_Wait();
+		return;
+	}
+
+	int mode = (combat == NULL ? 1 : 0);
 
 	RECT_Text((&border), 15, 36);
 	RECT_Center(&border, sys->screen);
@@ -3009,7 +3083,7 @@ int choose_spell(KBgame *game, int mode) {
 		j = i + half;
 		if (!mode)
 			KB_imenu(&seven_choices, i, 12);
-		KB_iprintf("%2d %-12s", game->spells[j], spell_names[i]);
+		KB_iprintf("%2d %-12s", game->spells[i], spell_names[i]);
 		KB_iprintf(" %c ", 'A' + i);
 		if (mode)
 			KB_imenu(&seven_choices, i, 12);
@@ -3018,6 +3092,10 @@ int choose_spell(KBgame *game, int mode) {
 
 	KB_iloc(border.x + fs->w, border.y + fs->h * 13 + fs->h/4);
 	KB_iprintf("Cast which %s spell (A-%c)?", (mode ? "Adventure" : "Combat"), 'A' + half);
+
+	word twirl_x, twirl_y;
+
+	KB_getpos(sys, &twirl_x, &twirl_y);
 
 	const char *twirl = "\x1D" "\x05" "\x1F" "\x1C" ; /* stands for: | / - \ */  
 	byte twirl_pos = 0;
@@ -3042,7 +3120,7 @@ int choose_spell(KBgame *game, int mode) {
 
 			if (game->spells[spell_id] == 0) {
 
-				KB_iloc(border.x + fs->w * 34, border.y + fs->h * 13 + fs->h/4);
+				KB_iloc(twirl_x, twirl_y);
 				KB_iprintf("%c", 'A' + key - 1);
 
 				KB_TopBox("     You don't know that spell!");
@@ -3052,12 +3130,8 @@ int choose_spell(KBgame *game, int mode) {
 			} else {
 
 				switch (spell_id) {
-					case 0:
-						//clone
-					break;
-					case 1:
-						//teleport
-					break;
+					case 0:	clone_army(game, combat);	break;
+					case 1: teleport_army(game, combat);break;
 					case 2:
 						//fireball
 					break;		
@@ -3092,6 +3166,7 @@ int choose_spell(KBgame *game, int mode) {
 
 				/* Spend 1 spell */
 				game->spells[spell_id]--;
+				if (combat) combat->spells++;
 			}
 
 			done = 1;
@@ -3100,7 +3175,7 @@ int choose_spell(KBgame *game, int mode) {
 		if (redraw) {
 			redraw = 0;
 
-			KB_iloc(border.x + fs->w * 34, border.y + fs->h * 13 + fs->h/4);
+			KB_iloc(twirl_x, twirl_y);
 			KB_iprintf("%c", twirl[twirl_pos]);
 
 			KB_flip(sys);
@@ -3528,7 +3603,7 @@ void draw_combat(KBcombat *war) {
 				dst.x = u->x * tile->w + local.map.x;
 				dst.y = u->y * tile->h + local.map.y;
 
-				SDL_Surface *troop = SDL_TakeSurface(GR_TROOP, u->troop_id, j); /* j -- side */
+				SDL_Surface *troop = SDL_TakeSurface(GR_TROOP, u->troop_id, 1);
 
 				SDL_BlitSurface(troop, &src, sys->screen, &dst);
 			}
@@ -3897,7 +3972,7 @@ void combat_loop(KBgame *game, KBcombat *combat) {
 			case KEY_ACT(SHOOT):    	unit_try_shoot(combat);	break;
 			case KEY_ACT(USE_MAGIC):
 
-				choose_spell(game, 0);
+				choose_spell(game, combat);
 
 			break;
 			case KEY_ACT(VIEW_CHAR):	view_character(game);	break;
@@ -4039,7 +4114,7 @@ void adventure_loop(KBgame *game) {
 		}
 
 		if (key == KEY_ACT(USE_MAGIC)) {
-			choose_spell(game, 1);
+			choose_spell(game, NULL);
 		}
 
 		if (key == KEY_ACT(VIEW_CHAR)) {

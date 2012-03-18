@@ -234,6 +234,7 @@ typedef struct KBclass {
 typedef struct KBunit {
 	byte troop_id;
 	word count;
+	word max_count;
 
 	byte frame;
 
@@ -258,6 +259,8 @@ typedef struct KBcombat {
 
 	byte turn;		/* Turn counter, not really used */
 	byte phase;		/* Each player/AI turn might take up to 2 phases */
+
+	byte spells;	/* Spells casted this round */
 
 	byte side;		/* Indexes into units array */
 	byte unit_id;	/* units[side][unit_id], obviously */

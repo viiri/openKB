@@ -62,6 +62,7 @@ extern void temp_death(KBgame *game);
 
 /** Spell effects **/
 extern void raise_control(KBgame *game);
+extern int clone_troop(KBgame *game, KBcombat *war, int unit_id);
 
 /** Combat **/
 extern int test_defeat(KBgame *game, KBcombat *war);
@@ -78,3 +79,4 @@ extern int next_unit(KBcombat *war);
 extern int unit_touching(KBcombat *war, int side, int id, int other_id);
 extern int unit_surrounded(KBcombat *war, int side, int id);
 extern int unit_ranged_shot(KBcombat *war, int side, int id, int other_side, int other_id);
+extern void unit_relocate(KBcombat *war, int side, int id, int nx, int ny);
