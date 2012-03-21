@@ -169,6 +169,7 @@ typedef struct KBgamestate {
 #define SDLK_SYN 0x16
 
 #define SOFT_WAIT 150
+#define SHORT_WAIT 50
 
 #define _NON { 0 }
 #define _TIME(INTERVAL) { INTERVAL, 0 }
@@ -197,6 +198,16 @@ KBgamestate press_any_key_interactive = {
 		{	_AREA(0, 0, 1024, 768), 0xFF, 0, KFLAG_ANYKEY },
 		{	_TIME(SOFT_WAIT), SDLK_SYN, 0, KFLAG_TIMER },
 		0,
+	},
+	0
+};
+
+KBgamestate yes_no_interactive = {
+	{
+		{	{ 0 }, SDLK_y, 0, 0      	},
+		{	{ 0 }, SDLK_n, 0, 0      	},
+		{	_TIME(SHORT_WAIT), SDLK_SYN, 0, KFLAG_TIMER },
+		0
 	},
 	0
 };
@@ -450,6 +461,13 @@ int KB_event(KBgamestate *state) {
 					(sp->hot_key == kbd->sym && 
 					( !sp->hot_mod || (sp->hot_mod & kbd->mod) )))
 					{
+						if (sp->hot_key != kbd->sym && (
+							kbd->sym == SDLK_LSHIFT || kbd->sym == SDLK_RSHIFT ||
+							kbd->sym == SDLK_LCTRL || kbd->sym == SDLK_RCTRL ||
+							kbd->sym == SDLK_LALT || kbd->sym == SDLK_RALT ))
+						{
+							continue;
+						}
 						eve = i + 1; /* !!! */
 						if (sp->flag & KFLAG_TIMEKEY)
 						{
@@ -4042,6 +4060,80 @@ void combat_loop(KBgame *game, KBcombat *combat) {
 #undef KEY_ACT
 }
 
+
+int save_game(KBgame *game) {
+	int err;
+	char buffer[PATH_LEN];
+	KB_dircpy(buffer, sys->conf->save_dir);
+	KB_dirsep(buffer);
+	KB_strcat(buffer, game->name);
+	KB_strcat(buffer, ".");
+	KB_strcat(buffer, "DAT2");
+
+	err = KB_saveDAT(buffer, game);
+	if (err) KB_errlog("Unable to save game '%s'\n", buffer);
+	else KB_stdlog("Saved game into '%s'\n", buffer);
+}
+
+KBgamestate quit_question = {
+	{
+		{	{ 0 }, 0xFF, 0, KFLAG_ANYKEY },
+		{	{ 0 }, SDLK_q, KMOD_CTRL, 0	},
+		0
+	},
+	0
+};
+int ask_quit_game(KBgame *game) {
+
+	save_game(game);
+
+	KB_BottomBox(NULL, "\nYour game has been saved.\n\nPress Control-Q to Quit or\nany other key to continue.", 0);
+
+	int done = 0;
+	while (!done) {
+		int key = KB_event(&quit_question);
+		if (key) done = key;
+	}
+
+	return 2 - done;
+}
+int ask_fast_quit(KBgame *game) {
+
+	const char *twirl = "\x1D" "\x05" "\x1F" "\x1C" ; /* stands for: | / - \ */
+	byte twirl_pos = 0;
+	word twirl_x, twirl_y;
+
+	KB_TopBox(" Quit to DOS without saving (y/n) ");
+
+	KB_getpos(sys, &twirl_x, &twirl_y);
+
+	int redraw = 1;
+	int done = 0;
+	while (!done) {
+		int key = KB_event(&yes_no_interactive);
+
+		if (key == 3) {
+			twirl_pos++;
+			if (twirl_pos > 3) twirl_pos = 0;
+			redraw = 1;
+		}
+		else
+		if (key) done = key;
+
+		if (redraw) {
+			redraw = 0;
+
+			KB_iloc(twirl_x, twirl_y);
+			KB_iprintf("%c", twirl[twirl_pos]);
+
+			KB_flip(sys);
+		}
+
+	}
+
+	return done - 1;
+}
+
 /* Main game loop (adventure screen) */
 void adventure_loop(KBgame *game) {
 
@@ -4126,10 +4218,10 @@ void adventure_loop(KBgame *game) {
 		}
 
 		if (key == KEY_ACT(SAVE_QUIT)) {
-
+			if (!ask_quit_game(game)) done = 1;
 		}
 		if (key == KEY_ACT(FAST_QUIT)) {
-
+			if (!ask_fast_quit(game)) done = 1;
 		}
 
 		if (key == KEY_ACT(DISMISS_ARMY)) {
