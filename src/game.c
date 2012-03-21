@@ -1006,7 +1006,9 @@ KBgame *load_game() {
 			KB_strcat(buffer, fullname[sel]);
 
 			game = KB_loadDAT(buffer);
-			if (game == NULL) KB_errlog("Unable to load game %s\n", buffer);
+			if (game == NULL) KB_errlog("Unable to load game '%s'\n", buffer);
+			else KB_strcpy(game->savefile, fullname[sel]);
+
 			done = 1;
 		}
 		//if (key == 3) { done = 1; }
@@ -4066,9 +4068,8 @@ int save_game(KBgame *game) {
 	char buffer[PATH_LEN];
 	KB_dircpy(buffer, sys->conf->save_dir);
 	KB_dirsep(buffer);
-	KB_strcat(buffer, game->name);
-	KB_strcat(buffer, ".");
-	KB_strcat(buffer, "DAT2");
+	KB_strcat(buffer, game->savefile);
+	KB_strcat(buffer, "2");//TODO: Remove this '2', it's for debug purposes only
 
 	err = KB_saveDAT(buffer, game);
 	if (err) KB_errlog("Unable to save game '%s'\n", buffer);

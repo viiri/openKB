@@ -67,7 +67,8 @@
 typedef struct KBgame KBgame;
 
 struct KBgame {
-	char name[11];
+	char savefile[64];	/* Name of the savefile, not really part of the game */ 
+	char name[11]; /* Player name */
 
 	byte class;	/* Character class */
 	byte rank;	/* Rank, player character's level */
