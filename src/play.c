@@ -60,18 +60,22 @@ void end_week(KBgame *game) {
 	printf("END OF WEEK!\n");
 }
 
-void end_day(KBgame *game) {
+/* End the day; return 1 if week ended, 0 otherwise */
+int end_day(KBgame *game) {
 	game->days_left -= 1;
 	game->steps_left = DAY_STEPS;
-	if (!(game->days_left % WEEK_DAYS)) end_week(game);
+	if (!(game->days_left % WEEK_DAYS)) return 1;
+	return 0;
 }
 
-/* Spend some ammount of game days */
-void spend_days(KBgame *game, word days) {
-	word i;
+/* Spend some ammount of game days, return number of weeks passed */
+int spend_days(KBgame *game, word days) {
+	int i, weeks_passed = 0;
+	if (days > game->days_left) days = game->days_left;
 	for (i = 0; i < days; i++) {
-		end_day(game);
+		weeks_passed += end_day(game);
 	}
+	return weeks_passed;
 }
 
 /* Spend remaining days in the week */

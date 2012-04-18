@@ -324,8 +324,8 @@ void KB_imenu(KBgamestate *state, int id, int cols) {
 		(RECT)->h = (HOST)->h
 
 #define RECT_Pos(RECT, HOST) \
-		RECT->x = HOST->x, \
-		RECT->y = HOST->y
+		(RECT)->x = (HOST)->x, \
+		(RECT)->y = (HOST)->y
 
 #define RECT_AddPos(RECT, HOST) \
 		RECT->x += HOST->x, \
@@ -336,7 +336,7 @@ void KB_imenu(KBgamestate *state, int id, int cols) {
 		(RECT)->y = ((HOST)->h - (RECT)->h) / 2
 
 #define RECT_Right(RECT, HOST) \
-		RECT->x = (HOST->w - RECT->w)
+		(RECT)->x = ((HOST)->w - (RECT)->w)
 
 #define RECT_Bottom(RECT, HOST) \
 		(RECT)->y = ((HOST)->h - (RECT)->h)
@@ -3215,10 +3215,66 @@ void win_game(KBgame *game) {
 
 void lose_game(KBgame *game) {
 
-	KB_TopBox("Press 'ESC' to exit");
+	char message[1024];
+	char *lines;
 
+	SDL_Rect full, half;
+	SDL_Rect pos;
+
+	SDL_Surface *image = SDL_LoadRESOURCE(GR_ENDING, 1, 0);
+
+	full.x = local.map.x;
+	full.y = local.map.y;
+	full.w = sys->screen->w - local.frames[FRAME_RIGHT]->w - local.map.x;// + local.side.w;
+	full.h = local.map.h;
+
+	half.x = full.x;
+	half.y = full.y;
+	half.w = full.w - image->w;
+	half.h = full.h;
+
+	pos.x = 0;
+	pos.y = 0;
+
+	lines = KB_Resolve(STRL_ENDINGS, 1);
+
+	//TODO: Remove this mess
+	int i, j = 0, n = 19;
+	char *line = lines;
+	for (i = 0; i < n; ) {
+		if (*line == '\0') {
+			i++;
+			*line = '\n';
+		}
+		line++;
+	}
+
+	/* TODO: Make sure message comes with appropriate "%s the %s" substring
+	sprintf(message,
+		game->name,
+		classes[game->class][game->rank].title);
+	*/
+
+	KB_strcpy(message, lines);
+
+	RECT_Pos(&pos, &full);
+	RECT_Size(&pos, image);
+	RECT_Right(&pos, &full);
+	pos.x += full.x;
+
+	KB_TopBox("        Press 'ESC' to exit"); //CENTERED
+
+	SDL_BlitSurface( image, NULL, sys->screen, &pos );
+
+	SDL_FillRect( sys->screen, &half, 0xFF0000 );
+	KB_iloc(half.x, half.y);
+	KB_iprint(message);
+
+   	KB_flip(sys);
 	KB_Pause();
 
+	SDL_FreeSurface(image);
+	free(lines);
 }
 
 /* Returns 0 if the game was won, 1 if search was futile, 2 if search was cancelled */
@@ -4216,6 +4272,7 @@ void adventure_loop(KBgame *game) {
 
 		if (key == KEY_ACT(END_WEEK)) {
 			spend_week(game);
+			end_week(game);
 		}
 
 		if (key == KEY_ACT(SAVE_QUIT)) {
@@ -4368,7 +4425,9 @@ void adventure_loop(KBgame *game) {
 		}
 
 		if (game->steps_left <= 0) {
-			end_day(game);
+			if (end_day(game)) {
+				end_week(game);
+			}
 		}
 		if (game->days_left == 0) {
 			lose_game(game);
