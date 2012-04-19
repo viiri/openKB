@@ -120,6 +120,9 @@ KBgame* KB_loadDAT(const char* filename) {
 	/* Steps left till end of day */
 	game->steps_left = READ_BYTE(p);
 
+	/* Skip 1 byte */
+	game->unknown3 = READ_BYTE(p);
+
 	/* Castle ownership */
 	for (n = 0; n < MAX_CASTLES; n++)
 		game->castle_owner[n] = READ_BYTE(p);
@@ -136,9 +139,6 @@ KBgame* KB_loadDAT(const char* filename) {
 	game->scepter_x = READ_BYTE(p);
 	game->scepter_y = READ_BYTE(p);
 
-	/* Skip 1 byte */
-	game->unknown3 = READ_BYTE(p);
-
 	/* Fog of war (convert from 1-bit-per-tile to 1-byte-per-tile format) */
 	map_size = ( MAX_CONTINENTS * LEVEL_W * LEVEL_H );
 	for (n = 0; n < MAX_CONTINENTS; n++) {
@@ -147,7 +147,7 @@ KBgame* KB_loadDAT(const char* filename) {
 			char test_bits = READ_BYTE(p);
 			for (k = 0; k < 8; k++) {
 				char one_bit = ((test_bits & (0x01 << k)) >> k) & 0x01;
-				game->fog[n][y][x + 7 - k] = one_bit;
+				game->fog[n][y][x + 8 - k] = one_bit;
 			}
 		}
 	}
@@ -278,14 +278,236 @@ int KB_saveDAT(const char* filename, KBgame *game) {
 
 	char buf[DAT_SIZE];
 	FILE *f;
-	int n;
+	int n, k, map_size;
+	int x, y;
 
 	f = fopen(filename, "wb");
 	if (f == NULL) return 1;
 
 	/* Layout the save in "buf" */
-	//TODO......
+	char *p = &buf[0];
 
+	/* Player name */
+	memcpy(p, game->name, 10);
+	for (n = strlen(game->name); n < 10; n++) {
+		buf[n] = ' ';
+	}
+	p += 11;
+
+	/* Main stats */
+	WRITE_BYTE(p, game->class);
+	WRITE_BYTE(p, game->rank);
+	WRITE_BYTE(p, game->spell_power);
+	WRITE_BYTE(p, game->max_spells);
+
+	/* Quest progress */
+	for (n = 0; n < MAX_VILLAINS; n++)
+		WRITE_BYTE(p, game->villain_caught[n]);
+
+	for (n = 0; n < MAX_ARTIFACTS; n++)
+		WRITE_BYTE(p, game->artifact_found[n]);
+
+	for (n = 0; n < MAX_CONTINENTS; n++)
+		WRITE_BYTE(p, game->continent_found[n]);
+
+	for (n = 0; n < MAX_CONTINENTS; n++)
+		WRITE_BYTE(p, game->orb_found[n]);
+
+	/* Spell book */
+	for (n = 0; n < MAX_SPELLS; n++)
+		WRITE_BYTE(p, game->spells[n]);
+
+	/* More stats */
+	WRITE_BYTE(p, game->knows_magic);
+	WRITE_BYTE(p, game->siege_weapons);
+	WRITE_BYTE(p, game->contract);
+
+	for (n = 0; n < 5; n++)
+		WRITE_BYTE(p, game->player_troops[n]);
+
+	/* Options and difficulty setting */
+	WRITE_BYTE(p, game->options[0]);//delay
+
+	WRITE_BYTE(p, game->difficulty);
+
+ 	WRITE_BYTE(p, game->options[1]);//sounds
+ 	WRITE_BYTE(p, game->options[2]);//walk beep
+ 	WRITE_BYTE(p, game->options[3]);//animation
+ 	WRITE_BYTE(p, game->options[4]);//show army size
+
+	/* Player location */
+	WRITE_BYTE(p, game->continent);
+	WRITE_BYTE(p, game->x);
+	WRITE_BYTE(p, game->y);
+	WRITE_BYTE(p, game->last_x);
+	WRITE_BYTE(p, game->last_y);
+	WRITE_BYTE(p, game->boat_x);
+	WRITE_BYTE(p, game->boat_y);
+	WRITE_BYTE(p, game->boat);
+	WRITE_BYTE(p, game->mount);
+
+	WRITE_BYTE(p, game->options[5]);//CGA palette
+
+	/* Spells sold in towns */
+	for (n = 0; n < MAX_TOWNS; n++)
+		WRITE_BYTE(p, game->town_spell[n]);
+
+	/* Town/Contract */
+	for (n = 0; n < 5; n++)
+		WRITE_BYTE(p, game->contract_cycle[n]);
+	WRITE_BYTE(p, game->last_contract);
+	WRITE_BYTE(p, game->max_contract);
+
+	/* Steps left till end of day */
+	WRITE_BYTE(p, game->steps_left);
+
+	/* Skip 1 byte */
+	WRITE_BYTE(p, game->unknown3);
+
+	/* Castle ownership */
+	for (n = 0; n < MAX_CASTLES; n++)
+		WRITE_BYTE(p, game->castle_owner[n]);
+
+	/* Visited castles and towns */
+	for (n = 0; n < MAX_CASTLES; n++)
+		WRITE_BYTE(p, game->castle_visited[n]);
+
+	for (n = 0; n < MAX_TOWNS; n++)
+		WRITE_BYTE(p, game->town_visited[n]);
+
+	/* Scepter location (encrypted) */
+	WRITE_BYTE(p, game->scepter_continent ^ game->scepter_key);
+	WRITE_BYTE(p, game->scepter_x ^ game->scepter_key);
+	WRITE_BYTE(p, game->scepter_y ^ game->scepter_key);
+
+	/* Fog of war (convert from 1-byte-per-tile to 1-bit-per-tile format) */
+	map_size = ( MAX_CONTINENTS * LEVEL_W * LEVEL_H );
+	for (n = 0; n < MAX_CONTINENTS; n++) {
+		for (y = 0; y < LEVEL_H; y++)
+		for (x = 0; x < LEVEL_W; x += 8) {
+			char one_byte = 0;
+			for (k = 0; k < 8; k++) {
+				char one_bit = (game->fog[n][y][x + 8 - k] & 0x01) << k;
+				one_byte |= one_bit;
+			}
+			WRITE_BYTE(p, one_byte);
+		}
+	}
+
+	/* Castle garrison troops */
+	for (n = 0; n < MAX_CASTLES; n++)
+		for (k = 0; k < 5; k++)
+			WRITE_BYTE(p, game->castle_troops[n][k]);
+
+	/* Read friendly followers' coords */
+	for (n = 0; n < MAX_CONTINENTS; n++) {
+		for (k = 0; k < FRIENDLY_FOLLOWERS; k++) {
+			WRITE_BYTE(p, game->follower_coords[n][k][0]);//X
+			WRITE_BYTE(p, game->follower_coords[n][k][1]);//Y
+		}	
+	}
+
+	/* Map chests */
+	for (n = 0; n < MAX_CONTINENTS - 1; n++) {
+		WRITE_BYTE(p, game->map_coords[n][0]);//X
+		WRITE_BYTE(p, game->map_coords[n][1]);//Y
+	}
+
+	/* Orb chests */
+	for (n = 0; n < MAX_CONTINENTS; n++) {
+		WRITE_BYTE(p, game->orb_coords[n][0]);//X
+		WRITE_BYTE(p, game->orb_coords[n][1]);//Y
+	}
+
+	/* Teleporting caves */
+	for (n = 0; n < MAX_CONTINENTS; n++) {
+		for (k = 0; k < MAX_TELECAVES; k++) {
+			WRITE_BYTE(p, game->teleport_coords[n][k][0]);//X
+			WRITE_BYTE(p, game->teleport_coords[n][k][1]);//Y
+		}
+	}
+
+	/* Dwellings locations */
+	for (n = 0; n < MAX_CONTINENTS; n++) {
+		for (k = 0; k < MAX_DWELLINGS; k++) {
+			WRITE_BYTE(p, game->dwelling_coords[n][k][0]);//X
+			WRITE_BYTE(p, game->dwelling_coords[n][k][1]);//Y
+		}
+	}
+
+	/* Hostile foes' coords */
+	for (n = 0; n < MAX_CONTINENTS; n++) {
+		for (k = FRIENDLY_FOLLOWERS; k < MAX_FOLLOWERS; k++) {
+			WRITE_BYTE(p, game->follower_coords[n][k][0]);//X
+			WRITE_BYTE(p, game->follower_coords[n][k][1]);//Y
+		}
+	}
+
+	/* Hostile foes' troops */
+	for (n = 0; n < MAX_CONTINENTS; n++) {
+		for (k = FRIENDLY_FOLLOWERS; k < MAX_FOLLOWERS; k++) {
+			WRITE_BYTE(p, game->follower_troops[n][k][0]);
+			WRITE_BYTE(p, game->follower_troops[n][k][1]);
+			WRITE_BYTE(p, game->follower_troops[n][k][2]);
+		}
+	}
+
+	/* Foes' army counts */
+	for (n = 0; n < MAX_CONTINENTS; n++) {
+		for (k = FRIENDLY_FOLLOWERS; k < MAX_FOLLOWERS; k++) {
+			WRITE_BYTE(p, game->follower_numbers[n][k][0]);
+			WRITE_BYTE(p, game->follower_numbers[n][k][1]);
+			WRITE_BYTE(p, game->follower_numbers[n][k][2]);
+		}
+	}
+
+	/* Dwelling troop type and population count */
+	for (n = 0; n < MAX_CONTINENTS; n++)
+		for (k = 0; k < MAX_DWELLINGS; k++)
+			WRITE_BYTE(p, game->dwelling_troop[n][k]);
+
+	for (n = 0; n < MAX_CONTINENTS; n++)
+		for (k = 0; k < MAX_DWELLINGS; k++)
+			WRITE_BYTE(p, game->dwelling_population[n][k]);
+
+	/* Write scepter key */
+	WRITE_BYTE(p, game->scepter_key);
+
+	/* More stats */
+	WRITE_WORD(p, game->base_leadership);
+	WRITE_WORD(p, game->leadership);
+	WRITE_WORD(p, game->commission);
+	WRITE_WORD(p, game->followers_killed);
+
+	/* Player army numbers */
+	for (n = 0; n < 5; n++)
+		WRITE_WORD(p, game->player_numbers[n]);
+
+	/* Castle garrison numbers */
+	for (n = 0; n < MAX_CASTLES; n++)
+		for (k = 0; k < 5; k++)
+			WRITE_WORD(p, game->castle_numbers[n][k]);
+
+	/* More stats */
+	WRITE_WORD(p, game->time_stop);
+	WRITE_WORD(p, game->days_left);
+
+	/* Score (unused) */
+	WRITE_WORD(p, game->score);
+
+	/* Skip 2 bytes */
+	WRITE_BYTE(p, game->unknown1);
+	WRITE_BYTE(p, game->unknown2);
+
+	/* Player's gold (32 bit, can get quite rich!) */
+	WRITE_DWORD(p, game->gold);
+
+	/* Map dump */
+	n = map_size; 
+	memcpy(p, game->map, n);
+	p += n;
+
+	/** DONE **/
 	n = fwrite(buf, sizeof(char), DAT_SIZE, f);
 	fclose(f);
 

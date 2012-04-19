@@ -67,7 +67,8 @@
 typedef struct KBgame KBgame;
 
 struct KBgame {
-	char name[11];
+	char savefile[64];	/* Name of the savefile, not really part of the game */ 
+	char name[11]; /* Player name */
 
 	byte class;	/* Character class */
 	byte rank;	/* Rank, player character's level */
@@ -234,6 +235,7 @@ typedef struct KBclass {
 typedef struct KBunit {
 	byte troop_id;
 	word count;
+	word max_count;
 
 	byte frame;
 
@@ -258,6 +260,8 @@ typedef struct KBcombat {
 
 	byte turn;		/* Turn counter, not really used */
 	byte phase;		/* Each player/AI turn might take up to 2 phases */
+
+	byte spells;	/* Spells casted this round */
 
 	byte side;		/* Indexes into units array */
 	byte unit_id;	/* units[side][unit_id], obviously */

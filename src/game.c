@@ -169,6 +169,7 @@ typedef struct KBgamestate {
 #define SDLK_SYN 0x16
 
 #define SOFT_WAIT 150
+#define SHORT_WAIT 50
 
 #define _NON { 0 }
 #define _TIME(INTERVAL) { INTERVAL, 0 }
@@ -197,6 +198,16 @@ KBgamestate press_any_key_interactive = {
 		{	_AREA(0, 0, 1024, 768), 0xFF, 0, KFLAG_ANYKEY },
 		{	_TIME(SOFT_WAIT), SDLK_SYN, 0, KFLAG_TIMER },
 		0,
+	},
+	0
+};
+
+KBgamestate yes_no_interactive = {
+	{
+		{	{ 0 }, SDLK_y, 0, 0      	},
+		{	{ 0 }, SDLK_n, 0, 0      	},
+		{	_TIME(SHORT_WAIT), SDLK_SYN, 0, KFLAG_TIMER },
+		0
 	},
 	0
 };
@@ -450,6 +461,13 @@ int KB_event(KBgamestate *state) {
 					(sp->hot_key == kbd->sym && 
 					( !sp->hot_mod || (sp->hot_mod & kbd->mod) )))
 					{
+						if (sp->hot_key != kbd->sym && (
+							kbd->sym == SDLK_LSHIFT || kbd->sym == SDLK_RSHIFT ||
+							kbd->sym == SDLK_LCTRL || kbd->sym == SDLK_RCTRL ||
+							kbd->sym == SDLK_LALT || kbd->sym == SDLK_RALT ))
+						{
+							continue;
+						}
 						eve = i + 1; /* !!! */
 						if (sp->flag & KFLAG_TIMEKEY)
 						{
@@ -608,6 +626,15 @@ char *text_input(int max_len, int numbers_only, int x, int y) {
 	entered_name[curs] = '\0';
 
 	return (done == -1 ? NULL : &entered_name[0]);	
+}
+
+/* Wait for ~1.5 seconds or a keypress */
+inline void KB_Wait() { 
+ 	Uint32 delay = 1500;
+ 	while (!KB_event(&press_any_key) && delay) {
+ 		delay -= 10;
+ 		SDL_Delay(10);
+ 	}
 }
 
 /* Wait for a keypress */
@@ -979,7 +1006,9 @@ KBgame *load_game() {
 			KB_strcat(buffer, fullname[sel]);
 
 			game = KB_loadDAT(buffer);
-			if (game == NULL) KB_errlog("Unable to load game %s\n", buffer);
+			if (game == NULL) KB_errlog("Unable to load game '%s'\n", buffer);
+			else KB_strcpy(game->savefile, fullname[sel]);
+
 			done = 1;
 		}
 		//if (key == 3) { done = 1; }
@@ -2816,11 +2845,7 @@ void move_unit(KBcombat *war, int side, int id, int ox, int oy) {
 	}
 
 	/* Actually move */
-	war->umap[u->y][u->x] = 0;
-	war->umap[ny][nx] = (side * MAX_UNITS) + id + 1;
-
-	u->x = nx;
-	u->y = ny;
+	unit_relocate(war, side, id, nx, ny);
 
 	/* Spend 1 move point */
 	u->moves--;
@@ -2968,10 +2993,69 @@ int instant_army(KBgame *game) {
 	return 0;
 }
 
-/* Mode 1 for adventure spells, mode 0 for combat spells */
-int choose_spell(KBgame *game, int mode) {
+int clone_army(KBgame *game, KBcombat *war) {
 
-	byte spell_id;
+	int ok, x, y, unit_id, clones;
+
+	KBunit *u = &war->units[war->side][war->unit_id];
+
+	KB_TopBox("     Select your army to Clone");// CENTERED
+
+	x = u->x;
+	y = u->y;
+
+	ok = pick_target(war, &x, &y, 3);
+
+	if (ok) {
+
+		unit_id = war->umap[y][x];
+
+		clones = clone_troop(game, war, unit_id);
+
+		KB_status_message("%d %s cloned", clones, troops[u->troop_id].name);
+
+	}
+
+}
+
+int teleport_army(KBgame *game, KBcombat *war) {
+
+	int ok, x, y, side, unit_id;
+
+	KBunit *u = &war->units[war->side][war->unit_id];
+
+	KB_TopBox("     Select army to Teleport");// CENTERED
+
+	x = u->x;
+	y = u->y;
+
+	ok = pick_target(war, &x, &y, 2);
+
+	if (ok) {
+
+		side = 0;
+		unit_id = war->umap[y][x] - 1;
+		if (unit_id > 4) { side = 1; unit_id -= 5; }
+
+		KB_TopBox("     Select new location");// CENTERED
+
+		ok = pick_target(war, &x, &y, 1);
+
+		if (ok) {
+			/* Relocate unit */
+			unit_relocate(war, side, unit_id, x, y);
+		}
+
+	}
+
+	return ok;
+}
+
+
+/* Pass "combat" pointer for combat spells, NULL for adventure spells */
+int choose_spell(KBgame *game, KBcombat *combat) {
+
+	byte spell_id = 0xFF;
 
 	SDL_Rect border;
 
@@ -2984,6 +3068,16 @@ int choose_spell(KBgame *game, int mode) {
 		no_spell_banner();
 		return;	
 	}
+
+	if (combat && combat->spells)
+	{
+		KB_TopBox("     Only 1 spell per round!");
+		KB_flip(sys);
+		KB_Wait();
+		return;
+	}
+
+	int mode = (combat == NULL ? 1 : 0);
 
 	RECT_Text((&border), 15, 36);
 	RECT_Center(&border, sys->screen);
@@ -3009,7 +3103,7 @@ int choose_spell(KBgame *game, int mode) {
 		j = i + half;
 		if (!mode)
 			KB_imenu(&seven_choices, i, 12);
-		KB_iprintf("%2d %-12s", game->spells[j], spell_names[i]);
+		KB_iprintf("%2d %-12s", game->spells[i], spell_names[i]);
 		KB_iprintf(" %c ", 'A' + i);
 		if (mode)
 			KB_imenu(&seven_choices, i, 12);
@@ -3018,6 +3112,10 @@ int choose_spell(KBgame *game, int mode) {
 
 	KB_iloc(border.x + fs->w, border.y + fs->h * 13 + fs->h/4);
 	KB_iprintf("Cast which %s spell (A-%c)?", (mode ? "Adventure" : "Combat"), 'A' + half);
+
+	word twirl_x, twirl_y;
+
+	KB_getpos(sys, &twirl_x, &twirl_y);
 
 	const char *twirl = "\x1D" "\x05" "\x1F" "\x1C" ; /* stands for: | / - \ */  
 	byte twirl_pos = 0;
@@ -3042,7 +3140,7 @@ int choose_spell(KBgame *game, int mode) {
 
 			if (game->spells[spell_id] == 0) {
 
-				KB_iloc(border.x + fs->w * 34, border.y + fs->h * 13 + fs->h/4);
+				KB_iloc(twirl_x, twirl_y);
 				KB_iprintf("%c", 'A' + key - 1);
 
 				KB_TopBox("     You don't know that spell!");
@@ -3052,12 +3150,8 @@ int choose_spell(KBgame *game, int mode) {
 			} else {
 
 				switch (spell_id) {
-					case 0:
-						//clone
-					break;
-					case 1:
-						//teleport
-					break;
+					case 0:	clone_army(game, combat);	break;
+					case 1: teleport_army(game, combat);break;
 					case 2:
 						//fireball
 					break;		
@@ -3092,6 +3186,7 @@ int choose_spell(KBgame *game, int mode) {
 
 				/* Spend 1 spell */
 				game->spells[spell_id]--;
+				if (combat) combat->spells++;
 			}
 
 			done = 1;
@@ -3100,7 +3195,7 @@ int choose_spell(KBgame *game, int mode) {
 		if (redraw) {
 			redraw = 0;
 
-			KB_iloc(border.x + fs->w * 34, border.y + fs->h * 13 + fs->h/4);
+			KB_iloc(twirl_x, twirl_y);
 			KB_iprintf("%c", twirl[twirl_pos]);
 
 			KB_flip(sys);
@@ -3528,7 +3623,7 @@ void draw_combat(KBcombat *war) {
 				dst.x = u->x * tile->w + local.map.x;
 				dst.y = u->y * tile->h + local.map.y;
 
-				SDL_Surface *troop = SDL_TakeSurface(GR_TROOP, u->troop_id, j); /* j -- side */
+				SDL_Surface *troop = SDL_TakeSurface(GR_TROOP, u->troop_id, 1);
 
 				SDL_BlitSurface(troop, &src, sys->screen, &dst);
 			}
@@ -3699,6 +3794,26 @@ int pick_target(KBcombat *war, int *x, int *y, int filter) {
 	return confirmed;
 }
 
+int unit_try_wait(KBcombat *war) {
+	KBunit *u = &war->units[war->side][war->unit_id];
+	KBtroop *t = &troops[u->troop_id];
+
+	if (war->phase) u->acted = 1;
+
+	KB_status_message("%s wait", t->name);
+
+	return 1;
+}
+
+void unit_try_pass(KBcombat *war) {
+	KBunit *u = &war->units[war->side][war->unit_id];
+	KBtroop *t = &troops[u->troop_id];
+
+	u->acted = 1;
+
+	KB_status_message("%s pass", t->name);
+}
+
 void unit_try_fly(KBcombat *war) {
 
 	int nx, ny;
@@ -3856,6 +3971,7 @@ void combat_loop(KBgame *game, KBcombat *combat) {
 
 	int ai_turn = 0;
 	int ai_think = 2;
+	int pass = 0;
 
 #define KEY_ACT(ACT) (COMBAT_ARROW_KEYS + 1 + COMBAT_ ## ACT)
 
@@ -3876,16 +3992,12 @@ void combat_loop(KBgame *game, KBcombat *combat) {
 			case KEY_ACT(SHOOT):    	unit_try_shoot(combat);	break;
 			case KEY_ACT(USE_MAGIC):
 
-				choose_spell(game, 0);
+				choose_spell(game, combat);
 
 			break;
 			case KEY_ACT(VIEW_CHAR):	view_character(game);	break;
-			case KEY_ACT(WAIT):
-
-			break;
-			case KEY_ACT(PASS):
-				KB_status_message("Unitia pass"); 
-			break;
+			case KEY_ACT(WAIT):     	pass = unit_try_wait(combat); 	break;
+			case KEY_ACT(PASS):     	unit_try_pass(combat); 	break;
 			default: break;
 		}
 
@@ -3909,7 +4021,9 @@ void combat_loop(KBgame *game, KBcombat *combat) {
 			redraw = 1;
 		}
 
-		if (combat->units[combat->side][combat->unit_id].acted) {
+		if (pass || combat->units[combat->side][combat->unit_id].acted) {
+
+			combat->units[combat->side][combat->unit_id].frame = 0;
 
 			if (!test_defeat(game, combat)) {
 
@@ -3931,6 +4045,7 @@ void combat_loop(KBgame *game, KBcombat *combat) {
 			}
 
 			redraw = 1;
+			pass = 0;
 		}
 
 		if (redraw) {
@@ -3945,6 +4060,79 @@ void combat_loop(KBgame *game, KBcombat *combat) {
 
 	}
 #undef KEY_ACT
+}
+
+
+int save_game(KBgame *game) {
+	int err;
+	char buffer[PATH_LEN];
+	KB_dircpy(buffer, sys->conf->save_dir);
+	KB_dirsep(buffer);
+	KB_strcat(buffer, game->savefile);
+	KB_strcat(buffer, "2");//TODO: Remove this '2', it's for debug purposes only
+
+	err = KB_saveDAT(buffer, game);
+	if (err) KB_errlog("Unable to save game '%s'\n", buffer);
+	else KB_stdlog("Saved game into '%s'\n", buffer);
+}
+
+KBgamestate quit_question = {
+	{
+		{	{ 0 }, 0xFF, 0, KFLAG_ANYKEY },
+		{	{ 0 }, SDLK_q, KMOD_CTRL, 0	},
+		0
+	},
+	0
+};
+int ask_quit_game(KBgame *game) {
+
+	save_game(game);
+
+	KB_BottomBox(NULL, "\nYour game has been saved.\n\nPress Control-Q to Quit or\nany other key to continue.", 0);
+
+	int done = 0;
+	while (!done) {
+		int key = KB_event(&quit_question);
+		if (key) done = key;
+	}
+
+	return 2 - done;
+}
+int ask_fast_quit(KBgame *game) {
+
+	const char *twirl = "\x1D" "\x05" "\x1F" "\x1C" ; /* stands for: | / - \ */
+	byte twirl_pos = 0;
+	word twirl_x, twirl_y;
+
+	KB_TopBox(" Quit to DOS without saving (y/n) ");
+
+	KB_getpos(sys, &twirl_x, &twirl_y);
+
+	int redraw = 1;
+	int done = 0;
+	while (!done) {
+		int key = KB_event(&yes_no_interactive);
+
+		if (key == 3) {
+			twirl_pos++;
+			if (twirl_pos > 3) twirl_pos = 0;
+			redraw = 1;
+		}
+		else
+		if (key) done = key;
+
+		if (redraw) {
+			redraw = 0;
+
+			KB_iloc(twirl_x, twirl_y);
+			KB_iprintf("%c", twirl[twirl_pos]);
+
+			KB_flip(sys);
+		}
+
+	}
+
+	return done - 1;
 }
 
 /* Main game loop (adventure screen) */
@@ -4019,7 +4207,7 @@ void adventure_loop(KBgame *game) {
 		}
 
 		if (key == KEY_ACT(USE_MAGIC)) {
-			choose_spell(game, 1);
+			choose_spell(game, NULL);
 		}
 
 		if (key == KEY_ACT(VIEW_CHAR)) {
@@ -4031,10 +4219,10 @@ void adventure_loop(KBgame *game) {
 		}
 
 		if (key == KEY_ACT(SAVE_QUIT)) {
-
+			if (!ask_quit_game(game)) done = 1;
 		}
 		if (key == KEY_ACT(FAST_QUIT)) {
-
+			if (!ask_fast_quit(game)) done = 1;
 		}
 
 		if (key == KEY_ACT(DISMISS_ARMY)) {

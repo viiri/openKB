@@ -88,6 +88,28 @@ typedef uint8_t 	byte  ;
 #define UNPACK_32_BE(C1, C2, C3, C4) \
         UNPACK_32_LE(C4, C3, C2, C1)
 
+#define PACK_16_LE(C1, C2, V) \
+	C1 = (V & 0xFF), \
+	C2 = ((V >> 8) & 0xFF)
+
+#define PACK_24_LE(C1, C2, C3, V) \
+	C1 = (V & 0xFF), \
+	C2 = ((V >> 8) & 0xFF), \
+	C3 = ((V >> 16) & 0xFF)
+
+#define PACK_32_LE(C1, C2, C3, C4, V) \
+	C1 = (V & 0xFF), \
+	C2 = ((V >> 8) & 0xFF), \
+	C3 = ((V >> 16) & 0xFF), \
+	C4 = ((V >> 24) & 0xFF)
+
+#define PACK_16_BE(C1, C2, V) \
+        PACK_16_LE(C2, C1, V)
+#define PACK_24_BE(C1, C2, C3, V) \
+        PACK_24_LE(C3, C2, C1, V)
+#define PACK_32_BE(C1, C2, C3, C4, V) \
+        PACK_32_LE(C4, C3, C2, C1, V)
+
 #if (KB_BYTE_ORDER == KB_LIL_ENDIAN)
 
 #define KB_SHIFT_RIGHT_WORD SHIFT_RIGHT_LE
@@ -106,6 +128,13 @@ typedef uint8_t 	byte  ;
 #define KB_UNPACK_WORDBE UNPACK_16_BE
 #define KB_UNPACK_SWORDBE UNPACK_24_BE
 #define KB_UNPACK_DWORDBE UNPACK_32_BE
+
+#define KB_PACK_WORD PACK_16_LE
+#define KB_PACK_SWORD PACK_24_LE
+#define KB_PACK_DWORD PACK_32_LE
+#define KB_PACK_WORDBE PACK_16_BE
+#define KB_PACK_SWORDBE PACK_24_BE
+#define KB_PACK_DWORDBE PACK_32_BE
 
 #else
 
@@ -126,6 +155,13 @@ typedef uint8_t 	byte  ;
 #define KB_UNPACK_SWORDBE UNPACK_24_LE
 #define KB_UNPACK_DWORDBE UNPACK_32_LE
 
+#define KB_PACK_WORD PACK_16_BE
+#define KB_PACK_SWORD PACK_24_BE
+#define KB_PACK_DWORD PACK_32_BE
+#define KB_PACK_WORDBE PACK_16_LE
+#define KB_PACK_SWORDBE PACK_24_LE
+#define KB_PACK_DWORDBE PACK_32_LE
+
 #endif
 
 #define READ_BYTE(PTR) *PTR++
@@ -136,5 +172,14 @@ typedef uint8_t 	byte  ;
 #define READ_WORD_BE(PTR) KB_UNPACK_WORDBE(*PTR, *(PTR+1)), PTR+=2
 #define READ_SWORD_BE(PTR) KB_UNPACK_SWORDBE(*PTR, *(PTR+1), *(PTR+2)), PTR+=3
 #define READ_DWORD_BE(PTR) KB_UNPACK_DWORDBE(*PTR, *(PTR+1), *(PTR+2), *(PTR+3)), PTR+=4
+
+#define WRITE_BYTE(PTR, DATA) *PTR++ = DATA
+#define WRITE_WORD(PTR, DATA) KB_PACK_WORD(*PTR, *(PTR+1), DATA), PTR+=2
+#define WRITE_SWORD(PTR, DATA) KB_PACK_SWORD(*PTR, *(PTR+1), *(PTR+2), DATA), PTR+=3
+#define WRITE_DWORD(PTR, DATA) KB_PACK_DWORD(*PTR, *(PTR+1), *(PTR+2), *(PTR+3), DATA), PTR+=4
+
+#define WRITE_WORD_BE(PTR, DATA) KB_PACK_WORDBE(*PTR, *(PTR+1), DATA), PTR+=2
+#define WRITE_SWORD_BE(PTR, DATA) KB_PACK_SWORDBE(*PTR, *(PTR+1), *(PTR+2), DATA), PTR+=3
+#define WRITE_DWORD_BE(PTR, DATA) KB_PACK_DWORDBE(*PTR, *(PTR+1), *(PTR+2), *(PTR+3), DATA), PTR+=4
 
 #endif /* _OPENKB_LIBKB_SYS */

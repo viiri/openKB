@@ -267,6 +267,15 @@ void raise_control(KBgame *game) {
 	game->leadership += game->spell_power * 100;
 }
 
+int clone_troop(KBgame *game, KBcombat *war, int unit_id) {
+	/* #Clones = SpellPower * 10 / Troop.HP */
+	int clones = game->spell_power * 10 /
+		troops[war->units[0][unit_id].troop_id].hit_points;
+	war->units[0][unit_id].count += clones;
+	war->units[0][unit_id].max_count += clones;
+	return clones;
+}
+
 /** Combat **/
 
 /* Return 0 when player is out of his army, 1 otherwise */
@@ -292,6 +301,7 @@ void prepare_units_player(KBcombat *war, int side, KBgame *game) {
 	{
 		war->units[side][i].troop_id = game->player_troops[i];
 		war->units[side][i].count = game->player_numbers[i];
+		war->units[side][i].max_count = war->units[side][i].count;
 		war->units[side][i].y = i;
 		war->units[side][i].x = side * (CLEVEL_W - 1);
 	}
@@ -305,6 +315,7 @@ void prepare_units_foe(KBcombat *war, int side, KBgame *game, int continent_id, 
 	{
 		war->units[side][i].troop_id = game->follower_troops[continent_id][foe_id][i];
 		war->units[side][i].count = game->follower_numbers[continent_id][foe_id][i];
+		war->units[side][i].max_count = war->units[side][i].count; 
 		war->units[side][i].y = i;
 		war->units[side][i].x = side * (CLEVEL_W - 1);
 	}
@@ -341,6 +352,7 @@ void reset_turn(KBcombat *war) {
 			war->units[j][i].flights = 2;
 	}
 	war->phase = 0;
+	war->spells = 0;
 } 
 
 void wipe_battlefield(KBcombat *war) {
@@ -461,4 +473,15 @@ int unit_ranged_shot(KBcombat *war, int side, int id, int other_side, int other_
 	kills = damage / troops[other->troop_id].hit_points;
 
 	return kills;	
+}
+
+/* Move unit "side/id" to a new location "nx,ny" */
+void unit_relocate(KBcombat *war, int side, int id, int nx, int ny) {
+	KBunit *u = &war->units[side][id];
+
+	war->umap[u->y][u->x] = 0;
+	war->umap[ny][nx] = (side * MAX_UNITS) + id + 1;
+
+	u->x = nx;
+	u->y = ny;
 }
