@@ -72,6 +72,10 @@
 #define GR_ARTIFACT	0x35	/* filled map; subId - artifact index (0-7) */
 #define GR_ORBMAP	0x36	/* filled map; subId - continent index (0-3) */
 
+#define GR_ENDING	0x40	/* subId - 0=won, 1=lost */
+#define GR_ENDTILE	0x41	/* subId - 0=grass, 1=wall, 2=hero */
+#define GR_ENDTILES	0x42	/* subId - undefined */
+
 #define SN_TUNE		0x60	/* subId - tune index (0-10) */
 #define PAL_PALETTE	0x70	/* subId - undefined */
 #define COL_TEXT	0x71	/* subId - undefined */
@@ -91,6 +95,7 @@
 #define STR_VNAME	0xE3	/* villain name ; subId - villain index */
 #define STR_VDESC	0xE4	/* villain description line ; subId - line (villain index * 14) */
 #define STR_CREDIT	0xE5	/* a line of credits ; subId - line */
+#define STR_ENDING	0xE6	/* line of ending text ; subId - line, 100<=game won, >100=game lost */
 
 #define STRL_SIGNS	0xF0	/* signpost texts ; subId - undefined */
 #define STRL_TROOPS	0xF1	/* troop names ; subId - undefined */
@@ -98,6 +103,7 @@
 #define STRL_VNAMES 0xF3	/* villains names ; subId - undefined */
 #define STRL_VDESCS 0xF4	/* villains descriptions ; subId - villain id */
 #define STRL_CREDITS 0xF5	/* credits ; subId - undefined */
+#define STRL_ENDINGS 0xF6	/* ending text ; subId - 0=game won, 1=game lost */
 
 #define FRAME_TOP   	0
 #define FRAME_LEFT  	1

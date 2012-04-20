@@ -142,6 +142,12 @@ char* DOS_read_strings(KBmodule *mod, int off, int endoff) {
 	return buf;
 }
 
+void DOS_compact_strings(KBmodule *mod, char *buf, int len) {
+	int i;
+	for (i = 0; i < len - 1; i++)
+		if (buf[i] == '\0') buf[i] = '\n';
+}
+
 char *DOS_troop_names[] = {
     "peas","spri","mili","wolf","skel","zomb","gnom","orcs","arcr","elfs",
     "pike","noma","dwar","ghos","kght","ogre","brbn","trol","cavl","drui",
@@ -265,6 +271,41 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 						char buffl[8];
 			sprintf(buffl, "#%d", sub_id);
 			ident = &buffl[0];
+		}
+		break;
+		case GR_ENDING:	/* subId - 0=won, 1=lost */
+		{
+			/* Ending screen */
+			method = RAW_IMG;
+			middle_name = "endpic";
+			suffix = bpp_names[mod->bpp];
+			if (sub_id) {
+				ident = "#1";
+			} else {
+				ident = "#0";
+			}
+		}
+		break;
+		case GR_ENDTILE:	/* subId - 0=grass, 1=wall, 2=hero */
+		{
+			/* Ending tile */
+			method = RAW_IMG;
+			middle_name = "endpic";
+			suffix = bpp_names[mod->bpp];
+			char buffl[8];
+			sprintf(buffl, "#%d", sub_id - 2);
+			ident = &buffl[0];
+		}
+		break;
+		case GR_ENDTILES:
+		{
+			/* Ending tiles */
+			method = IMG_ROW;
+			middle_name = "endpic";
+			suffix = bpp_names[mod->bpp];
+			ident = "";
+			row_start = 2;
+			row_frames = 3;
 		}
 		break;
 		case GR_FONT:
@@ -565,6 +606,24 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 		case STRL_CREDITS:
 		{
 			return DOS_read_strings(mod, 0x16031, 0x160FF);
+		}
+		break;
+		case STR_ENDING: /* subId - string index (indexes above 100 indicate next group) */
+		{
+			/* A small string containing part of the ending message. */
+			if (sub_id > 100)	/* Game lost */
+				return KB_strlist_ind(DOS_Resolve(mod, STRL_ENDINGS, 1), sub_id - 100);
+			else            	/* Game won */
+				return KB_strlist_ind(DOS_Resolve(mod, STRL_ENDINGS, 0), sub_id);
+		}
+		break;
+		case STRL_ENDINGS:
+		{
+			/* Returns large buffer of \0-separated strings, forming an ending text */
+			if (sub_id) /* Game lost */
+				return DOS_read_strings(mod, 0x1B0E3, 0x1B212);
+			else    	/* Game won */
+				return DOS_read_strings(mod, 0x1AFB4, 0x1B0E2);
 		}
 		break;
 		case RECT_MAP:

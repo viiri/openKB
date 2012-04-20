@@ -48,11 +48,11 @@ extern void dismiss_troop(KBgame *game, byte slot);
 
 /** Game events **/
 
-extern void end_day(KBgame *game);
+extern int end_day(KBgame *game);
 
 extern void end_week(KBgame *game);
 
-extern void spend_days(KBgame *game, word days);
+extern int spend_days(KBgame *game, word days);
 
 extern void spend_week(KBgame *game);
 
