@@ -3641,7 +3641,7 @@ void draw_map(KBgame *game, int tick) {
 	for (j = 0; j < perim_h; j++)
 	for (i = 0; i < perim_w; i++) {
 
-		byte tile = KB_GetMapTile(game, game->continent, game->y, game->x); 
+		byte tile = KB_GetMapTile(game, game->continent, border_y + j, border_x + i); 
 
 		pos.x = i * (pos.w) + local.map.x;
 		pos.y = (perim_h - 1 - j) * (pos.h) + local.map.y;
