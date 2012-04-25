@@ -32,10 +32,6 @@ typedef struct KBenv {
 
 	KBconfig *conf;
 
-	Uint32 fg_color;
-	Uint32 bg_color;
-	Uint32 ui_color;
-
 	word cursor_x;	/* Text position */
 	word cursor_y;
 	word base_x;	/* Pixel offset */

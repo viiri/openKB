@@ -26,7 +26,7 @@
  *
  * GR_ resources are ready-to-blit SDL_Surfaces.
  * SN_ resources are tunes in ? format
- * PAL_ are arrays of 255 SDL_Colors.
+ * PAL_ are arrays of 256 SDL_Colors.
  * DAT_ are byte arrays of pre-defined length.
  * STR_ are asiiz strings.
  * STRL_ are asiiz-lists (\0 acts as a separator, \0\0 ends the list).
@@ -78,7 +78,7 @@
 
 #define SN_TUNE		0x60	/* subId - tune index (0-10) */
 #define PAL_PALETTE	0x70	/* subId - undefined */
-#define COL_TEXT	0x71	/* subId - undefined */
+#define COL_TEXT	0x71	/* textbox colorscheme ; subId - scheme type, see CS_ defines below */
 #define COL_MINIMAP	0x72	/* subId - undefined */
 
 #define DAT_WORLD	0x90	/* complete world map ; subId - undefined */
@@ -105,11 +105,74 @@
 #define STRL_CREDITS 0xF5	/* credits ; subId - undefined */
 #define STRL_ENDINGS 0xF6	/* ending text ; subId - 0=game won, 1=game lost */
 
+/* Possible values for RECT_UI subid: */
 #define FRAME_TOP   	0
 #define FRAME_LEFT  	1
 #define FRAME_RIGHT 	2
 #define FRAME_BOTTOM	3
 #define FRAME_MIDDLE	4
+
+/* Refrence to EGA pallete, mostly used by DOS module. */
+#define EGA_BLACK	0
+#define EGA_DBLUE	1
+#define EGA_DGREEN	2
+#define EGA_DCYAN	3
+#define EGA_DRED	4
+#define EGA_MAGENTA	5
+#define EGA_BROWN	6
+#define EGA_GREY	7
+#define EGA_DGREY	8
+#define EGA_BLUE	9
+#define EGA_GREEN	10
+#define EGA_CYAN	11
+#define EGA_RED 	12
+#define EGA_VIOLET	13
+#define EGA_YELLOW	14
+#define EGA_WHITE	15
+#define EGA_DVIOLET EGA_MAGENTA
+#define EGA_DYELLOW EGA_BROWN
+
+/* Possible values for COL_TEXT subid: */
+#define CS_GENERIC	0
+#define CS_STATUS_1	1
+#define CS_STATUS_2	2
+#define CS_STATUS_3	3
+#define CS_STATUS_4	4
+#define CS_STATUS_5	5
+#define CS_TOPMENU	6
+#define CS_CHROME	7
+#define CS_MINIMENU	8
+
+/* Color scheme for COL_TEXT: */
+enum {
+	COLOR_BACKGROUND,
+	COLOR_TEXT1,
+	COLOR_TEXT = COLOR_TEXT1,
+	COLOR_TEXT2,
+	COLOR_TEXT3,
+	COLOR_TEXT4,
+	COLOR_SHADOW1,
+	COLOR_SHADOW = COLOR_SHADOW1,
+	COLOR_SHADOW2,
+	COLOR_FRAME1,
+	COLOR_FRAME = COLOR_FRAME1,
+	COLOR_FRAME2,
+
+	COLOR_SEL_BACKGROUND,
+	COLOR_SELECTION = COLOR_SEL_BACKGROUND, //Mark first used "SEL_" value
+	COLOR_SEL_TEXT1,
+	COLOR_SEL_TEXT = COLOR_SEL_TEXT1,
+	COLOR_SEL_TEXT2,
+	COLOR_SEL_TEXT3,
+	COLOR_SEL_TEXT4,
+	COLOR_SEL_SHADOW1,
+	COLOR_SEL_SHADOW = COLOR_SEL_SHADOW1,
+	COLOR_SEL_SHADOW2,
+	COLOR_SEL_FRAME1,
+	COLOR_SEL_FRAME2,
+
+	COLORS_MAX
+};
 
 /* Tile indexes from DOS version. */
 #define TILE_GRASS      	0
@@ -156,6 +219,7 @@ extern void put_cga_pal(SDL_Surface *dest);
 extern void put_ega_pal(SDL_Surface *dest);
 extern void put_vga_pal(SDL_Surface *dest);
 extern void put_color_pal(SDL_Surface *dest, Uint32 fore, Uint32 back);
+extern Uint32 ega_pallete_rgb[16]; 
 
 
 /* Provide useful functions to potential resource loader */

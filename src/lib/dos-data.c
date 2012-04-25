@@ -490,20 +490,20 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 				CASTLE,
 				MAP_OBJECT,
 			} tile_type;
-			Uint32 ega_minimap_index[8] = {
-				0x0000FF,
-				0x0000AA,
-				0x00FF00,
-				0xFFFF55,
-				0xAA5500,
-				0x00AA00,
-				0xFFFFFF,
-				0xFF0000,
+			byte ega_minimap_index[8] = {
+				EGA_BLUE,
+				EGA_DBLUE,
+				EGA_GREEN,
+				EGA_YELLOW,
+				EGA_BROWN,
+				EGA_DGREEN,
+				EGA_WHITE,
+				EGA_DRED,
 			};
-			static Uint32 colors[255];
+			static Uint32 colors[256];
 
-			byte tile;
-			for (tile = 0; tile < 255; tile++) {
+			int tile;
+			for (tile = 0; tile < 256; tile++) {
 
 				if ( IS_GRASS(tile) ) tile_type = GRASS;
 				else if ( IS_DEEP_WATER(tile) ) tile_type = DEEP_WATER;
@@ -514,18 +514,150 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 				else if ( IS_CASTLE(tile) ) tile_type = CASTLE;
 				else if ( IS_MAPOBJECT(tile) || IS_INTERACTIVE(tile)) tile_type = MAP_OBJECT;
 
-				colors[tile] = ega_minimap_index[tile_type];
+				colors[tile] = ega_pallete_rgb[ega_minimap_index[tile_type]];
 			}
 			return &colors;
 		}
 		break;
 		case COL_TEXT:
 		{
-			static Uint32 colors[16] = {
-				0xAA0000, 0xFFFFFF,
-				0xAA0000, 0xFFFFFF,
+			byte ega_scheme_chrome_index[] = {
+				EGA_BLACK,	// background
+				EGA_WHITE,	// text1
+				EGA_WHITE,	// text2
+				EGA_WHITE,	// text3
+				EGA_WHITE,	// text4
+				EGA_MAGENTA,// shadow1
+				EGA_MAGENTA,// shadow2
+				EGA_WHITE,	// frame1
+				EGA_WHITE,	// frame2
+				EGA_WHITE,	// sel_background
+				EGA_BLACK,	// sel_text1
+				EGA_BLACK,	// sel_text2
+				EGA_BLACK,	// sel_text3
+				EGA_BLACK,	// sel_text4
+				EGA_MAGENTA,// sel_shadow1
+				EGA_MAGENTA,// sel_shadow2
+				EGA_WHITE,	// sel_frame1
+				EGA_WHITE,	// sel_frame2
 			};
-			return &colors; 
+			byte ega_scheme_status_index[] = {
+				EGA_DRED,	// background
+				EGA_WHITE,	// text1
+				EGA_WHITE,	// text2
+				EGA_WHITE,	// text3
+				EGA_WHITE,	// text4
+				EGA_MAGENTA,// shadow1
+				EGA_MAGENTA,// shadow2
+				EGA_YELLOW,	// frame1
+				EGA_YELLOW,	// frame2
+				EGA_DRED,	// sel_background
+				EGA_WHITE,	// sel_text1
+				EGA_WHITE,	// sel_text2
+				EGA_WHITE,	// sel_text3
+				EGA_WHITE,	// sel_text4
+				EGA_MAGENTA,// sel_shadow1
+				EGA_MAGENTA,// sel_shadow2
+				EGA_YELLOW,	// sel_frame1
+				EGA_YELLOW,	// sel_frame2
+			};
+			byte ega_scheme_menu_index[] = {
+				EGA_DBLUE,	// background
+				EGA_WHITE,	// text1
+				EGA_WHITE,	// text2
+				EGA_WHITE,	// text3
+				EGA_WHITE,	// text4
+				EGA_MAGENTA,// shadow1
+				EGA_MAGENTA,// shadow2
+				EGA_YELLOW,	// frame1
+				EGA_YELLOW,	// frame2
+				EGA_DBLUE,	// sel_background
+				EGA_WHITE,	// sel_text1
+				EGA_WHITE,	// sel_text2
+				EGA_WHITE,	// sel_text3
+				EGA_WHITE,	// sel_text4
+				EGA_MAGENTA,// sel_shadow1
+				EGA_MAGENTA,// sel_shadow2
+				EGA_YELLOW,	// sel_frame1
+				EGA_YELLOW,	// sel_frame2
+			};			
+			byte ega_scheme_mb_index[] = {
+				EGA_DBLUE,	// background
+				EGA_WHITE,	// text1
+				EGA_WHITE,	// text2
+				EGA_WHITE,	// text3
+				EGA_WHITE,	// text4
+				EGA_MAGENTA,// shadow1
+				EGA_MAGENTA,// shadow2
+				EGA_YELLOW,	// frame1
+				EGA_YELLOW,	// frame2
+				EGA_WHITE,	// sel_background
+				EGA_BLUE,	// sel_text1
+				EGA_BLUE,	// sel_text2
+				EGA_BLUE,	// sel_text3
+				EGA_BLUE,	// sel_text4
+				EGA_MAGENTA,// sel_shadow1
+				EGA_MAGENTA,// sel_shadow2
+				EGA_MAGENTA,// sel_frame1
+				EGA_MAGENTA,// sel_frame2
+			};
+			byte ega_scheme_savefile_index[] = {
+				EGA_BLUE,	// background
+				EGA_WHITE,	// text1
+				EGA_WHITE,	// text2
+				EGA_WHITE,	// text3
+				EGA_WHITE,	// text4
+				EGA_MAGENTA,// shadow1
+				EGA_MAGENTA,// shadow2
+				EGA_MAGENTA,// frame1
+				EGA_MAGENTA,// frame2
+				EGA_WHITE,	// sel_background
+				EGA_BLUE,	// sel_text1
+				EGA_BLUE,	// sel_text2
+				EGA_BLUE,	// sel_text3
+				EGA_BLUE,	// sel_text4
+				EGA_MAGENTA,// sel_shadow1
+				EGA_MAGENTA,// sel_shadow2
+				EGA_MAGENTA,// sel_frame1
+				EGA_MAGENTA,// sel_frame2
+			};
+			byte *ega_index_ptr;
+			int i;
+			Uint32 *colors;
+
+			colors = malloc(sizeof(Uint32) * COLORS_MAX);
+			if (colors == NULL) return NULL;
+
+			switch (sub_id) {
+				case CS_MINIMENU:	/* Savefile selection */
+					ega_index_ptr = ega_scheme_savefile_index;
+					break;
+				case CS_CHROME: 	/* Bare UI */
+					ega_index_ptr = ega_scheme_chrome_index;
+					break;
+				case CS_TOPMENU:	/* Menu */
+					ega_index_ptr = ega_scheme_menu_index;
+					break;
+				case CS_STATUS_1: /* Status bar .. by difficulty */
+				case CS_STATUS_2:
+				case CS_STATUS_3:
+				case CS_STATUS_4:
+				case CS_STATUS_5:
+					ega_index_ptr = ega_scheme_status_index;
+					break;
+				case CS_GENERIC:
+				default: /* Default Message Box */
+					ega_index_ptr = ega_scheme_mb_index;
+					break;
+			}
+
+			for (i = 0; i < COLORS_MAX; i++) {
+
+				colors[i] = ega_pallete_rgb[ega_index_ptr[i]];
+
+			}
+
+			return colors;
 		}	
 		break;
 		case STR_SIGN:

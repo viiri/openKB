@@ -80,9 +80,7 @@ KBenv *KB_startENV(KBconfig *conf) {
 	nsys->font_size.w = 8;
 	nsys->font_size.h = 8;
 
-	nsys->bg_color = 0;
-	nsys->fg_color = 0xFFFFFF;
-	nsys->ui_color = 0xFFFFFF;
+	//TODO: default font color
 
 	return nsys;
 }

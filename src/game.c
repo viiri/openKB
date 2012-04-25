@@ -52,9 +52,15 @@ struct {
 	int boat_flip;
 	int hero_flip;
 
+	/* Each "Uint32*" is a pointer to an array of 256 Uint32 colors 
+	 * that follow enum COLOR_ convention */
+	Uint32* message_colors;
+	Uint32* status_colors;
+	Uint32* topmenu_colors;
+
 } local = { NULL };
 
-void update_frames();
+void update_ui_frames();
 
 void prepare_resources() {
 
@@ -73,7 +79,11 @@ void prepare_resources() {
 	local.map_tile = RECT_LoadRESOURCE(RECT_TILE, 0);
 	local.side_tile = RECT_LoadRESOURCE(RECT_UITILE, 0);
 
-	update_frames();
+	local.message_colors = KB_Resolve(COL_TEXT, CS_GENERIC);
+	local.status_colors = KB_Resolve(COL_TEXT, CS_STATUS_2);
+	local.topmenu_colors = KB_Resolve(COL_TEXT, CS_TOPMENU);
+
+	update_ui_frames();
 }
 
 void free_resources() {
@@ -90,12 +100,21 @@ void free_resources() {
 
 	free(local.map_tile);
 	free(local.side_tile);
-	
+
+	free(local.message_colors);
+	free(local.status_colors);
+	free(local.topmenu_colors);
+
 	SDL_FreeCachedSurfaces();
-	
+
 }
 
-void update_frames() {
+void update_ui_colors(KBgame *game) {
+	if (local.status_colors) free(local.status_colors);
+	local.status_colors = KB_Resolve(COL_TEXT, CS_STATUS_1 + game->difficulty);
+}
+
+void update_ui_frames() {
 
 	SDL_Surface *screen = sys->screen;
 	SDL_Rect *fs = &sys->font_size;
@@ -642,21 +661,13 @@ inline void KB_Pause() {
  	while (!KB_event(&press_any_key)) SDL_Delay(10);
 }
 
-/* Change active colors */
-void KB_MessageColor(Uint32 bg, Uint32 fg, Uint32 frame) {
-	sys->bg_color = bg;
-	sys->fg_color = fg;
-	sys->ui_color = frame;
-	incolor(fg, bg);
-}
-
 /* Display a message. Wait for a key to discard. */
 SDL_Rect* KB_MessageBox(const char *str, int wait) {
 
 	SDL_Surface *screen = sys->screen;
-	Uint32 bg = sys->bg_color;
-	Uint32 fg = sys->fg_color;
-	Uint32 ui = sys->ui_color;
+	Uint32 bg = local.message_colors[COLOR_BACKGROUND];
+	Uint32 fg = local.message_colors[COLOR_TEXT];
+	Uint32 ui = local.message_colors[COLOR_FRAME];
 
 	SDL_Rect *fs = &sys->font_size;
 
@@ -726,9 +737,9 @@ SDL_Rect* KB_MessageBox(const char *str, int wait) {
 SDL_Rect* KB_BottomFrame() {
 	SDL_Surface *screen = sys->screen;
 
-	Uint32 bg = sys->bg_color;
-	Uint32 fg = sys->fg_color;
-	Uint32 ui = sys->ui_color;
+	Uint32 bg = local.message_colors[COLOR_BACKGROUND];
+	Uint32 fg = local.message_colors[COLOR_TEXT];
+	Uint32 ui = local.message_colors[COLOR_FRAME];
 
 	SDL_Rect *fs = &sys->font_size;
 	
@@ -782,12 +793,13 @@ SDL_Rect* KB_BottomBox(const char *header, const char *str, int wait) {
 
 SDL_Rect* KB_TopBox(const char *str) {
 
-	Uint32 *colors = KB_Resolve(COL_TEXT, 0);	
+	Uint32 *colors = local.status_colors;
 
 	/* Clean line */
-	SDL_FillRect(sys->screen, &local.status, colors[0]);
+	SDL_FillRect(sys->screen, &local.status, colors[COLOR_BACKGROUND]);
 
 	/* Print string */
+	KB_icolor(colors);
 	KB_iloc(local.status.x, local.status.y + 1);
 	KB_iprint(str);
 
@@ -805,13 +817,14 @@ void KB_status_message(const char *fmt, ...)
 	vsprintf(msg, fmt, argptr);
 	va_end(argptr);
 
-	/* Get colors :( Not like this tho! */
-	colors = KB_Resolve(COL_TEXT, 0); //YUCK
+	/* Get colors */
+	colors = local.status_colors;
 
 	/* Fill status bar area */
-	SDL_FillRect(sys->screen, &local.status, colors[0]);
+	SDL_FillRect(sys->screen, &local.status, colors[COLOR_BACKGROUND]);
 
 	/* Move cursor there, and print the message */
+	KB_icolor(colors);
 	KB_iloc(local.status.x, local.status.y + 1);
 	KB_iprint(" ");
 	KB_iprint(msg);
@@ -918,6 +931,8 @@ KBgame *load_game() {
 	SDL_Surface *screen = sys->screen;
 	KBconfig *conf = sys->conf;
 	
+	Uint32 *colors = local.message_colors;
+	Uint32 *colors_inner = KB_Resolve(COL_TEXT, CS_MINIMENU);
 	KBgame *game = NULL;
 
 	int done = 0;
@@ -927,6 +942,7 @@ KBgame *load_game() {
 	int sel = 0;
 
 	SDL_Rect menu;
+	SDL_Rect menu_inner;
 
 	char filename[10][16];
 	char fullname[10][16];
@@ -987,6 +1003,12 @@ KBgame *load_game() {
 		savegame_selection.spots[i + 3].coords.h = fs->h;
 	}
 
+	/* Inner menu position and size */
+	menu_inner.x = menu.x + fs->w*4 + fs->w/2;
+	menu_inner.y = menu.y + fs->h*4 - fs->h/4;
+	menu_inner.w = menu.w - fs->w*7;
+	menu_inner.h = fs->h * num_files + (fs->h/4)*2;
+
 	while (!done) {
 
 		key = KB_event( &savegame_selection );
@@ -1022,23 +1044,25 @@ KBgame *load_game() {
 
 			int i;
 
-			SDL_TextRect(screen, &menu, 0xFFFFFF, 0x000000);
+			SDL_TextRect(screen, &menu, colors[COLOR_FRAME], colors[COLOR_BACKGROUND]);
 
-			incolor(0xFFFFFF, 0x000000);
+			incolor(colors[COLOR_TEXT], colors[COLOR_BACKGROUND]);
 			inprint(screen, " Select game:", menu.x + fs->w, menu.y + fs->w - fs->w/2);
 			inprint(screen, "   Overlord  ", menu.x + fs->w, menu.y + fs->w*2);
 			inprint(screen, "             ", menu.x + fs->w, menu.y + fs->w*4 - fs->w/2);
+			
+			SDL_FillRect(screen, &menu_inner, colors_inner[COLOR_BACKGROUND]);
 
 			for (i = 0; i < num_files; i++) {
-				incolor(0xFFFFFF, 0x000000);
+				incolor(colors[COLOR_TEXT], colors[COLOR_BACKGROUND]);
 				char buf[4];sprintf(buf, "%d.", i + 1);
 				inprint(screen, buf, menu.x + fs->w*2, fs->h * i + menu.y + fs->h*4);
-
-				if (i == sel) incolor(0x000000, 0xFFFFFF);
+				incolor(colors_inner[COLOR_TEXT], colors_inner[COLOR_BACKGROUND]);
+				if (i == sel) incolor(colors_inner[COLOR_SEL_TEXT], colors_inner[COLOR_SEL_BACKGROUND]);
 				inprint(screen, filename[i], menu.x + fs->w * 5, fs->h * i + menu.y + fs->h*4);
 			}
 
-	incolor(0xFFFFFF, 0x000000);
+	incolor(local.status_colors[COLOR_TEXT], local.status_colors[COLOR_BACKGROUND]);
 	inprint(screen, " 'ESC' to exit \x18\x19 Return to Select  ", local.status.x, local.status.y);
 
 	    	SDL_Flip( screen );
@@ -1047,7 +1071,7 @@ KBgame *load_game() {
 		}
 
 	}
-
+	free(colors_inner);
 	return game;
 }
 
@@ -1058,8 +1082,6 @@ void show_credits() {
 	SDL_Surface *userpic = SDL_LoadRESOURCE(GR_SELECT, 2, 0);
 
 	SDL_Rect *max;
-
-	KB_MessageColor(0x0000AA, 0xFFFFFF, 0xFFFF55);
 
 	char *credits = KB_Resolve(STRL_CREDITS, 0);
 	if (credits == NULL) return;
@@ -1104,7 +1126,7 @@ KBgame *select_game(KBconfig *conf) {
 
 	KBgame *game = NULL;
 
-	Uint32 *colors = KB_Resolve(COL_TEXT, 0);
+	Uint32 *colors = KB_Resolve(COL_TEXT, CS_CHROME);
 
 	SDL_Surface *title = SDL_LoadRESOURCE(GR_SELECT, 0, 0);
 
@@ -1122,7 +1144,7 @@ KBgame *select_game(KBconfig *conf) {
 
 			if (!credits) {
 				KB_iloc(local.status.x, local.status.y);
-				KB_icolor(colors);
+				KB_icolor(local.status_colors);
 				KB_iprint("Select Char A-D or L-Load saved game");
 			}
 
@@ -1692,13 +1714,13 @@ void view_minimap(KBgame *game) {
 	border.y += fs->h;
 	border.x -= fs->w * 3;
 
-	Uint32 *colors = KB_Resolve(COL_TEXT, 0);
+	Uint32 *colors = local.message_colors;
 
 	Uint32 *map_colors = KB_Resolve(COL_MINIMAP, 0);
 
 	SDL_Surface *tile = SDL_LoadRESOURCE(GR_PURSE, 0, 0);
 
-	SDL_TextRect(sys->screen, &border, colors[0], colors[1]);
+	SDL_TextRect(sys->screen, &border, colors[COLOR_BACKGROUND], colors[COLOR_TEXT]);
 
 	SDL_Rect map;
 
@@ -1787,11 +1809,11 @@ void view_contract(KBgame *game) {
 	
 	border.y += fs->h/2;
 
-	Uint32 *colors = KB_Resolve(COL_TEXT, 0);
+	Uint32 *colors = local.message_colors;
 
 	SDL_Surface *tile = SDL_LoadRESOURCE(GR_PURSE, 0, 0);
 
-	SDL_TextRect(sys->screen, &border, colors[0], colors[1]);
+	SDL_TextRect(sys->screen, &border, colors[COLOR_BACKGROUND], colors[COLOR_TEXT]);
 
 	SDL_Rect hdst = { border.x + fs->w, border.y + fs->h, tile->w, tile->h };
 
@@ -3154,9 +3176,9 @@ int choose_spell(KBgame *game, KBcombat *combat) {
 	
 	border.y -= fs->h;
 
-	Uint32 *colors = KB_Resolve(COL_TEXT, 0);
+	Uint32 *colors = local.message_colors;
 
-	SDL_TextRect(sys->screen, &border, colors[0], colors[1]);
+	SDL_TextRect(sys->screen, &border, colors[COLOR_BACKGROUND], colors[COLOR_TEXT]);
 
 	KB_TopBox("        Press 'ESC' to exit");
 
@@ -3770,10 +3792,10 @@ void draw_damage(KBcombat *war, KBunit *u) {
 
 void draw_combat_statusbar(KBcombat *war) {
 
-	Uint32 *colors = KB_Resolve(COL_TEXT, 0); //YUCK
+	Uint32 *colors = local.status_colors;
 
 	/* Status bar */
-	SDL_FillRect(sys->screen, &local.status, colors[0]);
+	SDL_FillRect(sys->screen, &local.status, colors[COLOR_BACKGROUND]);
 
 	if (war->side) return;
 
@@ -4255,7 +4277,7 @@ void adventure_loop(KBgame *game) {
 
 	SDL_Surface *screen = sys->screen;
 
-	Uint32 *colors = KB_Resolve(COL_TEXT, 0);
+	Uint32 *colors = local.message_colors;
 
 	SDL_Rect status_rect = { local.status.x, local.status.y, local.status.w, local.status.h };
 
@@ -4500,7 +4522,8 @@ void adventure_loop(KBgame *game) {
 			draw_sidebar(game, tick);
 
 			/* Status bar */
-			SDL_FillRect(screen, &status_rect, colors[0]);
+			SDL_FillRect(screen, &status_rect, local.status_colors[COLOR_BACKGROUND]);
+			KB_icolor(local.status_colors);
 			KB_iloc(status_rect.x, status_rect.y + 1);
 			KB_printf(sys, " Options / Controls / Days Left:%d ", game->days_left);
 
@@ -4570,6 +4593,9 @@ int run_game(KBconfig *conf) {
 
 		/* And log it into stdout */
 		KB_stdlog("%s the %s (%d days left)\n", game->name, classes[game->class][game->rank].title, game->days_left);
+
+		/* HACK - Update color resource based on difficulty setting */
+		update_ui_colors(game);
 
 		/* PLAY THE GAME */
 		adventure_loop(game);
