@@ -1439,6 +1439,33 @@ void KB_BlitMap(SDL_Surface *dest, SDL_Surface *tileset, SDL_Rect *viewport) {
 
 }
 
+inline byte KB_GetMapTile(KBgame *game, byte continent, int y, int x) {
+	/* If coordinates are in bounds, return the tile */
+	return  (y >= 0 && y < LEVEL_W - 1 && x >= 0 && x <= LEVEL_H - 1) 
+			? game->map[continent][y][x] & 0x7F /* ***WITH INTERACTIVITY BIT REMOVED*** */
+			: TILE_DEEP_WATER; /* otherwise, return water tile */
+}
+
+void KB_DrawMapTile(SDL_Surface *dest, SDL_Rect *dest_rect,	SDL_Surface *tileset, byte m) {
+
+	SDL_Rect src;
+	int th, tw;
+
+	/* Calculate needed offsets on the 8x? tileset */
+	th = m / 8;
+	tw = m - (th * 8);
+
+	src.w = dest_rect->w;
+	src.h = dest_rect->h;
+	src.x = tw * src.w;
+	src.y = th * src.h;
+
+/*	pos.x = i * (pos.w) + local.map.x;
+	pos.y = (perim_h - 1 - j) * (pos.h) + local.map.y; */
+
+	SDL_BlitSurface(tileset, &src, dest, dest_rect);
+}
+
 
 KBgamestate yes_no_question = {
 	{
@@ -1499,106 +1526,149 @@ void draw_location(int loc_id, int troop_id, int frame) {
 	free(top_frame);
 	free(bar_frame);
 }
-
+/*
+ * Puzzle map screen.
+ *
+ * DOS aesthetics:
+ *  first, "Press 'ESC' to exit" is displayed.
+ *  then, whole puzzle map is shown
+ *  then, it gets cleared piece by piece from top left corner
+ *  artifacts actually go first, then villains
+ *  while the clearing is performed, villains continue their animation routine.
+ * NOTE:
+ *  Other modules might require different aesthetics later :(
+ */
 void view_puzzle(KBgame *game) {
 
 	SDL_Surface *artifacts = SDL_LoadRESOURCE(GR_VIEW, 0, 0);
-	
 	SDL_Surface *tile = SDL_LoadRESOURCE(GR_TILE, 0, 0);
-	
 	SDL_Surface *tileset = SDL_LoadRESOURCE(GR_TILESET, 0, 0);
 
-	SDL_Surface *faces[MAX_VILLAINS];
+	SDL_Surface *faces[MAX_VILLAINS]; /* Initialized below */
 
+	/* Local variables to handle "opening" animation */ 
+	int opened[PUZZLEMAP_W][PUZZLEMAP_H] = { 0 };
+	int open_x = 0;
+	int open_y = 0;
+	enum {
+		BEGIN,
+		ARTIFACTS,
+		VILLAINS,
+		DONE,
+	} open_mode = BEGIN;
 
-	/*---*/
-	SDL_Rect *fs = &sys->font_size;
+	/* Puzzle map is drawn over regular map */
 	SDL_Rect pos;
-	SDL_Rect *left_frame = RECT_LoadRESOURCE(RECT_UI, 1);
-	SDL_Rect *top_frame = RECT_LoadRESOURCE(RECT_UI, 0);
-	SDL_Rect *bar_frame  = RECT_LoadRESOURCE(RECT_UI, 4);
+	RECT_Pos(&pos, &local.map); 
 
-	//RECT_Size(&pos, bg); 
-	pos.x = left_frame->w;
-	pos.y = top_frame->h + bar_frame->h + fs->h + sys->zoom;
-	/*---*/
+	/* Display this as soon as possible: */
+	KB_TopBox("        Press 'ESC' to exit"); //CENTERED
+	KB_flip(sys);
 
-	int i;	
-	
-	for (i = 0; i < MAX_VILLAINS; i++) {
-
+	/* Now, load all the villain faces */
+	int i;
+	for (i = 0; i < MAX_VILLAINS; i++)
 		faces[i] = SDL_LoadRESOURCE(GR_VILLAIN, i, 0);
 
-	}
-
-	SDL_Surface *screen = sys->screen;
-
 	int j;
-	
-	int border_x = game->scepter_x - 3;
-	int border_y = game->scepter_y - 3;
 
+	int border_x = game->scepter_x - (PUZZLEMAP_W / 2);// + PUZZLEMAP_W % 2);
+	int border_y = game->scepter_y - (PUZZLEMAP_H / 2);// + PUZZLEMAP_H % 2);
+ 
 	int frame = 0;
 	int done = 0;
 	int redraw = 1;
 	while (!done) {
 
 		int key = KB_event(&press_any_key_interactive);
-		
+
 		if (key == 0xFF) done = 1;
-		
+
 		if (key == 2) {
 			frame++;
 			if (frame > 3) frame = 0;
 			redraw = 1;
+
+			/* Attend to the "opening" animation */
+			if (open_mode == BEGIN) {
+				open_mode++;
+			} else if (open_mode != DONE) {
+				int id = puzzle_map[open_y][open_x];
+				/* "id"s < 0 refer to artifacts; only open those in ARTIFACTS mode */
+				if (id < 0 && open_mode == ARTIFACTS) {
+					int artifact_id = -id - 1;
+					if (game->artifact_found[artifact_id]) {
+						opened[open_y][open_x] = 1;
+					}
+				}
+				/* Other "id"s refer to villains; only open those in VILLAINS mode */
+				if (id >= 0 && open_mode == VILLAINS) {
+					if (game->villain_caught[id]) {
+						opened[open_y][open_x] = 1;
+					}
+				}
+				/* Advance the cursor */
+				open_x++;
+				if (open_x > PUZZLEMAP_W - 1) { open_x = 0; open_y++; }
+				if (open_y > PUZZLEMAP_H - 1) { open_x = 0; open_y = 0; open_mode++; }
+			}
 		}
 
 		if (redraw) {
-			
-			for (j = 0; j < 5; j ++) {	
-				for (i = 0; i < 5; i ++) {
 
-					int id = puzzle_map[j][i];
+			for (j = 0; j < PUZZLEMAP_H; j ++) {
+				for (i = 0; i < PUZZLEMAP_W; i ++) {
 
 					SDL_Rect dst = { pos.x + i * tile->w, pos.y + j * tile->h, tile->w, tile->h };
 
-					if (id < 0) {
+					/* Draw a map tile */
+					if (opened[j][i]) {
 
-						int artifact_id = -id - 1;
-						
-						if (game->artifact_found[artifact_id]) {
-						
-						
-						} else {
+							byte tile = KB_GetMapTile(game, game->scepter_continent,
+								 border_y + (PUZZLEMAP_H - j) - 1,
+								 border_x + i);
+
+							if (IS_MAPOBJECT(tile)) tile = 0; /* Hide important objects */
+
+							KB_DrawMapTile(sys->screen, &dst, tileset, tile);
+
+					}
+					/* Draw a villain face/artifact */
+					else {
+
+						int id = puzzle_map[j][i];
+
+						if (id < 0) {
+
+							int artifact_id = -id - 1;
 
 							SDL_Rect src = { artifact_id * tile->w, 0, tile->w, tile->h };
-	
-							SDL_BlitSurface( artifacts, &src, screen, &dst);
 
-						}
+							SDL_BlitSurface(artifacts, &src, sys->screen, &dst);
 
-					} else {
-
-
-						if (game->villain_caught[id] ) {
-						
 						} else {
+
 							SDL_Rect src = { frame * tile->w, 0, tile->w, tile->h };
-	
-							SDL_BlitSurface( faces[id], &src, screen, &dst);
+
+							SDL_BlitSurface(faces[id], &src, sys->screen, &dst);
 						}
 					}
 				}
 			}
 
-			SDL_Flip(sys->screen);
+			KB_flip(sys);
 			redraw = 0;
 		}
 	}
 
-	
+	/* Now UNLOAD all the villains */
+	for (i = 0; i < MAX_VILLAINS; i++)
+		SDL_FreeSurface(faces[i]);
 
-	KB_Pause();
+	/* And other resources */
+	SDL_FreeSurface(artifacts);
+	SDL_FreeSurface(tile);
+	SDL_FreeSurface(tileset);
 }
 
 KBgamestate minimap_toggle = {
@@ -3570,24 +3640,13 @@ void draw_map(KBgame *game, int tick) {
 
 	for (j = 0; j < perim_h; j++)
 	for (i = 0; i < perim_w; i++) {
-		byte m;
-		
-		if (border_x + i > 63 || border_y + j > 63 || 
-			border_x + i < 0 || border_y + j < 0) m = 32;
-		else
-			m = game->map[0][border_y + j][border_x + i];
 
-		m &= 0x7F;
+		byte tile = KB_GetMapTile(game, game->continent, game->y, game->x); 
 
-		int th = m / 8;
-		int tw = m - (th * 8);
-
-		src.x = tw * src.w;
-		src.y = th * src.h;
 		pos.x = i * (pos.w) + local.map.x;
 		pos.y = (perim_h - 1 - j) * (pos.h) + local.map.y;
 
-		SDL_BlitSurface( tileset, &src , screen, &pos );
+		KB_DrawMapTile(screen, &pos, tileset, tile);
 	}
 
 	/** Draw boat **/
