@@ -22,6 +22,7 @@
 
 #include "bounty.h"
 #include "play.h"
+#include "save.h"
 #include "lib/kbconf.h"
 #include "lib/kbres.h"
 #include "lib/kbauto.h"
@@ -139,10 +140,6 @@ void update_ui_frames() {
 
 }
 
-
-/* TOH */
-KBgame* KB_loadDAT(const char* filename);
-int KB_saveDAT(const char* filename, KBgame *game);
 
 /*
  * Hotspot is a possible player action.
