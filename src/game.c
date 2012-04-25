@@ -2848,9 +2848,9 @@ void read_signpost(KBgame *game) {
 	int id = 0;
 	int ok = 0;
 	int i, j;
-	for (j = 0; j < 64; j++) {
-		for (i = 0; i < 64; i++) {
-			if (game->map[0][j][i] == 0x90) {
+	for (j = 0; j < LEVEL_H; j++) {
+		for (i = 0; i < LEVEL_W; i++) {
+			if (game->map[0][j][i] == TILE_SIGNPOST) {
 				if (i == game->x && j == game->y) { ok = 1; break; }
 				id ++;
 			}
@@ -4373,9 +4373,9 @@ void adventure_loop(KBgame *game) {
 			int cursor_y = game->y + oy;
 
 			if (cursor_x < 0) cursor_x = 0;
-			if (cursor_x > 63) cursor_x = 63;
 			if (cursor_y < 0) cursor_y = 0;
-			if (cursor_y > 63) cursor_y = 63;
+			if (cursor_x > LEVEL_W - 1) cursor_x = LEVEL_W - 1;
+			if (cursor_y > LEVEL_H - 1) cursor_y = LEVEL_H - 1;
 
 			byte m = game->map[game->continent][cursor_y][cursor_x];		
 
@@ -4419,7 +4419,7 @@ void adventure_loop(KBgame *game) {
 				game->x = cursor_x;
 				game->y = cursor_y;
 
-				if (m == 0x8e && !visit_telecave(game, 1)) {
+				if (m == TILE_TELECAVE && !visit_telecave(game, 1)) {
 					printf("HUH %d %d\n", cursor_x, cursor_y);
 					m = game->map[game->continent][cursor_y][cursor_x];
 					walk = 0;
@@ -4447,17 +4447,17 @@ void adventure_loop(KBgame *game) {
 			byte m = game->map[game->continent][game->y][game->x];
 			if (IS_INTERACTIVE(m) && game->mount != KBMOUNT_FLY) {
 				switch (m) {
-					case 0x85:	visit_castle(game);	walk = 0; break;
-					case 0x8a:	visit_town(game); walk = 0; break;
-					case 0x8b:	take_chest(game);	break;
-					case 0x8e:	if (!visit_telecave(game, 0)) break;
-					case 0x8c:
-					case 0x8d:
-					case 0x8f:	visit_dwelling(game, m - 0x8c); walk = 0; break;
-					case 0x90:	read_signpost(game);		break;
-					case 0x91:	walk = !attack_foe(game);	break;
-					case 0x92:
-					case 0x93:	take_artifact(game, m - 0x92);	break;
+					case TILE_CASTLE:   	visit_castle(game);	walk = 0; break;
+					case TILE_TOWN:     	visit_town(game); walk = 0; break;
+					case TILE_CHEST:    	take_chest(game);       	break;
+					case TILE_DWELLING_4:	if (!visit_telecave(game, 0)) break;
+					case TILE_DWELLING_1:
+					case TILE_DWELLING_2:
+					case TILE_DWELLING_3:	visit_dwelling(game, m - TILE_DWELLING_1); walk = 0; break;
+					case TILE_SIGNPOST: 	read_signpost(game);    	break;
+					case TILE_FOE:      	walk = !attack_foe(game);	break;
+					case TILE_ARTIFACT_1:
+					case TILE_ARTIFACT_2:	take_artifact(game, m - TILE_ARTIFACT_1);	break;
 					default:
 						KB_errlog("Unknown interactive tile %02x at location %d, %d\n", m, game->x, game->y);
 					break;

@@ -112,7 +112,20 @@
 #define FRAME_MIDDLE	4
 
 /* Tile indexes from DOS version. */
-#define TILE_DEEP_WATER	32
+#define TILE_GRASS      	0
+#define TILE_DEEP_WATER 	32
+#define TILE_CASTLE     	0x85
+#define TILE_TOWN       	0x8A
+#define TILE_CHEST      	0x8B
+#define TILE_DWELLING_1 	0x8C
+#define TILE_DWELLING_2 	0x8D
+#define TILE_DWELLING_3 	0x8E
+#define TILE_DWELLING_4 	0x8F
+#define TILE_TELECAVE   	TILE_DWELLING_3
+#define TILE_SIGNPOST   	0x90
+#define TILE_FOE        	0x91
+#define TILE_ARTIFACT_1 	0x92
+#define TILE_ARTIFACT_2 	0x93
 
 #define IS_GRASS(M) 	((M) < 2 || (M) == 0x80)
 #define IS_CASTLE(M)	((M) >= 0x02 && (M) <= 0x07)
