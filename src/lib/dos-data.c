@@ -504,16 +504,6 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 
 			byte tile;
 			for (tile = 0; tile < 255; tile++) {
-#define IS_GRASS(M) ((M) < 2 || (M) == 0x80)
-#define IS_WATER(M) ((M) >= 0x14 && (M) <= 0x20)
-#define IS_DESERT(M) ((M) >= 0x2e && (M) <= 0x3a)
-#define IS_INTERACTIVE(M) ((M) & 0x80)
-
-#define IS_ROCK(M) ((M) >= 59 && (M) <= 71)
-#define IS_TREE(M) ((M) >= 33 && (M) <= 45)
-#define IS_CASTLE(M) ((M) >= 0x02 && (M) <= 0x07)
-#define IS_MAPOBJECT(M) ((M) >= 10 && (M) <= 19)
-#define IS_DEEP_WATER(M) ((M) == 32)
 
 				if ( IS_GRASS(tile) ) tile_type = GRASS;
 				else if ( IS_DEEP_WATER(tile) ) tile_type = DEEP_WATER;

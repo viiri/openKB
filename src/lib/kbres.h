@@ -111,6 +111,22 @@
 #define FRAME_BOTTOM	3
 #define FRAME_MIDDLE	4
 
+/* Tile indexes from DOS version. */
+#define TILE_DEEP_WATER	32
+
+#define IS_GRASS(M) 	((M) < 2 || (M) == 0x80)
+#define IS_CASTLE(M)	((M) >= 0x02 && (M) <= 0x07)
+#define IS_MAPOBJECT(M)	((M) >= 0x0a && (M) <= 0x13)
+#define IS_WATER(M) 	((M) >= 0x14 && (M) <= 0x20)
+#define IS_TREE(M)  	((M) >= 0x21 && (M) <= 0x2D)
+#define IS_DESERT(M)	((M) >= 0x2e && (M) <= 0x3a)
+#define IS_ROCK(M)  	((M) >= 0x3b && (M) <= 0x47)
+
+#define IS_DEEP_WATER(M) ((M) == TILE_DEEP_WATER)
+
+#define IS_INTERACTIVE(M) ((M) & 0x80)
+
+
 #ifdef HAVE_LIBSDL
 /* SDL flavor. */
 #include <SDL.h>
