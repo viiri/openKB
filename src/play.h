@@ -17,6 +17,9 @@
  *  You should have received a copy of the GNU General Public License
  *  along with openkb.  If not, see <http://www.gnu.org/licenses/>.
  */
+#ifndef _OPENKB_PLAY_H
+#define _OPENKB_PLAY_H
+
 #include "bounty.h"
 #include "lib/kbstd.h"
 
@@ -82,3 +85,5 @@ extern int unit_touching(KBcombat *war, int side, int id, int other_id);
 extern int unit_surrounded(KBcombat *war, int side, int id);
 extern int unit_ranged_shot(KBcombat *war, int side, int id, int other_side, int other_id);
 extern void unit_relocate(KBcombat *war, int side, int id, int nx, int ny);
+
+#endif
