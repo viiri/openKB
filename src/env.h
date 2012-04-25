@@ -84,6 +84,7 @@ extern void KB_stopENV(KBenv *env);
 extern void KB_flip(KBenv *env);
 
 extern void KB_printf(KBenv *env, const char *fmt, ...);
+extern void KB_vprintf(KBenv *env, const char *fmt, va_list argptr);
 extern SDL_Rect *KB_fontsize(KBenv *env);
 extern void KB_setfont(KBenv *env, SDL_Surface *surf);
 extern void KB_setcolor(KBenv *env, Uint32* colors); /* Colors must be in 0x00RRGGBB format ! */

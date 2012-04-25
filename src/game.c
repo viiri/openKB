@@ -319,6 +319,7 @@ void render_game(KBenv *env, KBgame *game, KBgamestate *state, KBconfig *conf) {
 #define KB_ilh(ARGS...) KB_lh(sys, ## ARGS)
 #define KB_iprint(ARGS...) KB_print(sys, ## ARGS)
 #define KB_iprintf(ARGS...) KB_printf(sys, ## ARGS)
+#define KB_ivprintf(ARGS...) KB_vprintf(sys, ## ARGS)
 
 void KB_imenu(KBgamestate *state, int id, int cols) {
 
@@ -363,24 +364,8 @@ void KB_imenu(KBgamestate *state, int id, int cols) {
 
 /* In this one, ROWS and COLS of text are used */
 #define RECT_Text(RECT, ROWS, COLS) \
-		RECT->w = COLS * sys->font_size.w, \
-		RECT->h = ROWS * sys->font_size.h
-
-//
-// TODO: get rid of those, call RECT_* directly
-inline void SDL_CenterRect(SDL_Rect *rect, SDL_Surface *img, SDL_Surface *host) 
-{
-	RECT_Size(rect, img);
-	RECT_Center(rect, host);
-}
-
-inline void SDL_CenterRectTxt(SDL_Rect *rect, int rows, int cols, SDL_Surface *host)
-{
-	SDL_Rect *size = &sys->font_size;
-	rect->w = cols * size->w;
-	rect->h = rows * size->h;
-	RECT_Center(rect, host); 
-}
+		(RECT)->w = (COLS) * sys->font_size.w, \
+		(RECT)->h = (ROWS) * sys->font_size.h
 
 int KB_reset(KBgamestate *state) {
 
@@ -661,8 +646,19 @@ inline void KB_Pause() {
  	while (!KB_event(&press_any_key)) SDL_Delay(10);
 }
 
+#define MSG_CENTERED	0x01
+#define MSG_RIGHT   	0x02
+#define MSG_PADDED    	0x04
+#define MSG_XXX2     	0x08
+#define MSG_HARDCODED	0x10
+#define MSG_XXX4    	0x20
+#define MSG_WAIT    	0x40
+#define MSG_PAUSE   	0x80
+
+#define MSG_FLUSH	(MSG_WAIT | MSG_PAUSE)
+
 /* Display a message. Wait for a key to discard. */
-SDL_Rect* KB_MessageBox(const char *str, int wait) {
+SDL_Rect* KB_MessageBox(const char *str, byte flag) {
 
 	SDL_Surface *screen = sys->screen;
 	Uint32 bg = local.message_colors[COLOR_BACKGROUND];
@@ -675,8 +671,7 @@ SDL_Rect* KB_MessageBox(const char *str, int wait) {
 
 	static SDL_Rect rect;
 
-	if (wait > 1) { 
-		wait = 0;
+	if (flag & MSG_HARDCODED) {
 		max_w = 30;
 	}
 
@@ -727,9 +722,8 @@ SDL_Rect* KB_MessageBox(const char *str, int wait) {
 		i++;
 	} while (str[i - 1] != '\0');
 
-	SDL_Flip(screen);
-
-	if (wait) KB_Pause();
+	if (flag & MSG_FLUSH) KB_flip(sys);
+	if (flag & MSG_PAUSE) KB_Pause();
 
 	return &rect;
 }
@@ -750,26 +744,25 @@ SDL_Rect* KB_BottomFrame() {
 	static SDL_Rect text;
 
 	/* Make a 30 x 8 border (+1 character on each side) */ 
-	RECT_Text((&border), 8, 30);
+	RECT_Text(&border, 8, 30);
 	border.h += fs->h / 2; /* Plus some extra pixels, because 'bottom box' is uneven */
 	border.x = left_frame->w;
 	border.y = screen->h - bottom_frame->h - border.h;
 
 	/* Actual text is 28 x 6 (meaning 28 cols per 6 rows, btw) */
-	RECT_Pos((&text), (&border));
+	RECT_Pos(&text, &border);
 	text.y += fs->h;
 	text.x += fs->w;
 	RECT_Text((&text), 6, 28);
 
 	/* A nice frame */
-	SDL_FillRect(screen, &border, 0xFF0000);
 	SDL_TextRect(screen, &border, ui, bg);
-	SDL_FillRect(screen, &text, 0x00FF00);
+	SDL_FillRect(screen, &text, 0x00FF00);//debug fill
 
 	return &text;
 }
 
-SDL_Rect* KB_BottomBox(const char *header, const char *str, int wait) {
+SDL_Rect* KB_BottomBox(const char *header, const char *str, byte flag) {
 
 	SDL_Rect *fs = &sys->font_size;
 
@@ -784,55 +777,54 @@ SDL_Rect* KB_BottomBox(const char *header, const char *str, int wait) {
 	if (header) KB_iprint("\n\n");	
 	KB_iprint(str);
 
-	SDL_Flip(sys->screen);
-
-	if (wait) KB_Pause();
+	/* Update screen and possibly wait */
+	if (flag & MSG_FLUSH) KB_flip(sys);
+	if (flag & MSG_PAUSE) KB_Pause();
 
 	return text;
 }
 
-SDL_Rect* KB_TopBox(const char *str) {
+SDL_Rect* KB_TopBox(byte flag, const char *str, ...) {
 
-	Uint32 *colors = local.status_colors;
-
-	/* Clean line */
-	SDL_FillRect(sys->screen, &local.status, colors[COLOR_BACKGROUND]);
-
-	/* Print string */
-	KB_icolor(colors);
-	KB_iloc(local.status.x, local.status.y + 1);
-	KB_iprint(str);
-
-	return &local.status;
-}
-
-void KB_status_message(const char *fmt, ...) 
-{ 
 	Uint32 *colors;
-	char msg[1024];
+	byte padding;
 
-	/* Prepare message string */
+	/* Possible varags */
 	va_list argptr;
-	va_start(argptr, fmt);
-	vsprintf(msg, fmt, argptr);
-	va_end(argptr);
+	va_start(argptr, str);
+	va_end(argptr); //too early?
 
 	/* Get colors */
 	colors = local.status_colors;
 
-	/* Fill status bar area */
+	/* Calculate padding if needed */
+	padding = 0;
+	if (flag & MSG_CENTERED) {
+		int len = strlen(str);
+		int max = local.status.w / sys->font_size.w;
+		if (len < max) padding = (max - len) / 2 + (max - len) % 2;
+	} else if (flag & MSG_PADDED) {
+		padding = 1;
+	}
+
+	/* Clear line */
 	SDL_FillRect(sys->screen, &local.status, colors[COLOR_BACKGROUND]);
 
-	/* Move cursor there, and print the message */
+	/* Print string [with varargs] */
 	KB_icolor(colors);
 	KB_iloc(local.status.x, local.status.y + 1);
-	KB_iprint(" ");
-	KB_iprint(msg);
+	KB_icurs(padding, 0);
+	KB_ivprintf(str, argptr);
 
-	/* Update screen and wait ~1.5 seconds */
-	SDL_Flip(sys->screen);
-	SDL_Delay(1500);
+	/* Update screen and possibly wait */
+	if (flag & MSG_FLUSH) KB_flip(sys);
+	if (flag & MSG_WAIT) KB_Wait();
+
+	return &local.status;
 }
+
+#define combat_log(STR, ...) KB_TopBox(MSG_WAIT | MSG_PADDED, (STR), __VA_ARGS__)
+#define combat_error combat_log
 
 /* "create game" screen (pick name and difficulty) */
 KBgame *create_game(int pclass) {
@@ -852,7 +844,9 @@ KBgame *create_game(int pclass) {
 
 	SDL_Rect *fs = &sys->font_size;
 
-	SDL_CenterRectTxt(&menu, rows, cols, screen);
+	RECT_Text(&menu, rows, cols);
+	RECT_Center(&menu, screen); 
+
 
 	int has_name = 0;
 	char *name;
@@ -1095,7 +1089,7 @@ void show_credits() {
 		credit++;
 	}
 	
-	max = KB_MessageBox(credits, 2);
+	max = KB_MessageBox(credits, MSG_HARDCODED);
 
 	SDL_Rect pos = { 0 };
 
@@ -1138,7 +1132,8 @@ KBgame *select_game(KBconfig *conf) {
 
 			SDL_Rect pos;
 
-			SDL_CenterRect(&pos, title, screen);
+			RECT_Size(&pos, title);
+			RECT_Center(&pos, screen);
 
 			SDL_BlitSurface( title, NULL , screen, &pos );
 
@@ -1300,7 +1295,8 @@ void display_logo() {
 
 			SDL_Surface *title = SDL_LoadRESOURCE(GR_LOGO, 0, 0);
 
-			SDL_CenterRect(&pos, title, screen);
+			RECT_Size(&pos, title);
+			RECT_Center(&pos, screen);
 
 			SDL_FillRect( screen , NULL, 0xFF3366);
 
@@ -1339,7 +1335,8 @@ void display_title() {
 
 			SDL_Surface *title = SDL_LoadRESOURCE(GR_TITLE, 0, 0);
 
-			SDL_CenterRect(&pos, title, screen);
+			RECT_Size(&pos, title);
+			RECT_Center(&pos, screen);
 
 			SDL_FillRect( screen , NULL, 0x000000);
 
@@ -1401,7 +1398,8 @@ void display_debug() {
 		src.h = peasant->h;
 		pos2.h = peasant2->h/2;
 
-			SDL_CenterRect(&pos, peasant2, screen);
+			RECT_Size(&pos, peasant2);
+			RECT_Center(&pos, screen);
 
 			SDL_FillRect( screen , NULL, 0x4664B4);
 
@@ -1584,7 +1582,7 @@ void view_puzzle(KBgame *game) {
 	RECT_Pos(&pos, &local.map); 
 
 	/* Display this as soon as possible: */
-	KB_TopBox("        Press 'ESC' to exit"); //CENTERED
+	KB_TopBox(MSG_CENTERED, "Press 'ESC' to exit");
 	KB_flip(sys);
 
 	/* Now, load all the villain faces */
@@ -1764,11 +1762,11 @@ void view_minimap(KBgame *game) {
 			int j;
 
 			if (!game->orb_found[game->continent])
-				KB_TopBox("        Press 'ESC' to exit");
+				KB_TopBox(MSG_CENTERED, "Press 'ESC' to exit");
 			else if (!orb)
-				KB_TopBox("  'ESC' to exit / 'SPC' whole map");
+				KB_TopBox(MSG_CENTERED, "'ESC' to exit / 'SPC' whole map");
 			else
-				KB_TopBox("  'ESC' to exit / 'SPC' your map");
+				KB_TopBox(MSG_CENTERED, "'ESC' to exit / 'SPC' your map");
 
 			for (j = 0; j < LEVEL_H; j++) {
 				for (i = 0; i < LEVEL_W; i++) {
@@ -1974,7 +1972,7 @@ void view_character(KBgame *game) {
 	KB_iprintf("Followers killed   %5d\n", game->followers_killed);
 	KB_iprintf("Current score      %5d\n", player_score(game));
 
-	KB_TopBox("        Press 'ESC' to exit");
+	KB_TopBox(MSG_CENTERED, "Press 'ESC' to exit");
 
 	/* Draw artifacts (and maps) */
 	int i;
@@ -2123,7 +2121,7 @@ void view_army(KBgame *game) {
 				KB_iprintf("G-Cost:%d\n", troops[ troop_id ].recruit_cost / 10 * game->player_numbers[i]);
 			}
 
-			KB_TopBox("        Press 'ESC' to exit");
+			KB_TopBox(MSG_CENTERED, "Press 'ESC' to exit");
 
 			SDL_Flip(sys->screen);
 			redraw = 0;
@@ -2219,7 +2217,7 @@ void audience_with_king(KBgame *game) {
 		"arrival with regal fanfare.\n\n"
 		"King Maximus rises from his\n"
 		"throne to greet you and\n"
-		"proclaims:           (space)", 1);
+		"proclaims:           (space)", MSG_PAUSE);
 
 	sprintf(message, "\n\n"
 		"My dear %s,\n\n"
@@ -2228,7 +2226,7 @@ void audience_with_king(KBgame *game) {
 		"villains.",
 	game->name, needed);
 
-	KB_BottomBox(message, "", 1);
+	KB_BottomBox(message, "", MSG_PAUSE);
 }
 
 void recruit_soldiers(KBgame *game) {
@@ -2337,8 +2335,8 @@ void recruit_soldiers(KBgame *game) {
 				result = buy_troop(game, home_troops[whom-1], number);
 
 				/* Display error if any */
-				if (result == 2) KB_BottomBox("\n\n\nYou don't have enough gold!", "", 1);
-				else if (result == 1) KB_BottomBox("", "No troop slots left!", 1);//verify this one
+				if (result == 2) KB_BottomBox("\n\n\nYou don't have enough gold!", "", MSG_PAUSE);
+				else if (result == 1) KB_BottomBox("", "No troop slots left!", MSG_PAUSE);//verify this one
 
 				/* Calculate new "MAX YOU CAN HANDLE" number based on leadership (and troop hp?) */
 				max = army_leadership(game, home_troops[whom-1]) / troops [ home_troops[whom-1] ].hit_points;
@@ -2573,7 +2571,7 @@ void visit_town(KBgame *game) {
 
 	int random_troop = rand() % MAX_TROOPS;
 
-	KB_TopBox("        Press 'ESC' to exit");
+	KB_TopBox(MSG_CENTERED, "Press 'ESC' to exit");
 
 	int done = 0;
 	int frame = 0;
@@ -2854,7 +2852,7 @@ void visit_dwelling(KBgame *game, byte rtype) {
 				game->dwelling_population[game->continent][id] -= number;
 
 			/* Display error if any */
-			else if (result == 2) KB_BottomBox("\n\n\nYou don't have enough gold!", "", 1);
+			else if (result == 2) KB_BottomBox("\n\n\nYou don't have enough gold!", "", MSG_PAUSE);
 			else if (result == 1) KB_BottomBox("", "No troop slots left!", 1);//verify this one
 
 			/* Calculate new "MAX YOU CAN HANDLE" number based on leadership (and troop hp?) */
@@ -2884,7 +2882,7 @@ void read_signpost(KBgame *game) {
 
 	KB_stdlog("Read sign post [%d] at %d, %d { %s }\n", id, game->x, game->y, sign);
 
-	KB_BottomBox("A sign reads:", sign, 1);
+	KB_BottomBox("A sign reads:", sign, MSG_PAUSE);
 
 	SDL_Flip(sys->screen);
 	KB_Pause();
@@ -2922,7 +2920,7 @@ void move_unit(KBcombat *war, int side, int id, int ox, int oy) {
 			if (war->umap[ny][nx] >= 1 && war->umap[ny][nx] <= MAX_UNITS) return;
 			/* Otherwise -- Hostile troop */
 
-			KB_status_message("PC Unit attacks!");
+			combat_log("PC Unit attacks!", NULL);
 		}
 		/* Right side */
 		else {
@@ -2930,7 +2928,7 @@ void move_unit(KBcombat *war, int side, int id, int ox, int oy) {
 			if (war->umap[ny][nx] >= (MAX_UNITS+1) && war->umap[ny][nx] <= (MAX_UNITS*2)) return;
 			/* Otherwise -- Hostile troop */
 			
-			KB_status_message("NPC Unit attacks!");
+			combat_log("NPC Unit attacks!", NULL);
 		}
 
 		return;
@@ -3059,7 +3057,7 @@ KBgamestate cross_choice = {
 
 int build_bridge(KBgame *game) {
 
-	KB_TopBox("Build bridge in which direction <>ud");
+	KB_TopBox(0, "Build bridge in which direction <>ud");
 
 	KB_flip(sys);
 
@@ -3067,11 +3065,11 @@ int build_bridge(KBgame *game) {
 	
 	if (key == 0xFF) return 1;
 
-	KB_TopBox("Not a suitable location for a bridge");
+	KB_TopBox(0, "Not a suitable location for a bridge");
 	KB_flip(sys);
 	KB_Pause();
 
-	KB_TopBox("What a waste of a good spell!");
+	KB_TopBox(0, "What a waste of a good spell!");
 	KB_flip(sys);
 	KB_Pause();
 	
@@ -3080,7 +3078,7 @@ int build_bridge(KBgame *game) {
 
 int instant_army(KBgame *game) {
 
-	KB_BottomBox("A few Sprites", "have joined to your army.", 1);
+	KB_BottomBox("A few Sprites", "have joined to your army.", MSG_PAUSE);
 
 	return 0;
 }
@@ -3091,7 +3089,7 @@ int clone_army(KBgame *game, KBcombat *war) {
 
 	KBunit *u = &war->units[war->side][war->unit_id];
 
-	KB_TopBox("     Select your army to Clone");// CENTERED
+	KB_TopBox(MSG_CENTERED, "Select your army to Clone");
 
 	x = u->x;
 	y = u->y;
@@ -3104,7 +3102,7 @@ int clone_army(KBgame *game, KBcombat *war) {
 
 		clones = clone_troop(game, war, unit_id);
 
-		KB_status_message("%d %s cloned", clones, troops[u->troop_id].name);
+		combat_log("%d %s cloned", clones, troops[u->troop_id].name);
 
 	}
 
@@ -3116,7 +3114,7 @@ int teleport_army(KBgame *game, KBcombat *war) {
 
 	KBunit *u = &war->units[war->side][war->unit_id];
 
-	KB_TopBox("     Select army to Teleport");// CENTERED
+	KB_TopBox(MSG_CENTERED, "Select army to Teleport");
 
 	x = u->x;
 	y = u->y;
@@ -3129,7 +3127,7 @@ int teleport_army(KBgame *game, KBcombat *war) {
 		unit_id = war->umap[y][x] - 1;
 		if (unit_id > 4) { side = 1; unit_id -= 5; }
 
-		KB_TopBox("     Select new location");// CENTERED
+		KB_TopBox(MSG_CENTERED, "Select new location");
 
 		ok = pick_target(war, &x, &y, 1);
 
@@ -3163,7 +3161,7 @@ int choose_spell(KBgame *game, KBcombat *combat) {
 
 	if (combat && combat->spells)
 	{
-		KB_TopBox("     Only 1 spell per round!");
+		KB_TopBox(MSG_CENTERED, "Only 1 spell per round!");
 		KB_flip(sys);
 		KB_Wait();
 		return;
@@ -3180,7 +3178,7 @@ int choose_spell(KBgame *game, KBcombat *combat) {
 
 	SDL_TextRect(sys->screen, &border, colors[COLOR_BACKGROUND], colors[COLOR_TEXT]);
 
-	KB_TopBox("        Press 'ESC' to exit");
+	KB_TopBox(MSG_CENTERED, "Press 'ESC' to exit");
 
 	KB_iloc(border.x + fs->w, border.y + fs->h/2);
 	KB_iprint("              Spells\n\n");
@@ -3235,7 +3233,7 @@ int choose_spell(KBgame *game, KBcombat *combat) {
 				KB_iloc(twirl_x, twirl_y);
 				KB_iprintf("%c", 'A' + key - 1);
 
-				KB_TopBox("     You don't know that spell!");
+				KB_TopBox(MSG_CENTERED, "You don't know that spell!");
 				KB_flip(sys);
 				KB_Pause();
 
@@ -3299,7 +3297,7 @@ int choose_spell(KBgame *game, KBcombat *combat) {
 
 void win_game(KBgame *game) {
 
-	KB_TopBox("Press 'ESC' to exit");
+	KB_TopBox(MSG_CENTERED, "Press 'ESC' to exit");
 
 	KB_Pause();
 
@@ -3354,7 +3352,7 @@ void lose_game(KBgame *game) {
 	RECT_Right(&pos, &full);
 	pos.x += full.x;
 
-	KB_TopBox("        Press 'ESC' to exit"); //CENTERED
+	KB_TopBox(MSG_CENTERED, "Press 'ESC' to exit");
 
 	SDL_BlitSurface( image, NULL, sys->screen, &pos );
 
@@ -3401,7 +3399,7 @@ int ask_search(KBgame *game) {
 		return 0;
 
 	} else {
-		KB_BottomBox(NULL, "\n\nYour search of this area has\nrevealed nothing.", 1);
+		KB_BottomBox(NULL, "\n\nYour search of this area has\nrevealed nothing.", MSG_PAUSE);
 		spend_days(game, days);
 	}
 
@@ -3937,7 +3935,7 @@ int unit_try_wait(KBcombat *war) {
 
 	if (war->phase) u->acted = 1;
 
-	KB_status_message("%s wait", t->name);
+	combat_log("%s wait", t->name);
 
 	return 1;
 }
@@ -3948,7 +3946,7 @@ void unit_try_pass(KBcombat *war) {
 
 	u->acted = 1;
 
-	KB_status_message("%s pass", t->name);
+	combat_log("%s pass", t->name);
 }
 
 void unit_try_fly(KBcombat *war) {
@@ -3960,7 +3958,7 @@ void unit_try_fly(KBcombat *war) {
 	KBtroop *t = &troops[u->troop_id];
 
 	if (!(t->abilities & ABIL_FLY)) {
-		KB_status_message("Can't Fly");
+		combat_error("Can't Fly", NULL);
 		return;
 	}
 
@@ -4014,7 +4012,7 @@ void unit_try_shoot(KBcombat *war) {
 
 		draw_damage(war, victim);
 
-		KB_status_message("%s shoot %s killing %d", troops[u->troop_id].name, troops[victim->troop_id].name, kills);
+		combat_log("%s shoot %s killing %d", troops[u->troop_id].name, troops[victim->troop_id].name, kills);
 
 		//unit_apply_damage(war, victim);
 
@@ -4241,7 +4239,7 @@ int ask_fast_quit(KBgame *game) {
 	byte twirl_pos = 0;
 	word twirl_x, twirl_y;
 
-	KB_TopBox(" Quit to DOS without saving (y/n) ");
+	KB_TopBox(0, " Quit to DOS without saving (y/n) ");
 
 	KB_getpos(sys, &twirl_x, &twirl_y);
 
@@ -4522,12 +4520,9 @@ void adventure_loop(KBgame *game) {
 			draw_sidebar(game, tick);
 
 			/* Status bar */
-			SDL_FillRect(screen, &status_rect, local.status_colors[COLOR_BACKGROUND]);
-			KB_icolor(local.status_colors);
-			KB_iloc(status_rect.x, status_rect.y + 1);
-			KB_printf(sys, " Options / Controls / Days Left:%d ", game->days_left);
+			KB_TopBox(0, " Options / Controls / Days Left:%d ", game->days_left);
 
-	    	SDL_Flip( screen );
+	    	KB_flip(sys);
 			redraw = 0;
 		}
 	}

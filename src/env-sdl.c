@@ -180,6 +180,12 @@ void KB_printf(KBenv *env, const char *fmt, ...) {
 	va_end(argptr);
 }
 
+void KB_vprintf(KBenv *env, const char *fmt, va_list argptr) { 
+	char buf[256];
+	vsnprintf(buf, 255, fmt, argptr);
+	KB_print(env, buf);
+}
+
 /*
  * SDL Operations.
  * Any SDL resource handler should have those or similar! :)
