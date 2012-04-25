@@ -93,6 +93,16 @@ inline void KB_curs(KBenv *env, word cursor_x, word cursor_y);
 inline void KB_lh(KBenv *env, byte h);
 inline void KB_getpos(KBenv *env, word *x, word *y);
 
+/* Short-hand aliases for above functions */
+#define KB_ifont(ARGS...) KB_setfont(sys, ## ARGS)
+#define KB_icolor(ARGS...) KB_setcolor(sys, ## ARGS)
+#define KB_iloc(ARGS...) KB_loc(sys, ## ARGS)
+#define KB_icurs(ARGS...) KB_curs(sys, ## ARGS)
+#define KB_ilh(ARGS...) KB_lh(sys, ## ARGS)
+#define KB_iprint(ARGS...) KB_print(sys, ## ARGS)
+#define KB_iprintf(ARGS...) KB_printf(sys, ## ARGS)
+#define KB_ivprintf(ARGS...) KB_vprintf(sys, ## ARGS)
+
 
 extern void SDL_SBlitSurface(SDL_Surface *src, SDL_Rect *srcrect, SDL_Surface *dst, SDL_Rect *dstrect);
 

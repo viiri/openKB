@@ -38,7 +38,7 @@ LIB_BINARY=src/libkb.a
 
 VEND_SOURCES=vendor/scale2x.c vendor/inprint.c vendor/sha2.c
 
-GAME_SOURCES=src/main.c src/save.c src/game.c src/play.c src/bounty.c src/env-sdl.c
+GAME_SOURCES=src/main.c src/save.c src/game.c src/play.c src/bounty.c src/env-sdl.c src/ui.c
 GAME_BINARY=openkb
 
 GAME_DIST=$(DESTDIR)$(GAME_BINARY)-$(VERSION)
