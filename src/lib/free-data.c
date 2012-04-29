@@ -18,6 +18,15 @@
  *  along with openkb.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <SDL.h> 
+#include <SDL_image.h>	/* PNG support */
+
+#include "kbconf.h"	/* KBmodule type */
+#include "kbres.h"	/* GR_? defines */
+
+#define TILE_W 48
+#define TILE_H 34
+
 void* GNU_Resolve(KBmodule *mod, int id, int sub_id) {
 
 	char *image_name = NULL;
@@ -85,7 +94,7 @@ void* GNU_Resolve(KBmodule *mod, int id, int sub_id) {
 		break;
 		case GR_PURSE:
 		{
-			SDL_Surface *ts = SDL_CreatePALSurface(48, 34);
+			SDL_Surface *ts = SDL_CreatePALSurface(TILE_W, TILE_H);
 			return ts;
 		}
 		break;
@@ -133,8 +142,8 @@ void* GNU_Resolve(KBmodule *mod, int id, int sub_id) {
 
 			/* This one must be assembled */
 			int i;
-			SDL_Rect dst = { 0, 0, 48, 34 };
-			SDL_Rect src = { 0, 0, 48, 34 };
+			SDL_Rect dst = { 0, 0, TILE_W, TILE_H };
+			SDL_Rect src = { 0, 0, TILE_W, TILE_H };
 			SDL_Surface *ts = SDL_CreatePALSurface(8 * dst.w, 70/7 * dst.h);
 			SDL_Surface *row = NULL;
 			row = GNU_Resolve(mod, GR_TILEROW, 0);
