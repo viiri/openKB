@@ -647,7 +647,7 @@ void* GNU_Resolve(KBmodule *mod, int id, int sub_id) {
 		break;
 		case GR_TILESET:	/* subId - continent */
 		{
-#define SDL_ClonePalette(DST, SRC) SDL_SetPalette((DST), SDL_LOGPAL | SDL_PHYSPAL, (SRC)->format->palette->colors, 0, (SRC)->format->palette->ncolors)
+
 			/* This one must be assembled */
 			int i;
 			SDL_Rect dst = { 0, 0, 48, 34 };

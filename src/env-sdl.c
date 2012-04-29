@@ -195,7 +195,6 @@ void KB_vprintf(KBenv *env, const char *fmt, va_list argptr) {
 		SURFACE->format->Rmask, SURFACE->format->Gmask,	SURFACE->format->Bmask,	SURFACE->format->Amask)
 #define SDL_CloneSurfaceHW(SURFACE, H, W) SDL_CreateRGBSurface(SURFACE->flags, W, H, SURFACE->format->BitsPerPixel, \
 		SURFACE->format->Rmask, SURFACE->format->Gmask,	SURFACE->format->Bmask,	SURFACE->format->Amask)
-#define SDL_ClonePalette(DST, SRC) SDL_SetPalette((DST), SDL_LOGPAL | SDL_PHYSPAL, (SRC)->format->palette->colors, 0, (SRC)->format->palette->ncolors) 
 
 void SDL_SizeX(SDL_Surface *surface, SDL_Surface *new_surface, Uint8 size) {
 	SDL_Rect sr = { 0, 0, surface->w, surface->h };

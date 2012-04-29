@@ -209,6 +209,7 @@ enum {
 #include "kbdir.h" // for KB_DIR
 /* Provide usefull functions to modules */
 inline SDL_Surface* SDL_CreatePALSurface(Uint32 width, Uint32 height);
+inline void SDL_ClonePalette(SDL_Surface *dst, SDL_Surface *src);
 extern void SDL_BlitXBPP(const char *src, SDL_Surface *dest, SDL_Rect *dstrect, int bpp);
 extern void SDL_BlitMASK(const char *src, SDL_Surface *dest, SDL_Rect *dstrect);
 extern void SDL_ReplaceIndex(SDL_Surface *dest, SDL_Rect *dstrect, byte search, byte replace);

@@ -30,6 +30,11 @@ inline SDL_Surface* SDL_CreatePALSurface(Uint32 width, Uint32 height)
 	return SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, 8, 0xFF, 0xFF, 0xFF, 0x00);
 }
 
+inline void SDL_ClonePalette(SDL_Surface *dst, SDL_Surface *src)
+{
+	SDL_SetPalette(dst, SDL_LOGPAL | SDL_PHYSPAL, src->format->palette->colors, 0, src->format->palette->ncolors);
+}
+
 void SDL_BlitXBPP(const char *src, SDL_Surface *dest, SDL_Rect *dstrect, int bpp)
 {
 	byte base_mask = 0;	
