@@ -148,14 +148,9 @@ void* GNU_Resolve(KBmodule *mod, int id, int sub_id) {
 
 	if (image_name) {
 
-		char realname[1024];
+		char *realname;
 
-		realname[0] = '\0';
-		KB_dircpy(realname, mod->slotA_name);
-		KB_dirsep(realname);
-		KB_strcat(realname, image_name);
-		KB_strcat(realname, image_subid);
-		KB_strcat(realname, image_suffix);
+		realname = KB_fastpath(mod->slotA_name, "/", image_name, image_subid, image_suffix); 
 
 		KB_debuglog(0, "? FREE IMG FILE: %s\n", realname);
 
@@ -166,6 +161,7 @@ void* GNU_Resolve(KBmodule *mod, int id, int sub_id) {
 		if (surf && is_transparent)
 			SDL_SetColorKey(surf, SDL_SRCCOLORKEY, 0xFF);
 
+		free(realname);
 		return surf;
 	}
 
