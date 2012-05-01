@@ -38,6 +38,7 @@
 #define GR_TILE		0x03	/* subId - tile index */
 #define GR_TILESET	0x04	/* subId - continent flavor */
 #define GR_TILEROW	0x0B	/* subId - row index (1 row = 36 tiles) */
+#define GR_TILESALT	0x0D	/* continent flavor tiles; subId - 0=full; 1-3=continent */
 #define GR_VILLAIN	0x05	/* subId - villain index */
 
 #define GR_FACE 	0x07	/* subId - face index (villain index * 4) */
@@ -207,6 +208,7 @@ enum {
 /* SDL flavor. */
 #include <SDL.h>
 #include "kbdir.h" // for KB_DIR
+#include "kbconf.h" // for KBresolve_cb
 /* Provide usefull functions to modules */
 inline SDL_Surface* SDL_CreatePALSurface(Uint32 width, Uint32 height);
 inline void SDL_ClonePalette(SDL_Surface *dst, SDL_Surface *src);
@@ -222,6 +224,10 @@ extern void put_vga_pal(SDL_Surface *dest);
 extern void put_color_pal(SDL_Surface *dest, Uint32 fore, Uint32 back);
 extern Uint32 ega_pallete_rgb[16]; 
 
+/* Tileset factories (make single SDL_Surface from multiple ones) */
+SDL_Surface* KB_LoadTileset_TILES(SDL_Rect *tilesize, KBresolve_cb resolve, KBmodule *mod);
+SDL_Surface* KB_LoadTileset_ROWS(SDL_Rect *tilesize, KBresolve_cb resolve, KBmodule *mod);
+SDL_Surface* KB_LoadTilesetSalted(byte continent, KBresolve_cb resolve, KBmodule *mod);
 
 /* Provide useful functions to potential resource loader */
 /*

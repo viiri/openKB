@@ -139,40 +139,8 @@ void* GNU_Resolve(KBmodule *mod, int id, int sub_id) {
 		break;
 		case GR_TILESET:	/* subId - continent */
 		{
-
-			/* This one must be assembled */
-			int i;
-			SDL_Rect dst = { 0, 0, TILE_W, TILE_H };
-			SDL_Rect src = { 0, 0, TILE_W, TILE_H };
-			SDL_Surface *ts = SDL_CreatePALSurface(8 * dst.w, 70/7 * dst.h);
-			SDL_Surface *row = NULL;
-			row = GNU_Resolve(mod, GR_TILEROW, 0);
-			if (row->format->palette)
-				SDL_ClonePalette(ts, row);
-			else {
-				KB_errlog("Warning - can't read palette in a 24-bpp file\n");
-			}
-			for (i = 0; i < 72; i++) {
-				if (i == 36) {
-					SDL_FreeSurface(row);
-					row = GNU_Resolve(mod, GR_TILEROW, 36);
-					src.x = 0;
-					src.y = 0;
-				}
-				if (dst.x >= dst.w*8) {
-					dst.x = 0;
-					dst.y += dst.h;
-				}
-				SDL_BlitSurface(row, &src, ts, &dst);
-				if (dst.w != src.w) {
-					KB_errlog("Missing pixels for tile %d -- need %d, have %d\n", i, src.w, dst.w);
-					dst.w = src.w;
-				}
-				dst.x += dst.w;
-				src.x += src.w;
-			}
-			SDL_FreeSurface(row);
-			return ts;
+			SDL_Rect tilesize = { 0, 0, TILE_W, TILE_H };
+			return KB_LoadTileset_ROWS(&tilesize, GNU_Resolve, mod);
 		}
 		break;
 		default: break;

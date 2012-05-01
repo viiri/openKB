@@ -344,24 +344,28 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 		break;
 		case GR_TILESET:	/* subId - continent */
 		{
-#define SDL_ClonePalette(DST, SRC) SDL_SetPalette((DST), SDL_LOGPAL | SDL_PHYSPAL, (SRC)->format->palette->colors, 0, (SRC)->format->palette->ncolors)
-			/* This one must be assembled */
-			int i;
-			SDL_Rect dst = { 0, 0, DOS_TILE_W, DOS_TILE_H };
-			SDL_Rect src = { 0, 0, DOS_TILE_W, DOS_TILE_H };
-			SDL_Surface *ts = SDL_CreatePALSurface(8 * dst.w, 70/7 * dst.h);
-			for (i = 0; i < 72; i++) {
-				SDL_Surface *tile = DOS_Resolve(mod, GR_TILE, i);
-				SDL_ClonePalette(ts, tile);
-				SDL_BlitSurface(tile, &src, ts, &dst);
-				dst.x += dst.w;
-				if (dst.x >= ts->w) {
-					dst.x = 0;
-					dst.y += dst.h;
-				}
-				SDL_FreeSurface(tile);
+			SDL_Rect tilesize = { 0, 0, DOS_TILE_W, DOS_TILE_H };
+			if (sub_id) return KB_LoadTilesetSalted(sub_id, DOS_Resolve, mod);
+			return KB_LoadTileset_TILES(&tilesize, DOS_Resolve, mod);
+			//return KB_LoadTileset_ROWS(&tilesize, DOS_Resolve, mod);
+		}
+		break;
+		case GR_TILESALT:	/* subId - 0=full; 1-3=continent */
+		{
+			/* A row of replacement tiles. */
+			method = IMG_ROW;
+			middle_name = "tilesalt";
+			suffix = bpp_names[mod->bpp];
+			ident = "";
+			if (sub_id) {
+				/* 3 tiles per continent */
+				row_start = (sub_id - 1) * 3;
+				row_frames = 3;
+			} else {
+				/* All of them */
+				row_start = 0;
+				row_frames = 9;
 			}
-			return ts;
 		}
 		break;
 		case GR_CURSOR:	/* subId - undefined */

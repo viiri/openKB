@@ -51,6 +51,8 @@ typedef struct KBmodule {
 
 } KBmodule;
 
+typedef void*	(*KBresolve_cb)(KBmodule *mod, int id, int sub_id);
+
 #define C_config_file  0
 #define C_config_dir   1
 #define C_save_dir     2
