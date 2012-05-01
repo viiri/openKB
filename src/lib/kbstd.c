@@ -118,6 +118,78 @@ void KB_strlistcpy(char *dst, ...) {
 
 }
 
+char *vmakepath(int *_len, va_list arglist) {
+
+	int arg_len, len;
+	int used, step = FILE_LEN;
+
+	char *str, *input, *arg;
+
+	len = PATH_LEN;
+	used = 0;
+	str = malloc(sizeof(char) * len);
+	if (str == NULL) { /* Out of memory */
+		*_len = 0;
+		return NULL;
+	}
+
+	str[0] = '\0';
+	while (input = va_arg(arglist, char*)) {
+
+		arg = input;
+
+		/* Hack -- apply OS-specific directory separator instead of '/' */
+		if (input[0] == '/') {
+			if (str[used - 1] == PATH_SEP_SYM || str[used - 1] == '#') continue;
+			arg = PATH_SEP;
+		}
+
+		arg_len = strlen(arg);
+		if (arg_len + used + 1 > len) {
+
+			len += step;
+			step *= 2;
+			str = realloc(str, sizeof(char) * len);
+			if (str == NULL) { /* Out of memory */
+				len = 0;
+				break;
+			}
+		}
+
+		strlcat(str, arg, len);
+		used += arg_len;
+	}
+
+	if (_len) *_len = len;
+	return str;
+}
+
+char *makepath(int *len, ...) {
+	char *path;
+	va_list argptr;
+	va_start(argptr, len);
+	path = vmakepath(len, argptr);
+	va_end(argptr);
+	return path;
+}
+
+char *KB_makepath(int *_len, ...) {
+
+	char *path;
+	int len;
+
+	va_list argptr;
+	va_start(argptr, _len);
+
+	path = vmakepath(&len, argptr);
+	if (path == NULL)
+		KB_errlog("[makepath] Can't allocate %d bytes for path string\n", len);
+
+	va_end(argptr);
+	if (_len) *_len = len;
+	return path;
+}
+
 void KB_strncat(char *dst, const char *src, unsigned int n) {
 	if (strlcat(dst, src, n) >= n)
 		KB_errlog("[strlcat] Can't append '%s' to '%s', %d limit reached\n", src, dst, n);

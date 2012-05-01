@@ -89,6 +89,10 @@ extern void KB_strncpy_dbg(char *dst, const char *src, unsigned int n, const cha
 
 #endif
 
+extern char *KB_makepath(int *len, ...); /* Allocate new string and concat varargs into it, len is resulting sizeof() */
+
+#define KB_fastpath(ARGS...) KB_makepath(NULL, ARGS, NULL);
+
 extern void KB_dirnsep(char *dst, unsigned int n);
 extern void KB_dirncpy(char *dst, const char *src, unsigned int n);
 
