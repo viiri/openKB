@@ -240,6 +240,8 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 		NULL, ".256",	//7, 8
 	};
 
+	char subId_str[8];
+
 	middle_name = suffix = ident = NULL;
 
 	switch (id) {
@@ -267,10 +269,8 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 			method = RAW_IMG;
 			middle_name = "select";
 			suffix = bpp_names[mod->bpp];
-			ident = "#0";
-						char buffl[8];
-			sprintf(buffl, "#%d", sub_id);
-			ident = &buffl[0];
+			snprintf(subId_str, 8, "#%d", sub_id);
+			ident = subId_str;
 		}
 		break;
 		case GR_ENDING:	/* subId - 0=won, 1=lost */
@@ -279,11 +279,8 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 			method = RAW_IMG;
 			middle_name = "endpic";
 			suffix = bpp_names[mod->bpp];
-			if (sub_id) {
-				ident = "#1";
-			} else {
-				ident = "#0";
-			}
+			snprintf(subId_str, 8, "#%d", sub_id);
+			ident = subId_str;
 		}
 		break;
 		case GR_ENDTILE:	/* subId - 0=grass, 1=wall, 2=hero */
@@ -292,9 +289,8 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 			method = RAW_IMG;
 			middle_name = "endpic";
 			suffix = bpp_names[mod->bpp];
-			char buffl[8];
-			sprintf(buffl, "#%d", sub_id - 2);
-			ident = &buffl[0];
+			snprintf(subId_str, 8, "#%d", sub_id - 2);
+			ident = subId_str;
 		}
 		break;
 		case GR_ENDTILES:
@@ -337,9 +333,8 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 				middle_name = "tileseta";
 			}
 			suffix = bpp_names[mod->bpp];
-			char buffl[8];
-			sprintf(buffl, "#%d", sub_id);
-			ident = &buffl[0];
+			snprintf(subId_str, 8, "#%d", sub_id);
+			ident = subId_str;
 		}
 		break;
 		case GR_TILESET:	/* subId - continent */
@@ -415,9 +410,8 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 			method = RAW_IMG;
 			middle_name = "cursor";
 			suffix = bpp_names[mod->bpp];
-			ident = "#0";
-			if (sub_id == 1) ident = "#1";
-			if (sub_id == 2) ident = "#2";
+			snprintf(subId_str, 8, "#%d", sub_id);
+			ident = subId_str;
 		}
 		break;
 		case GR_PIECE:
