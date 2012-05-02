@@ -116,8 +116,8 @@ typedef struct KBgamestate {
 		(RECT)->y = (HOST)->y
 
 #define RECT_AddPos(RECT, HOST) \
-		RECT->x += HOST->x, \
-		RECT->y += HOST->y
+		(RECT)->x += (HOST)->x, \
+		(RECT)->y += (HOST)->y
 
 #define RECT_Center(RECT, HOST) \
 		(RECT)->x = ((HOST)->w - (RECT)->w) / 2, \
