@@ -372,7 +372,8 @@ SDL_Rect* KB_MessageBox(const char *str, byte flag) {
 
 	int i, max_w = 28;
 
-	static SDL_Rect rect;
+	static SDL_Rect frame;	/* Outer rectangle */
+	SDL_Rect text;      	/* Inner rectangle */
 
 	if (flag & MSG_HARDCODED) {
 		max_w = 30;
@@ -390,21 +391,22 @@ SDL_Rect* KB_MessageBox(const char *str, byte flag) {
 	} while (str[i - 1] != '\0');
 
 	/* Keep in rect */
-	rect.w = max_w * fs->w;
-	rect.h = h * fs->h;
+	text.w = max_w * fs->w;
+	text.h = h * fs->h;
 
 	/* To the center of the screen */
-	rect.x = (screen->w - rect.w) / 2;
-	rect.y = (screen->h - rect.h) / 2;
+	RECT_Center(&text, screen);
 
 	/* A little bit up */
-	rect.y -= fs->h;//*2 !!
+	text.y -= fs->h / 2;
 
 	/* A nice frame */
-	rect.x -= fs->w;rect.y -= fs->h;rect.w += fs->w*2;rect.h += (fs->h*2);
-	SDL_TextRect(screen, &rect, ui, bg);
-	rect.x += fs->w;rect.y += fs->h;rect.w -= fs->w*2;rect.h -= (fs->h*2);
-	SDL_FillRect(screen, &rect, 0xFF0000);
+	frame.x = text.x - fs->w;
+	frame.y = text.y - fs->h;
+	frame.w = text.w + fs->w * 2;
+	frame.h = text.h + fs->h * 2;
+	SDL_TextRect(screen, &frame, ui, bg);
+	SDL_FillRect(screen, &text, 0xFF0000);
 
 	/* Restore color */
 	incolor(fg, bg);
@@ -417,7 +419,7 @@ SDL_Rect* KB_MessageBox(const char *str, byte flag) {
 		if (str[i] == '\n' || str[i] == '\0' || (str[i] == ' ' && w > max_w - 3)) {
 			buffer[w] = '\0';
 			buffer[w-1] = '\0';
-			inprint(screen, buffer, rect.x, rect.y + h * fs->h);
+			inprint(screen, buffer, text.x, text.y + h * fs->h);
 			w = 0;
 			buffer[0] = '\0';
 			h++;
@@ -428,7 +430,7 @@ SDL_Rect* KB_MessageBox(const char *str, byte flag) {
 	if (flag & MSG_FLUSH) KB_flip(sys);
 	if (flag & MSG_PAUSE) KB_Pause();
 
-	return &rect;
+	return &frame;
 }
 
 SDL_Rect* KB_BottomFrame() {
