@@ -449,40 +449,30 @@ KBgame *load_game() {
 void show_credits() {
 
 	SDL_Rect *fs = &sys->font_size;
+	SDL_Rect *max, pos = { 0 };
 
 	SDL_Surface *userpic = SDL_LoadRESOURCE(GR_SELECT, 2, 0);
 
-	SDL_Rect *max;
-
 	char *credits = KB_Resolve(STRL_CREDITS, 0);
-	if (credits == NULL) return;
-	int i, j = 0, n = 10;
-	char *credit = credits;
-	for (i = 0; i < n; ) {
-		if (*credit == '\0') {
-			i++;
-			*credit = '\n';
-		}
-		credit++;
-	}
-	
+
+	if (credits == NULL) credits = "openkb " PACKAGE_VERSION;
+
 	max = KB_MessageBox(credits, MSG_HARDCODED);
 
-	SDL_Rect pos = { 0 };
+	RECT_Size(&pos, userpic);
+	RECT_Right(&pos, max);
+	RECT_AddPos(&pos, max);
 
-	RECT_Size((&pos), userpic);
-	RECT_Right((&pos), max);
-	RECT_AddPos((&pos), max);	
-
-	pos.y += (fs->h * 2);
+	pos.x -= (fs->w * 1);
+	pos.y += (fs->h * 3);
 
 	SDL_BlitSurface(userpic, NULL, sys->screen, &pos);
 
-	SDL_Flip(sys->screen); 
+	KB_flip(sys);
+	KB_Pause();
 
 	SDL_FreeSurface(userpic);
-
-	KB_Pause();
+	free(credits);
 }
 
 KBgame *select_game(KBconfig *conf) {

@@ -23,9 +23,50 @@
 
 #include "kbconf.h"	/* KBmodule type */
 #include "kbres.h"	/* GR_? defines */
+#include "kbfile.h"	/* KB_File operations */
 
 #define TILE_W 48
 #define TILE_H 34
+
+#define STRL_MAX 1024
+
+char* GNU_read_textfile(KBmodule *mod, const char *textfile) {
+
+	KB_File *fd;
+	char *filename, *buf;
+	int n, i;
+
+	filename = KB_fastpath(mod->slotA_name, "/", textfile);
+	if (filename == NULL) return NULL; /* Out of memory */
+
+	KB_debuglog(0, "? FREE TXT FILE: %s\n", filename);
+
+	fd = KB_fopen(filename, "r");
+	if (fd == NULL) {
+		KB_debuglog(0, "> FAILED TO OPEN, %s\n", filename);
+		free(filename);
+		return NULL;
+	}
+
+	buf = malloc(sizeof(char) * STRL_MAX);
+	if (buf == NULL) {
+		KB_fclose(fd);
+		free(filename);
+		return NULL; /* Out of memory */
+	}
+
+	n = KB_fread(buf, sizeof(char), STRL_MAX, fd);
+	buf[n] = '\0';
+
+	/* Convert multi-line file to a strlist
+	for (i = 0; i < n; i++)
+		if (buf[i] == '\n') buf[i] = '\0';
+	*/
+	KB_fclose(fd);
+	free(filename);
+
+	return buf;
+}
 
 void* GNU_Resolve(KBmodule *mod, int id, int sub_id) {
 
@@ -141,6 +182,11 @@ void* GNU_Resolve(KBmodule *mod, int id, int sub_id) {
 		{
 			SDL_Rect tilesize = { 0, 0, TILE_W, TILE_H };
 			return KB_LoadTileset_ROWS(&tilesize, GNU_Resolve, mod);
+		}
+		break;
+		case STRL_CREDITS:	/* multiple lines of credits */
+		{
+			return GNU_read_textfile(mod, "credits.txt");
 		}
 		break;
 		default: break;

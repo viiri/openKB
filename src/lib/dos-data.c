@@ -138,7 +138,76 @@ char* DOS_read_strings(KBmodule *mod, int off, int endoff) {
 		free(buf);
 		return NULL;
 	}
+	buf[n] = '\0';
+	return buf;
+}
 
+char* DOS_read_credits(KBmodule *mod, int off, int endoff) {
+
+	char *buf, *raw, *ptr;
+	int max = endoff - off, newmax = max + 50;
+
+	raw = DOS_read_strings(mod, off, endoff);
+
+	buf = malloc(sizeof(char) * newmax);
+
+	ptr = raw;
+	buf[0] = '\0';
+
+	//DOS_compact_strings(mod, buf, len);
+
+	int need_tab = 0;
+	int need_jump = 0;
+	int need_center = 0;
+
+	int used = 0;
+	while(*ptr) {
+		int mlen = 0;
+		mlen = strlen(ptr);
+
+		/* Determine if decorations are needed */
+		if (!strncasecmp(ptr, "copyright", 9)) { /* Line is a copyright notice */
+			need_center = 1;
+			need_jump = 1;
+		}	
+		if (ptr[mlen - 1] == ':') { /* Line ends with ':', it's a title */
+			need_jump = used;
+		} else {	/* Line is probably a person's name */
+			need_tab = 2;
+		}
+		if (need_center) {
+			need_tab = (30 - mlen) / 2;
+		}
+		/* Apply decorations */
+		if (need_jump) {
+			strlcat(buf, "\n", newmax);
+			used++;
+			need_jump = 0;
+		}
+		if (need_tab) {
+			int i;
+			for (i = 0; i < need_tab; i++) buf[used + i] = ' ';
+			buf[used + i] = '\0';
+			used += need_tab;
+			need_tab = 0;
+		}
+		/* Apply actual string */
+		strlcat(buf, ptr, newmax);
+		used += mlen;
+
+		/* Advance pointer */
+		ptr += mlen;
+		if (ptr - raw < max) ptr++; 
+
+		/* Newline */
+		if (ptr - raw < max && used < newmax) {
+			buf[used] = '\n';
+			used ++;
+			buf[used] = '\0';
+		}
+	}
+
+	free(raw);
 	return buf;
 }
 
@@ -725,7 +794,7 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 		break;
 		case STRL_CREDITS:
 		{
-			return DOS_read_strings(mod, 0x16031, 0x160FF);
+			return DOS_read_credits(mod, 0x16031, 0x160FF);
 		}
 		break;
 		case STR_ENDING: /* subId - string index (indexes above 100 indicate next group) */
