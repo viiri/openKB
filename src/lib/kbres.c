@@ -25,6 +25,13 @@
 #include <SDL.h>
 #include <SDL_image.h>
 
+/* Expand resource macros */
+#define _(R) # R ,
+const char *KBresid_names[] = {
+RESOURCES
+};
+#undef _ 
+
 inline SDL_Surface* SDL_CreatePALSurface(Uint32 width, Uint32 height)
 {
 	return SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, 8, 0xFF, 0xFF, 0xFF, 0x00);

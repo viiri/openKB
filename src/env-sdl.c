@@ -476,6 +476,8 @@ void* KB_Resolve(int id, int sub_id) {
 		}
 		if (ret != NULL) break;
 	}
+	if (ret == NULL)
+		KB_errlog("Unable to resolve resource %s::%d (from %d modules)\n", KBresid_names[id], sub_id, l);
 	return ret;
 }
 
