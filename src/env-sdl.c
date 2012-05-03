@@ -172,17 +172,17 @@ void KB_print(KBenv *env, const char *str) {
 
 
 void KB_printf(KBenv *env, const char *fmt, ...) { 
-	char buf[256];
+	char buf[1024];
 	va_list argptr;
 	va_start(argptr, fmt);
-	vsnprintf(buf, 255, fmt, argptr);
+	vsnprintf(buf, 1024, fmt, argptr);
 	KB_print(env, buf);
 	va_end(argptr);
 }
 
 void KB_vprintf(KBenv *env, const char *fmt, va_list argptr) { 
-	char buf[256];
-	vsnprintf(buf, 255, fmt, argptr);
+	char buf[1024];
+	vsnprintf(buf, 1024, fmt, argptr);
 	KB_print(env, buf);
 }
 
