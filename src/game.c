@@ -1208,16 +1208,7 @@ void view_contract(KBgame *game) {
 
 		int j, continent = -1, castle = -1;
 
-		int desc_line = villain_id * 14;
-		
-		byte line_offsets[14] = {
-			7,
-			7,
-			7,
-			7,
-			10,
-			0,
-		};
+		char *text = KB_Resolve(STRL_VDESCS, villain_id);
 
 		/* Find his castle */
 		for (j = 0; j < MAX_CASTLES; j++) {
@@ -1230,25 +1221,12 @@ void view_contract(KBgame *game) {
 				break; /* No point in continuing from here, castle has been found */
 		}
 
-		/* Print all 14 lines */
+		/* Print description, along with known residence information */
 		KB_iloc(border.x + fs->w, border.y + fs->h);
-		for (j = 0; j < 14; j++) {
-			KB_icurs( line_offsets[j], j);
-			char *text = KB_Resolve(STR_VDESC, desc_line + j);
-			KB_iprintf("%s\n", text);
-		}
-
-		/* Print known info (continent and castle of residence) */
-		KB_icurs(18, 3);
-		if (continent == -1)
-			KB_iprint("Unknown");
-		else
-			KB_iprint(continent_names[continent]);
-		KB_icurs(18, 4);
-		if (castle == -1)
-			KB_iprint("Unknown");
-		else
-			KB_iprint(castle_names[castle]);
+		KB_iprintf(text,
+			(continent == -1 ? "Unknown" : continent_names[continent]),
+			(   castle == -1 ? "Unknown" : castle_names[castle])
+		);
 
 		int done = 0;
 		int frame = 0;
@@ -1903,8 +1881,9 @@ void gather_information(KBgame *game, int id) {
 	if (game->castle_owner[id] == 0x7F) {
 		KB_iprint("no one's rule.\n");
 	} else {
-		char *name = KB_Resolve(STR_VNAME, game->castle_owner[id] & 0x1F);
+		char *name = STR_LoadRESOURCE(STRL_VNAMES, 0, game->castle_owner[id] & 0x1F);
 		KB_iprintf("%s's rule.\n", name);
+		free(name);
 	}
 
 	/* Army */

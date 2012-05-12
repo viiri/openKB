@@ -211,6 +211,85 @@ char* DOS_read_credits(KBmodule *mod, int off, int endoff) {
 	return buf;
 }
 
+char* DOS_read_vdescs(KBmodule *mod, int off, int endoff, int skip_lines) {
+
+	char *buf, *raw, *ptr;
+	int max = endoff - off, 
+		newmax = max + max / 2;
+
+	raw = DOS_read_strings(mod, off, endoff);
+	if (raw == NULL) return NULL;
+
+	buf = malloc(sizeof(char) * newmax);
+	if (buf == NULL) {
+		free(raw);
+		return NULL; /* Out of memory */
+	}
+
+	ptr = raw;
+	buf[0] = '\0';
+
+	int line = 0;
+	int need_tab = 0;
+
+	byte line_offsets[14] = {
+		7,
+		7,
+		7,
+		7,
+		10,
+		0,
+	};
+
+	int used = 0;
+	while(*ptr && line < skip_lines + 14) {
+		int mlen = 0;
+		mlen = strlen(ptr);
+
+		if (line < skip_lines) {
+			ptr += mlen;
+			if (ptr - raw < max) ptr++;
+			line++;
+			continue;
+		}
+
+		/* Determine if decorations are needed */
+		need_tab = line_offsets[line - skip_lines];
+		line++;
+		/* Apply decorations */
+		if (need_tab) {
+			int i;
+			for (i = 0; i < need_tab; i++) buf[used + i] = ' ';
+			buf[used + i] = '\0';
+			used += need_tab;
+			need_tab = 0;
+		}
+		/* Apply actual string */
+		strlcat(buf, ptr, newmax);
+		used += mlen;
+		/* Hack -- Apply extra '%s' */
+		if (!strncasecmp(ptr, "last seen:", 10)
+		 || !strncasecmp(ptr, "castle:", 7)) {
+		 	KB_strlcat(buf, " %s", newmax);
+		 	used += 3;
+		 }
+
+		/* Advance pointer */
+		ptr += mlen;
+		if (ptr - raw < max) ptr++; 
+ 
+		/* Newline */
+		if (ptr - raw < max && used < newmax) {
+			buf[used] = '\n';
+			used ++;
+			buf[used] = '\0';
+		}
+	}
+
+	free(raw);
+	return buf;
+}
+
 void DOS_compact_strings(KBmodule *mod, char *buf, int len) {
 	int i;
 	for (i = 0; i < len - 1; i++)
@@ -776,14 +855,13 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 		break;
 		case STR_VDESC:
 		{
-			int villain = sub_id / 13;
-			int line = sub_id - (villain * 13);
 			return KB_strlist_ind(DOS_Resolve(mod, STRL_VDESCS, 0), sub_id);
 		}
 		break;
 		case STRL_VDESCS:
 		{
-			return DOS_read_strings(mod, 0x16edf, 0x18427);
+			int line = sub_id * 14;
+			return DOS_read_vdescs(mod, 0x16edf, 0x18427, line);
 			//int ptroff = 0x16bf4;//17 * 13
 		}
 		break;

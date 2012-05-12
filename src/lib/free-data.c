@@ -189,6 +189,14 @@ void* GNU_Resolve(KBmodule *mod, int id, int sub_id) {
 			return GNU_read_textfile(mod, "credits.txt");
 		}
 		break;
+		case STRL_VDESCS:	/* multiple lines of villain description */
+		{
+			char tmp[128];
+			KB_strcpy(tmp, DOS_villain_names[sub_id]);
+			KB_strcat(tmp, ".txt");
+			return GNU_read_textfile(mod, tmp);
+		}
+		break;
 		default: break;
 	}
 
