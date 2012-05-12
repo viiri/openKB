@@ -438,6 +438,91 @@ void SDL_FreeCachedSurfaces() {
 		surf_cache[id][sub_id] = NULL; 
 	}
 }
+/* Convert strlist into an array of strings (accessible by index). Expensive. */
+char **STRL_LoadArray(int id, int sub_id) {
+
+	char **arr;
+	char *list;
+	int i, max;
+
+	list = (char*)KB_Resolve(id, sub_id);
+	if (list == NULL) return NULL;
+
+	max = KB_strlist_max(list);
+	arr = malloc(sizeof(char*) * (max+1));
+	if (arr == NULL) return NULL;
+
+	for (i = 0; i < max; i++) {
+
+		char *item = KB_strlist_ind(list, i);
+		int len = strlen(item);
+
+		arr[i] = malloc(sizeof(char) * len);
+		if (arr[i] == NULL) { /* Out of memory */
+			STRL_FreeArray(arr);
+			free(list);
+			return NULL;
+		}
+		memcpy(arr[i], item, len);
+		arr[i][len] = '\0';
+	}
+	arr[i] = NULL;
+
+	free(list);
+	return arr;
+}
+void STRL_FreeArray(char **arr) {
+	int i;
+	for (i = 0; arr[i]; i++) {
+		free(arr[i]);
+	}
+	free(arr);
+}
+#if 0
+/* Same as TakeSurface/FreeCachedSurfaces but for strings */
+char **strl_cache[64][64] = { NULL };
+char **STRL_TakeArray(int id, int sub_id) {
+	char **ret = NULL;
+	int cid = FIRST_STRL - id;
+	if (cid < 64 && sub_id < 64) {
+		if (strl_cache[cid][sub_id] != NULL)
+		{ 
+			return strl_cache[cid][sub_id];
+		} 
+	}
+	ret = STRL_LoadArray(id, sub_id);
+	if (cid < 64 && sub_id < 64) {
+		strl_cache[cid][sub_id] = ret;
+	}
+	return ret;
+}
+void STRL_FreeCachedArrays() {
+	int id, sub_id;
+	for (id = 0; id < 64; id++)
+	for (sub_id = 0; sub_id < 64; sub_id++) {
+		if (strl_cache[id][sub_id] != NULL) 
+			STRL_FreeArray(strl_cache[id][sub_id]);
+		strl_cache[id][sub_id] = NULL; 
+	}
+}
+#endif
+#if 1
+char *STRL_LoadRESOURCE(int id, int sub_id) {
+	return (char*)KB_Resolve(id, sub_id);
+}
+
+char *STR_LoadRESOURCE(int id, int sub_id, int line) {
+	char *list = KB_Resolve(id, sub_id);
+	char *match = KB_strlist_ind(list, line);
+	int len = strlen(match);
+	char *item = malloc(sizeof(char) * len);
+	item[0] = '\0';
+	KB_strncpy(item, match, len);
+	/* FREE! */
+	free(list);
+	return match;
+}
+#endif
 
 SDL_Rect* RECT_LoadRESOURCE(int id, int sub_id) {
 	int zoom = (conf->filter ? 2 : 1);
@@ -451,7 +536,6 @@ SDL_Rect* RECT_LoadRESOURCE(int id, int sub_id) {
 }
 
 SDL_Surface* KB_LoadIMG8(int id, int sub_id) {
-
 	SDL_Surface *surf = (SDL_Surface *)KB_Resolve(id, sub_id);
 	return surf;
 }
