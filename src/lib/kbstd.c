@@ -71,6 +71,18 @@ void  KB_errlog(char *fmt, ...)
 	va_end(argptr);
 }
 
+int KB_strlist_max(const char *list)
+{
+	int ind = 0, i = 0, n = sizeof(list);
+	while (i < n) {
+		if (list[i++] == '\0') {
+			ind++;
+			if (i < n && list[i++] == '\0') break;
+		}
+	}
+	return ind;
+}
+
 char* KB_strlist_ind(const char *list, int id)
 {
 	const char *match = list;
