@@ -109,7 +109,9 @@
 #define _(R) R,
 enum { 
 	RESOURCES 
-	GR_HERO = GR_CURSOR
+	GR_HERO = GR_CURSOR,
+	FIRST_STR = STR_SIGN,
+	FIRST_STRL = STRL_SIGNS,
 };
 #undef _
 
