@@ -25,9 +25,21 @@
 #include <SDL.h>
 #include <SDL_image.h>
 
+/* Expand resource macros */
+#define _(R) # R ,
+const char *KBresid_names[] = {
+RESOURCES
+};
+#undef _ 
+
 inline SDL_Surface* SDL_CreatePALSurface(Uint32 width, Uint32 height)
 {
 	return SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, 8, 0xFF, 0xFF, 0xFF, 0x00);
+}
+
+inline void SDL_ClonePalette(SDL_Surface *dst, SDL_Surface *src)
+{
+	SDL_SetPalette(dst, SDL_LOGPAL | SDL_PHYSPAL, src->format->palette->colors, 0, src->format->palette->ncolors);
 }
 
 void SDL_BlitXBPP(const char *src, SDL_Surface *dest, SDL_Rect *dstrect, int bpp)
@@ -203,4 +215,120 @@ SDL_Surface* KB_LoadIMG(const char *filename) {
 		surf = IMG_Load_RW(rw, 0);
 	SDL_RWclose(rw);
 	return surf;
+}
+
+
+/*
+ * Load each individual tile surface using the "resolve" callback and copy
+ * them into a 8 x 7 tileset.
+ * Returns newly allocated SDL_Surface.
+ */
+SDL_Surface* KB_LoadTileset_TILES(SDL_Rect *tilesize, KBresolve_cb resolve, KBmodule *mod) {
+
+	int i;
+	SDL_Rect dst = { 0, 0, tilesize->w, tilesize->h };
+	SDL_Rect src = { 0, 0, tilesize->w, tilesize->h };
+
+	SDL_Surface *ts = SDL_CreatePALSurface(8 * dst.w, 70/7 * dst.h);
+	if (ts == NULL) return NULL;	
+
+	for (i = 0; i < 72; i++) {
+		SDL_Surface *tile = resolve(mod, GR_TILE, i);
+		SDL_ClonePalette(ts, tile);
+		SDL_BlitSurface(tile, &src, ts, &dst);
+		dst.x += dst.w;
+		if (dst.x >= ts->w) {
+			dst.x = 0;
+			dst.y += dst.h;
+		}
+		SDL_FreeSurface(tile);
+	}
+
+	return ts;
+}
+
+/*
+ * Load two rows of tiles (36 tiles each) using the "resolve" callback and copy
+ * them into a 8 x 7 tileset.
+ * Returns newly allocated SDL_Surface.
+ */
+SDL_Surface* KB_LoadTileset_ROWS(SDL_Rect *tilesize, KBresolve_cb resolve, KBmodule *mod) {
+
+	int i;
+	SDL_Rect dst = { 0, 0, tilesize->w, tilesize->h };
+	SDL_Rect src = { 0, 0, tilesize->w, tilesize->h };
+	SDL_Surface *row = NULL;
+
+	SDL_Surface *ts = SDL_CreatePALSurface(8 * dst.w, 70/7 * dst.h);
+	if (ts == NULL) return NULL;
+
+	row = resolve(mod, GR_TILEROW, 0);
+	if (row->format->palette)
+		SDL_ClonePalette(ts, row);
+	else
+		KB_errlog("Warning - can't read palette in a 24-bpp file\n");
+
+	for (i = 0; i < 72; i++) {
+
+		/* Reload source row in the middle of the loop: */
+		if (i == 36) {
+			SDL_FreeSurface(row);
+			row = resolve(mod, GR_TILEROW, 36);
+			src.x = 0;
+			src.y = 0;
+		}
+		if (dst.x >= ts->w) {
+			dst.x = 0;
+			dst.y += dst.h;
+		}
+		SDL_BlitSurface(row, &src, ts, &dst);
+		if (dst.w != src.w) {
+			KB_errlog("Missing pixels for tile %d -- need %d, have %d\n", i, src.w, dst.w);
+			dst.w = src.w;
+		}
+		dst.x += dst.w;
+		src.x += src.w;
+	}
+	SDL_FreeSurface(row);
+
+	return ts;
+}
+
+/* Load new tileset, salted according to continent */
+SDL_Surface* KB_LoadTilesetSalted(byte continent, KBresolve_cb resolve, KBmodule *mod) {
+
+	int i, tiles_per_row;
+	SDL_Rect tilesize, src, dst;
+	SDL_Surface *tileset, *tilesalt;
+
+	tileset = resolve(mod, GR_TILESET, 0);
+	if (!continent) return tileset; /* Continent 0 is never salted */
+
+	tilesalt = resolve(mod, GR_TILESALT, continent);
+
+	/* Figure out the size of single tile */
+	tilesize.w = tilesalt->w / 3;
+	tilesize.h = tilesalt->h;
+	tiles_per_row = tileset->w / tilesize.w;
+
+	/* Copy tilesalt tiles 0, 1, 2 to tileset tiles 17, 18, 19 */
+	src.y = 0;
+	dst.w = src.w = tilesize.w;
+	dst.h = src.h = tilesize.h;
+
+	for (i = 0; i < 3; i++) {
+		int tid = 17 + i;
+
+		int row = tid / tiles_per_row;
+		int col = tid % tiles_per_row;
+
+		src.x = i * tilesize.w;
+		dst.x = col * tilesize.w;
+		dst.y = row * tilesize.h;
+
+		SDL_BlitSurface(tilesalt, &src, tileset, &dst);
+	}
+
+	SDL_FreeSurface(tilesalt);
+	return tileset;
 }

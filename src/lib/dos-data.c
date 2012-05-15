@@ -138,7 +138,155 @@ char* DOS_read_strings(KBmodule *mod, int off, int endoff) {
 		free(buf);
 		return NULL;
 	}
+	buf[n] = '\0';
+	return buf;
+}
 
+char* DOS_read_credits(KBmodule *mod, int off, int endoff) {
+
+	char *buf, *raw, *ptr;
+	int max = endoff - off, newmax = max + 50;
+
+	raw = DOS_read_strings(mod, off, endoff);
+
+	buf = malloc(sizeof(char) * newmax);
+
+	ptr = raw;
+	buf[0] = '\0';
+
+	//DOS_compact_strings(mod, buf, len);
+
+	int need_tab = 0;
+	int need_jump = 0;
+	int need_center = 0;
+
+	int used = 0;
+	while(*ptr) {
+		int mlen = 0;
+		mlen = strlen(ptr);
+
+		/* Determine if decorations are needed */
+		if (!strncasecmp(ptr, "copyright", 9)) { /* Line is a copyright notice */
+			need_center = 1;
+			need_jump = 1;
+		}	
+		if (ptr[mlen - 1] == ':') { /* Line ends with ':', it's a title */
+			need_jump = used;
+		} else {	/* Line is probably a person's name */
+			need_tab = 2;
+		}
+		if (need_center) {
+			need_tab = (30 - mlen) / 2;
+		}
+		/* Apply decorations */
+		if (need_jump) {
+			strlcat(buf, "\n", newmax);
+			used++;
+			need_jump = 0;
+		}
+		if (need_tab) {
+			int i;
+			for (i = 0; i < need_tab; i++) buf[used + i] = ' ';
+			buf[used + i] = '\0';
+			used += need_tab;
+			need_tab = 0;
+		}
+		/* Apply actual string */
+		strlcat(buf, ptr, newmax);
+		used += mlen;
+
+		/* Advance pointer */
+		ptr += mlen;
+		if (ptr - raw < max) ptr++; 
+
+		/* Newline */
+		if (ptr - raw < max && used < newmax) {
+			buf[used] = '\n';
+			used ++;
+			buf[used] = '\0';
+		}
+	}
+
+	free(raw);
+	return buf;
+}
+
+char* DOS_read_vdescs(KBmodule *mod, int off, int endoff, int skip_lines) {
+
+	char *buf, *raw, *ptr;
+	int max = endoff - off, 
+		newmax = max + max / 2;
+
+	raw = DOS_read_strings(mod, off, endoff);
+	if (raw == NULL) return NULL;
+
+	buf = malloc(sizeof(char) * newmax);
+	if (buf == NULL) {
+		free(raw);
+		return NULL; /* Out of memory */
+	}
+
+	ptr = raw;
+	buf[0] = '\0';
+
+	int line = 0;
+	int need_tab = 0;
+
+	byte line_offsets[14] = {
+		7,
+		7,
+		7,
+		7,
+		10,
+		0,
+	};
+
+	int used = 0;
+	while(*ptr && line < skip_lines + 14) {
+		int mlen = 0;
+		mlen = strlen(ptr);
+
+		if (line < skip_lines) {
+			ptr += mlen;
+			if (ptr - raw < max) ptr++;
+			line++;
+			continue;
+		}
+
+		/* Determine if decorations are needed */
+		need_tab = line_offsets[line - skip_lines];
+		line++;
+		/* Apply decorations */
+		if (need_tab) {
+			int i;
+			for (i = 0; i < need_tab; i++) buf[used + i] = ' ';
+			buf[used + i] = '\0';
+			used += need_tab;
+			need_tab = 0;
+		}
+		/* Apply actual string */
+		strlcat(buf, ptr, newmax);
+		used += mlen;
+		/* Hack -- Apply extra '%s' */
+		if (!strncasecmp(ptr, "last seen:", 10)
+		 || !strncasecmp(ptr, "castle:", 7)) {
+		 	KB_strlcat(buf, " %s", newmax);
+		 	used += 3;
+		 }
+
+		/* Advance pointer */
+		ptr += mlen;
+		if (ptr - raw < max) ptr++; 
+ 
+		/* Newline */
+		if (ptr - raw < max && used < newmax) {
+			buf[used] = '\n';
+			used ++;
+			buf[used] = '\0';
+		}
+	}
+
+	free(raw);
 	return buf;
 }
 
@@ -240,6 +388,8 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 		NULL, ".256",	//7, 8
 	};
 
+	char subId_str[8];
+
 	middle_name = suffix = ident = NULL;
 
 	switch (id) {
@@ -267,10 +417,8 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 			method = RAW_IMG;
 			middle_name = "select";
 			suffix = bpp_names[mod->bpp];
-			ident = "#0";
-						char buffl[8];
-			sprintf(buffl, "#%d", sub_id);
-			ident = &buffl[0];
+			snprintf(subId_str, 8, "#%d", sub_id);
+			ident = subId_str;
 		}
 		break;
 		case GR_ENDING:	/* subId - 0=won, 1=lost */
@@ -279,11 +427,8 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 			method = RAW_IMG;
 			middle_name = "endpic";
 			suffix = bpp_names[mod->bpp];
-			if (sub_id) {
-				ident = "#1";
-			} else {
-				ident = "#0";
-			}
+			snprintf(subId_str, 8, "#%d", sub_id);
+			ident = subId_str;
 		}
 		break;
 		case GR_ENDTILE:	/* subId - 0=grass, 1=wall, 2=hero */
@@ -292,9 +437,8 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 			method = RAW_IMG;
 			middle_name = "endpic";
 			suffix = bpp_names[mod->bpp];
-			char buffl[8];
-			sprintf(buffl, "#%d", sub_id - 2);
-			ident = &buffl[0];
+			snprintf(subId_str, 8, "#%d", sub_id - 2);
+			ident = subId_str;
 		}
 		break;
 		case GR_ENDTILES:
@@ -337,31 +481,34 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 				middle_name = "tileseta";
 			}
 			suffix = bpp_names[mod->bpp];
-			char buffl[8];
-			sprintf(buffl, "#%d", sub_id);
-			ident = &buffl[0];
+			snprintf(subId_str, 8, "#%d", sub_id);
+			ident = subId_str;
 		}
 		break;
 		case GR_TILESET:	/* subId - continent */
 		{
-#define SDL_ClonePalette(DST, SRC) SDL_SetPalette((DST), SDL_LOGPAL | SDL_PHYSPAL, (SRC)->format->palette->colors, 0, (SRC)->format->palette->ncolors)
-			/* This one must be assembled */
-			int i;
-			SDL_Rect dst = { 0, 0, DOS_TILE_W, DOS_TILE_H };
-			SDL_Rect src = { 0, 0, DOS_TILE_W, DOS_TILE_H };
-			SDL_Surface *ts = SDL_CreatePALSurface(8 * dst.w, 70/7 * dst.h);
-			for (i = 0; i < 72; i++) {
-				SDL_Surface *tile = DOS_Resolve(mod, GR_TILE, i);
-				SDL_ClonePalette(ts, tile);
-				SDL_BlitSurface(tile, &src, ts, &dst);
-				dst.x += dst.w;
-				if (dst.x >= ts->w) {
-					dst.x = 0;
-					dst.y += dst.h;
-				}
-				SDL_FreeSurface(tile);
+			SDL_Rect tilesize = { 0, 0, DOS_TILE_W, DOS_TILE_H };
+			if (sub_id) return KB_LoadTilesetSalted(sub_id, DOS_Resolve, mod);
+			return KB_LoadTileset_TILES(&tilesize, DOS_Resolve, mod);
+			//return KB_LoadTileset_ROWS(&tilesize, DOS_Resolve, mod);
+		}
+		break;
+		case GR_TILESALT:	/* subId - 0=full; 1-3=continent */
+		{
+			/* A row of replacement tiles. */
+			method = IMG_ROW;
+			middle_name = "tilesalt";
+			suffix = bpp_names[mod->bpp];
+			ident = "";
+			if (sub_id) {
+				/* 3 tiles per continent */
+				row_start = (sub_id - 1) * 3;
+				row_frames = 3;
+			} else {
+				/* All of them */
+				row_start = 0;
+				row_frames = 9;
 			}
-			return ts;
 		}
 		break;
 		case GR_CURSOR:	/* subId - undefined */
@@ -411,9 +558,8 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 			method = RAW_IMG;
 			middle_name = "cursor";
 			suffix = bpp_names[mod->bpp];
-			ident = "#0";
-			if (sub_id == 1) ident = "#1";
-			if (sub_id == 2) ident = "#2";
+			snprintf(subId_str, 8, "#%d", sub_id);
+			ident = subId_str;
 		}
 		break;
 		case GR_PIECE:
@@ -490,30 +636,20 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 				CASTLE,
 				MAP_OBJECT,
 			} tile_type;
-			Uint32 ega_minimap_index[8] = {
-				0x0000FF,
-				0x0000AA,
-				0x00FF00,
-				0xFFFF55,
-				0xAA5500,
-				0x00AA00,
-				0xFFFFFF,
-				0xFF0000,
+			byte ega_minimap_index[8] = {
+				EGA_BLUE,
+				EGA_DBLUE,
+				EGA_GREEN,
+				EGA_YELLOW,
+				EGA_BROWN,
+				EGA_DGREEN,
+				EGA_WHITE,
+				EGA_DRED,
 			};
-			static Uint32 colors[255];
+			static Uint32 colors[256];
 
-			byte tile;
-			for (tile = 0; tile < 255; tile++) {
-#define IS_GRASS(M) ((M) < 2 || (M) == 0x80)
-#define IS_WATER(M) ((M) >= 0x14 && (M) <= 0x20)
-#define IS_DESERT(M) ((M) >= 0x2e && (M) <= 0x3a)
-#define IS_INTERACTIVE(M) ((M) & 0x80)
-
-#define IS_ROCK(M) ((M) >= 59 && (M) <= 71)
-#define IS_TREE(M) ((M) >= 33 && (M) <= 45)
-#define IS_CASTLE(M) ((M) >= 0x02 && (M) <= 0x07)
-#define IS_MAPOBJECT(M) ((M) >= 10 && (M) <= 19)
-#define IS_DEEP_WATER(M) ((M) == 32)
+			int tile;
+			for (tile = 0; tile < 256; tile++) {
 
 				if ( IS_GRASS(tile) ) tile_type = GRASS;
 				else if ( IS_DEEP_WATER(tile) ) tile_type = DEEP_WATER;
@@ -524,18 +660,150 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 				else if ( IS_CASTLE(tile) ) tile_type = CASTLE;
 				else if ( IS_MAPOBJECT(tile) || IS_INTERACTIVE(tile)) tile_type = MAP_OBJECT;
 
-				colors[tile] = ega_minimap_index[tile_type];
+				colors[tile] = ega_pallete_rgb[ega_minimap_index[tile_type]];
 			}
 			return &colors;
 		}
 		break;
 		case COL_TEXT:
 		{
-			static Uint32 colors[16] = {
-				0xAA0000, 0xFFFFFF,
-				0xAA0000, 0xFFFFFF,
+			byte ega_scheme_chrome_index[] = {
+				EGA_BLACK,	// background
+				EGA_WHITE,	// text1
+				EGA_WHITE,	// text2
+				EGA_WHITE,	// text3
+				EGA_WHITE,	// text4
+				EGA_MAGENTA,// shadow1
+				EGA_MAGENTA,// shadow2
+				EGA_WHITE,	// frame1
+				EGA_WHITE,	// frame2
+				EGA_WHITE,	// sel_background
+				EGA_BLACK,	// sel_text1
+				EGA_BLACK,	// sel_text2
+				EGA_BLACK,	// sel_text3
+				EGA_BLACK,	// sel_text4
+				EGA_MAGENTA,// sel_shadow1
+				EGA_MAGENTA,// sel_shadow2
+				EGA_WHITE,	// sel_frame1
+				EGA_WHITE,	// sel_frame2
 			};
-			return &colors; 
+			byte ega_scheme_status_index[] = {
+				EGA_DRED,	// background
+				EGA_WHITE,	// text1
+				EGA_WHITE,	// text2
+				EGA_WHITE,	// text3
+				EGA_WHITE,	// text4
+				EGA_MAGENTA,// shadow1
+				EGA_MAGENTA,// shadow2
+				EGA_YELLOW,	// frame1
+				EGA_YELLOW,	// frame2
+				EGA_DRED,	// sel_background
+				EGA_WHITE,	// sel_text1
+				EGA_WHITE,	// sel_text2
+				EGA_WHITE,	// sel_text3
+				EGA_WHITE,	// sel_text4
+				EGA_MAGENTA,// sel_shadow1
+				EGA_MAGENTA,// sel_shadow2
+				EGA_YELLOW,	// sel_frame1
+				EGA_YELLOW,	// sel_frame2
+			};
+			byte ega_scheme_menu_index[] = {
+				EGA_DBLUE,	// background
+				EGA_WHITE,	// text1
+				EGA_WHITE,	// text2
+				EGA_WHITE,	// text3
+				EGA_WHITE,	// text4
+				EGA_MAGENTA,// shadow1
+				EGA_MAGENTA,// shadow2
+				EGA_YELLOW,	// frame1
+				EGA_YELLOW,	// frame2
+				EGA_DBLUE,	// sel_background
+				EGA_WHITE,	// sel_text1
+				EGA_WHITE,	// sel_text2
+				EGA_WHITE,	// sel_text3
+				EGA_WHITE,	// sel_text4
+				EGA_MAGENTA,// sel_shadow1
+				EGA_MAGENTA,// sel_shadow2
+				EGA_YELLOW,	// sel_frame1
+				EGA_YELLOW,	// sel_frame2
+			};			
+			byte ega_scheme_mb_index[] = {
+				EGA_DBLUE,	// background
+				EGA_WHITE,	// text1
+				EGA_WHITE,	// text2
+				EGA_WHITE,	// text3
+				EGA_WHITE,	// text4
+				EGA_MAGENTA,// shadow1
+				EGA_MAGENTA,// shadow2
+				EGA_YELLOW,	// frame1
+				EGA_YELLOW,	// frame2
+				EGA_WHITE,	// sel_background
+				EGA_BLUE,	// sel_text1
+				EGA_BLUE,	// sel_text2
+				EGA_BLUE,	// sel_text3
+				EGA_BLUE,	// sel_text4
+				EGA_MAGENTA,// sel_shadow1
+				EGA_MAGENTA,// sel_shadow2
+				EGA_MAGENTA,// sel_frame1
+				EGA_MAGENTA,// sel_frame2
+			};
+			byte ega_scheme_savefile_index[] = {
+				EGA_BLUE,	// background
+				EGA_WHITE,	// text1
+				EGA_WHITE,	// text2
+				EGA_WHITE,	// text3
+				EGA_WHITE,	// text4
+				EGA_MAGENTA,// shadow1
+				EGA_MAGENTA,// shadow2
+				EGA_MAGENTA,// frame1
+				EGA_MAGENTA,// frame2
+				EGA_WHITE,	// sel_background
+				EGA_BLUE,	// sel_text1
+				EGA_BLUE,	// sel_text2
+				EGA_BLUE,	// sel_text3
+				EGA_BLUE,	// sel_text4
+				EGA_MAGENTA,// sel_shadow1
+				EGA_MAGENTA,// sel_shadow2
+				EGA_MAGENTA,// sel_frame1
+				EGA_MAGENTA,// sel_frame2
+			};
+			byte *ega_index_ptr;
+			int i;
+			Uint32 *colors;
+
+			colors = malloc(sizeof(Uint32) * COLORS_MAX);
+			if (colors == NULL) return NULL;
+
+			switch (sub_id) {
+				case CS_MINIMENU:	/* Savefile selection */
+					ega_index_ptr = ega_scheme_savefile_index;
+					break;
+				case CS_CHROME: 	/* Bare UI */
+					ega_index_ptr = ega_scheme_chrome_index;
+					break;
+				case CS_TOPMENU:	/* Menu */
+					ega_index_ptr = ega_scheme_menu_index;
+					break;
+				case CS_STATUS_1: /* Status bar .. by difficulty */
+				case CS_STATUS_2:
+				case CS_STATUS_3:
+				case CS_STATUS_4:
+				case CS_STATUS_5:
+					ega_index_ptr = ega_scheme_status_index;
+					break;
+				case CS_GENERIC:
+				default: /* Default Message Box */
+					ega_index_ptr = ega_scheme_mb_index;
+					break;
+			}
+
+			for (i = 0; i < COLORS_MAX; i++) {
+
+				colors[i] = ega_pallete_rgb[ega_index_ptr[i]];
+
+			}
+
+			return colors;
 		}	
 		break;
 		case STR_SIGN:
@@ -587,14 +855,13 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 		break;
 		case STR_VDESC:
 		{
-			int villain = sub_id / 13;
-			int line = sub_id - (villain * 13);
 			return KB_strlist_ind(DOS_Resolve(mod, STRL_VDESCS, 0), sub_id);
 		}
 		break;
 		case STRL_VDESCS:
 		{
-			return DOS_read_strings(mod, 0x16edf, 0x18427);
+			int line = sub_id * 14;
+			return DOS_read_vdescs(mod, 0x16edf, 0x18427, line);
 			//int ptroff = 0x16bf4;//17 * 13
 		}
 		break;
@@ -605,7 +872,7 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 		break;
 		case STRL_CREDITS:
 		{
-			return DOS_read_strings(mod, 0x16031, 0x160FF);
+			return DOS_read_credits(mod, 0x16031, 0x160FF);
 		}
 		break;
 		case STR_ENDING: /* subId - string index (indexes above 100 indicate next group) */

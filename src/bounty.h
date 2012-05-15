@@ -56,13 +56,11 @@
 
 #define FRIENDLY_FOLLOWERS 5
 
-#define IS_GRASS(M) ((M) < 2 || (M) == 0x80)
-#define IS_WATER(M) ((M) >= 0x14 && (M) <= 0x20)
-#define IS_DESERT(M) ((M) >= 0x2e && (M) <= 0x3a)
-#define IS_INTERACTIVE(M) ((M) & 0x80)
-
 #define DAY_STEPS	40
 #define WEEK_DAYS	5
+
+#define PUZZLEMAP_W	5
+#define PUZZLEMAP_H	5
 
 typedef struct KBgame KBgame;
 
@@ -287,6 +285,6 @@ extern char *continent_names[4];
 extern byte castle_coords[MAX_CASTLES][3];	/* [continent][x][y] */
 extern byte town_coords[MAX_CASTLES][3];
 
-extern signed char puzzle_map[5][5]; /* each piece is covered by villain face or artifact */
+extern signed char puzzle_map[PUZZLEMAP_H][PUZZLEMAP_W]; /* each piece is covered by villain face or artifact */
 
 #endif /* _OPENKB_BOUNTY_H */

@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.56])
-AC_INIT(openkb, 0.0.1, https://sourceforge.net/p/openkb/tickets/)
+AC_INIT(openkb, 0.0.2, https://sourceforge.net/p/openkb/tickets/)
 
 AC_CONFIG_SRCDIR([src/main.c])
 AC_CONFIG_HEADERS([src/config.h])

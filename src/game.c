@@ -22,6 +22,8 @@
 
 #include "bounty.h"
 #include "play.h"
+#include "save.h"
+#include "ui.h"
 #include "lib/kbconf.h"
 #include "lib/kbres.h"
 #include "lib/kbauto.h"
@@ -31,30 +33,10 @@
 
 #include "env.h"
 
-#define MAX_HOTSPOTS	64
-
 /* Global/main environment */
 KBenv *sys = NULL;
 
-struct {
-
-	SDL_Rect *frames[6];
-
-	SDL_Surface *border[6];
-
-	SDL_Rect map;
-	SDL_Rect status;
-	SDL_Rect side;
-
-	SDL_Rect *map_tile;
-	SDL_Rect *side_tile;
-
-	int boat_flip;
-	int hero_flip;
-
-} local = { NULL };
-
-void update_frames();
+void update_ui_frames();
 
 void prepare_resources() {
 
@@ -73,7 +55,11 @@ void prepare_resources() {
 	local.map_tile = RECT_LoadRESOURCE(RECT_TILE, 0);
 	local.side_tile = RECT_LoadRESOURCE(RECT_UITILE, 0);
 
-	update_frames();
+	local.message_colors = KB_Resolve(COL_TEXT, CS_GENERIC);
+	local.status_colors = KB_Resolve(COL_TEXT, CS_STATUS_2);
+	local.topmenu_colors = KB_Resolve(COL_TEXT, CS_TOPMENU);
+
+	update_ui_frames();
 }
 
 void free_resources() {
@@ -90,12 +76,21 @@ void free_resources() {
 
 	free(local.map_tile);
 	free(local.side_tile);
-	
+
+	free(local.message_colors);
+	free(local.status_colors);
+	free(local.topmenu_colors);
+
 	SDL_FreeCachedSurfaces();
-	
+
 }
 
-void update_frames() {
+void update_ui_colors(KBgame *game) {
+	if (local.status_colors) free(local.status_colors);
+	local.status_colors = KB_Resolve(COL_TEXT, CS_STATUS_1 + game->difficulty);
+}
+
+void update_ui_frames() {
 
 	SDL_Surface *screen = sys->screen;
 	SDL_Rect *fs = &sys->font_size;
@@ -121,435 +116,15 @@ void update_frames() {
 }
 
 
-/* TOH */
-KBgame* KB_loadDAT(const char* filename);
-int KB_saveDAT(const char* filename, KBgame *game);
 
-/*
- * Hotspot is a possible player action.
- *
- * NOTE: The 'coords'/'timer' union should be taken care of.
- * When hotspot acts as a timer, 'w' and 'h' read from SDL_Rect are zeroes,
- * safely bypassing mouseover tests (e.g. "mouseX >= foo && mouseX < foo + 0").
- * 
- */
-typedef struct KBhotspot {
-
-	union {
-		SDL_Rect coords;
-		struct {
-			Uint32 resolution;
-			Uint32 passed;
-		};
-	};
-
-	Uint32	hot_key;
-	byte	hot_mod;
-	byte	flag;
-
-} KBhotspot;
-
-typedef struct KBgamestate {
-
-	KBhotspot spots[MAX_HOTSPOTS];
-	int max_spots;
-	int hover;
-	Uint32 last;
-
-} KBgamestate;
-
-#define KFLAG_ANYKEY	0x01
-#define KFLAG_RETKEY	0x02
-
-#define KFLAG_TIMER 	0x10
-#define KFLAG_TIMEKEY	0x20
-
-#define KFLAG_SOFTKEY 	(KFLAG_TIMER | KFLAG_TIMEKEY)
-
-#define SDLK_SYN 0x16
-
-#define SOFT_WAIT 150
-#define SHORT_WAIT 50
-
-#define _NON { 0 }
-#define _TIME(INTERVAL) { INTERVAL, 0 }
-#define _AREA(X,Y,W,H) { X, Y, W, H }
-
-KBgamestate debug_menu = {
-	{
-		{	_NON, SDLK_LEFT, 0, KFLAG_RETKEY, },
-		{	_NON, SDLK_RIGHT, 0, KFLAG_RETKEY, },
-		{	_NON, SDLK_SPACE, 0, KFLAG_RETKEY, },
-		0,
-	},
-	0
-};
-
-KBgamestate press_any_key = {
-	{
-		{	_AREA(0, 0, 1024, 768), 0xFF, 0, KFLAG_ANYKEY },
-		0,
-	},
-	0
-};
-
-KBgamestate press_any_key_interactive = {
-	{
-		{	_AREA(0, 0, 1024, 768), 0xFF, 0, KFLAG_ANYKEY },
-		{	_TIME(SOFT_WAIT), SDLK_SYN, 0, KFLAG_TIMER },
-		0,
-	},
-	0
-};
-
-KBgamestate yes_no_interactive = {
-	{
-		{	{ 0 }, SDLK_y, 0, 0      	},
-		{	{ 0 }, SDLK_n, 0, 0      	},
-		{	_TIME(SHORT_WAIT), SDLK_SYN, 0, KFLAG_TIMER },
-		0
-	},
-	0
-};
-
-KBgamestate difficulty_selection = {
-	{
-		{	_NON, SDLK_UP, 0, KFLAG_RETKEY },
-		{	_NON, SDLK_DOWN, 0, KFLAG_RETKEY },
-		{	_NON, SDLK_RETURN, 0, KFLAG_RETKEY },
-		0,
-	},
-	0
-};
-
-KBgamestate enter_string = {
-	{
-		{	_TIME(100), SDLK_BACKSPACE, 0, KFLAG_RETKEY | KFLAG_SOFTKEY },	
-		{	_NON, 0xFF, 0, KFLAG_ANYKEY | KFLAG_RETKEY },
-		{	_TIME(60), SDLK_SYN, 0, KFLAG_TIMER | KFLAG_RETKEY },
-		0,
-	},
-	0
-};
-
-KBgamestate character_selection = {
-	{
-		{	_AREA(0, 0, 0, 0), SDLK_a, 0, 0      	},
-		{	_AREA(0, 0, 0, 0), SDLK_b, 0, 0      	},
-		{	_AREA(0, 0, 0, 0), SDLK_c, 0, 0      	},
-		{	_AREA(0, 0, 0, 0), SDLK_d, 0, 0      	},
-		{	_AREA(180, 8, 140, 8), SDLK_l, 0, 0   	},
-		0,
-	},
-	0
-};
-
-KBgamestate module_selection = {
-	{
-		{	_NON, SDLK_UP, 0, 0		},
-		{	_NON, SDLK_DOWN, 0, 0 	},
-		{	_NON, SDLK_RETURN, 0, 0	},
-		{	_AREA(0, 0, 0, 0), SDLK_1, 0, 0		},
-		{	_AREA(0, 0, 0, 0), SDLK_2, 0, 0		},
-		{	_AREA(0, 0, 0, 0), SDLK_3, 0, 0		},
-		{	_AREA(0, 0, 0, 0), SDLK_4, 0, 0		},
-		{	_AREA(0, 0, 0, 0), SDLK_5, 0, 0		},
-		{	_AREA(0, 0, 0, 0), SDLK_6, 0, 0		},
-		{	_AREA(0, 0, 0, 0), SDLK_7, 0, 0		},
-		{	_AREA(0, 0, 0, 0), SDLK_8, 0, 0		},
-		{	_AREA(0, 0, 0, 0), SDLK_9, 0, 0		},
-		{	_AREA(0, 0, 0, 0), SDLK_0, 0, 0		},
-		{	_AREA(0, 0, 0, 0), SDLK_MINUS, 0, 0	},
-		0,
-	},
-	0
-};
-
-KBgamestate savegame_selection = {
-	{
-		{	_NON, SDLK_UP, 0, 0		},
-		{	_NON, SDLK_DOWN, 0, 0 	},
-		{	_NON, SDLK_RETURN, 0, 0	},
-		{	_AREA(0, 0, 0, 0), SDLK_1, 0, 0		},
-		{	_AREA(0, 0, 0, 0), SDLK_2, 0, 0		},
-		{	_AREA(0, 0, 0, 0), SDLK_3, 0, 0		},
-		{	_AREA(0, 0, 0, 0), SDLK_4, 0, 0		},
-		{	_AREA(0, 0, 0, 0), SDLK_5, 0, 0		},
-		{	_AREA(0, 0, 0, 0), SDLK_6, 0, 0		},
-		{	_AREA(0, 0, 0, 0), SDLK_7, 0, 0		},
-		{	_AREA(0, 0, 0, 0), SDLK_8, 0, 0		},
-		{	_AREA(0, 0, 0, 0), SDLK_9, 0, 0		},		
-		0,
-	},
-	0
-};
-
-#undef _NON
-#undef _TIME
-#undef _AREA
 
 void render_game(KBenv *env, KBgame *game, KBgamestate *state, KBconfig *conf) {
 
 }
 
 /* Usefull shortcuts */
-#define KB_ifont(ARGS...) KB_setfont(sys, ## ARGS)
-#define KB_icolor(ARGS...) KB_setcolor(sys, ## ARGS)
-#define KB_iloc(ARGS...) KB_loc(sys, ## ARGS)
-#define KB_icurs(ARGS...) KB_curs(sys, ## ARGS)
-#define KB_ilh(ARGS...) KB_lh(sys, ## ARGS)
-#define KB_iprint(ARGS...) KB_print(sys, ## ARGS)
-#define KB_iprintf(ARGS...) KB_printf(sys, ## ARGS)
-
-void KB_imenu(KBgamestate *state, int id, int cols) {
-
-	word x, y;
-
-	KB_getpos(sys, &x, &y);
-
-	state->spots[id].coords.x = x;
-	state->spots[id].coords.y = y;
-	state->spots[id].coords.w = sys->font_size.w * cols;
-	state->spots[id].coords.h = sys->font_size.h;
-}
-
-/*
- * "inline" functions to adjust SDL_Rect around HOST.
- *
- * HOST could be another SDL_Rect or SDL_Surface, or anything
- * that has ->w and ->h members (thus the usage of macros).
- */
-#define RECT_Size(RECT, HOST) \
-		(RECT)->w = (HOST)->w, \
-		(RECT)->h = (HOST)->h
-
-#define RECT_Pos(RECT, HOST) \
-		(RECT)->x = (HOST)->x, \
-		(RECT)->y = (HOST)->y
-
-#define RECT_AddPos(RECT, HOST) \
-		RECT->x += HOST->x, \
-		RECT->y += HOST->y
-
-#define RECT_Center(RECT, HOST) \
-		(RECT)->x = ((HOST)->w - (RECT)->w) / 2, \
-		(RECT)->y = ((HOST)->h - (RECT)->h) / 2
-
-#define RECT_Right(RECT, HOST) \
-		(RECT)->x = ((HOST)->w - (RECT)->w)
-
-#define RECT_Bottom(RECT, HOST) \
-		(RECT)->y = ((HOST)->h - (RECT)->h)
-
-
-/* In this one, ROWS and COLS of text are used */
-#define RECT_Text(RECT, ROWS, COLS) \
-		RECT->w = COLS * sys->font_size.w, \
-		RECT->h = ROWS * sys->font_size.h
-
-//
-// TODO: get rid of those, call RECT_* directly
-inline void SDL_CenterRect(SDL_Rect *rect, SDL_Surface *img, SDL_Surface *host) 
-{
-	RECT_Size(rect, img);
-	RECT_Center(rect, host);
-}
-
-inline void SDL_CenterRectTxt(SDL_Rect *rect, int rows, int cols, SDL_Surface *host)
-{
-	SDL_Rect *size = &sys->font_size;
-	rect->w = cols * size->w;
-	rect->h = rows * size->h;
-	RECT_Center(rect, host); 
-}
-
-int KB_reset(KBgamestate *state) {
-
-	SDL_Event event;
-	int i;
-
-	/* Flush all events (Evil) */
-	while (SDL_PollEvent(&event)) 
-		;
-
-	/* Reset all timers */
-	for (i = 0; i < MAX_HOTSPOTS; i++) {
-		if (state->spots[i].hot_key == 0) break;
-		if (state->spots[i].flag & KFLAG_TIMER) {
-			state->spots[i].coords.w = 0;
-		}
-	}
-}
-
-int KB_event(KBgamestate *state) {
-	SDL_Event event;
-
-	int eve = 0;
-	int new_hover = -1;
-
-	int click = -1;
-	int mouse_x = -1;
-	int mouse_y = -1;
-
-	int i;
-
-	static char kbd_state[512] = { 0 };
-
-	Uint32 passed, now;
-
-	/* If we don't know max number of hotspots, let's find out,
-	 * ...because it surely beats testing for it 3 times below
-	 * TODO? If KB_reset ever becomes mandatory, move it there... 
-	 */ 
-	if (state->max_spots == 0) {
-		for (i = 0; i < MAX_HOTSPOTS; i++) 
-			if (state->spots[i].hot_key == 0) break;
-		state->max_spots = i;
-	}
-
-	/* Update current time */
-	now = SDL_GetTicks();
-	passed = now - state->last;
-	state->last = now;
-
-	/* Trigger "timed hotspots" (basicly, timers) */
-	for (i = 0; i < state->max_spots; i++) {
-		KBhotspot *sp = &state->spots[i]; 
-		if (!(sp->flag & KFLAG_TIMER)) continue;
-
-		sp->passed += passed;
-
-		if (sp->passed >= sp->resolution) {
-			sp->passed -= sp->passed;
-
-			/* For "timed keys", also ensure the key is being pressed */
-			if (sp->flag & KFLAG_TIMEKEY && !kbd_state[sp->hot_key]) continue;
-
-			eve = i + 1; /* !!! */
-			if (sp->flag & KFLAG_RETKEY) eve = sp->hot_key;
-			break;
-		}
-	}
-
-	if (!eve)
-	while (SDL_PollEvent(&event)) {
-		//switch (event.type) {
-		//	case SDL_MOUSEMOTION:
-		//}
-		if (event.type == SDL_MOUSEMOTION) {
-			mouse_x = event.motion.x;
-			mouse_y = event.motion.y;
-		}
-		if ((event.type == SDL_QUIT) ||
-			(event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE))
-			{
-		 		eve = 0xFF;
-		 		break;
-			}
-
-		if (event.type == SDL_KEYUP) {
-			SDL_keysym *kbd = &event.key.keysym;
-			kbd_state[kbd->scancode] = 0;
-		}
-
-		if (event.type == SDL_KEYDOWN) {
-			SDL_keysym *kbd = &event.key.keysym;
-			kbd_state[kbd->scancode] = 1;
-			for (i = 0; i < state->max_spots; i++) {
-				KBhotspot *sp = &state->spots[i];
-				if ((sp->flag & KFLAG_ANYKEY) || 
-					(sp->hot_key == kbd->sym && 
-					( !sp->hot_mod || (sp->hot_mod & kbd->mod) )))
-					{
-						if (sp->hot_key != kbd->sym && (
-							kbd->sym == SDLK_LSHIFT || kbd->sym == SDLK_RSHIFT ||
-							kbd->sym == SDLK_LCTRL || kbd->sym == SDLK_RCTRL ||
-							kbd->sym == SDLK_LALT || kbd->sym == SDLK_RALT ))
-						{
-							continue;
-						}
-						eve = i + 1; /* !!! */
-						if (sp->flag & KFLAG_TIMEKEY)
-						{
-							sp->passed = 0;
-						}
-						if (sp->flag & KFLAG_RETKEY)
-						{
-							eve = kbd->sym; /* !!! */
-							if ((kbd->mod & KMOD_SHIFT) && (eve < 128)) { //shift -- uppercase!
-								if (eve >= SDLK_a && eve <= SDLK_z) eve -= 32;
-								if (eve >= SDLK_0 && eve <= SDLK_9) eve -= 16;
-							}
-						}
-					}
-			}
-			if (eve) break;
-		}
-		if (event.type == SDL_MOUSEBUTTONUP) {
-			mouse_x = event.button.x;
-			mouse_y = event.button.y;
-			if (event.button.button == 1) {
-				click = 1;
-				break;
-			}
-		}
-	}
-
-	/* Mouse moved */
-	if (mouse_x != -1 || mouse_y != -1) {
-		int zoom = 1;
-		SDL_Rect *r;
-		mouse_x /= zoom;
-		mouse_y /= zoom;
-		for (i = 0; i < state->max_spots; i++) {
-			r = &state->spots[i].coords;
-			if (mouse_x >= r->x && mouse_x < (r->x+r->w)
-			 && mouse_y >= r->y && mouse_y < (r->y+r->h)) 
-			{
-				new_hover = i;
-			}
-		}
-	}
-
-	/* Over a hotspot */
-	if (new_hover != -1) {
-		state->hover = new_hover;
-		if (click != -1) {
-			eve = new_hover + 1; /* !!! */
-			if (state->spots[new_hover].flag & KFLAG_RETKEY)
-				eve = state->spots[new_hover].hot_key;
-		}
-	}
-
-	return eve;
-}
-
-void SDL_TextRect(SDL_Surface *dest, SDL_Rect *r, Uint32 fore, Uint32 back) {
-
-	int i, j;
-
-	SDL_Rect *fs = &sys->font_size;
-
-	/* Choose colors, Fill Rect */
-	SDL_FillRect(dest, r, back);	
-	incolor(fore, back);
-
-	/* Top and bottom (horizontal fill) */
-	for (i = r->x ; i + fs->w < r->x + r->w; i += fs->w) {
-		inprint(dest, "\x0E", i, r->y);
-		inprint(dest, "\x0F", i, r->y + r->h - fs->h);
-	}
-	/* Left and right (vertical fill) */
-	for (j = r->y ; j + fs->h < r->y + r->h; j += fs->h) {
-		inprint(dest, "\x14", r->x, j);
-		inprint(dest, "\x15", i, j);
-	}
-	/* Corners */
-	inprint(dest, "\x10", r->x, r->y);/* Top-left */ 
-	inprint(dest, "\x11", i, r->y);/* Top-right */
-	inprint(dest, "\x12", r->x, r->y + r->h - fs->h);/* Bottom-left */
-	inprint(dest, "\x13", i, r->y + r->h - fs->h);/* Bottom-right */
-}
+#define combat_log(STR, ...) KB_TopBox(MSG_WAIT | MSG_PADDED, (STR), __VA_ARGS__)
+#define combat_error combat_log
 
 /* Enter name */
 char *text_input(int max_len, int numbers_only, int x, int y) {
@@ -628,199 +203,6 @@ char *text_input(int max_len, int numbers_only, int x, int y) {
 	return (done == -1 ? NULL : &entered_name[0]);	
 }
 
-/* Wait for ~1.5 seconds or a keypress */
-inline void KB_Wait() { 
- 	Uint32 delay = 1500;
- 	while (!KB_event(&press_any_key) && delay) {
- 		delay -= 10;
- 		SDL_Delay(10);
- 	}
-}
-
-/* Wait for a keypress */
-inline void KB_Pause() { 
- 	while (!KB_event(&press_any_key)) SDL_Delay(10);
-}
-
-/* Change active colors */
-void KB_MessageColor(Uint32 bg, Uint32 fg, Uint32 frame) {
-	sys->bg_color = bg;
-	sys->fg_color = fg;
-	sys->ui_color = frame;
-	incolor(fg, bg);
-}
-
-/* Display a message. Wait for a key to discard. */
-SDL_Rect* KB_MessageBox(const char *str, int wait) {
-
-	SDL_Surface *screen = sys->screen;
-	Uint32 bg = sys->bg_color;
-	Uint32 fg = sys->fg_color;
-	Uint32 ui = sys->ui_color;
-
-	SDL_Rect *fs = &sys->font_size;
-
-	int i, max_w = 28;
-
-	static SDL_Rect rect;
-
-	if (wait > 1) { 
-		wait = 0;
-		max_w = 30;
-	}
-
-	/* Faux-pass to get max dimensions */
-	int h = 0, w = 0; i = 0;
-	do {
-		w++;
-		if (str[i] == '\n' || str[i] == '\0' || (str[i] == ' ' && w > max_w - 3)) {
-			w = 0;
-			h++;
-		}
-		i++;
-	} while (str[i - 1] != '\0');
-
-	/* Keep in rect */
-	rect.w = max_w * fs->w;
-	rect.h = h * fs->h;
-
-	/* To the center of the screen */
-	rect.x = (screen->w - rect.w) / 2;
-	rect.y = (screen->h - rect.h) / 2;
-
-	/* A little bit up */
-	rect.y -= fs->h;//*2 !!
-
-	/* A nice frame */
-	rect.x -= fs->w;rect.y -= fs->h;rect.w += fs->w*2;rect.h += (fs->h*2);
-	SDL_TextRect(screen, &rect, ui, bg);
-	rect.x += fs->w;rect.y += fs->h;rect.w -= fs->w*2;rect.h -= (fs->h*2);
-	SDL_FillRect(screen, &rect, 0xFF0000);
-
-	/* Restore color */
-	incolor(fg, bg);
-
-	/* True-pass */
-	i = 0; h = 0; w = 0;
-	char buffer[80];
-	do {
-		buffer[w++] = str[i];
-		if (str[i] == '\n' || str[i] == '\0' || (str[i] == ' ' && w > max_w - 3)) {
-			buffer[w] = '\0';
-			buffer[w-1] = '\0';
-			inprint(screen, buffer, rect.x, rect.y + h * fs->h);
-			w = 0;
-			buffer[0] = '\0';
-			h++;
-		}
-		i++;
-	} while (str[i - 1] != '\0');
-
-	SDL_Flip(screen);
-
-	if (wait) KB_Pause();
-
-	return &rect;
-}
-
-SDL_Rect* KB_BottomFrame() {
-	SDL_Surface *screen = sys->screen;
-
-	Uint32 bg = sys->bg_color;
-	Uint32 fg = sys->fg_color;
-	Uint32 ui = sys->ui_color;
-
-	SDL_Rect *fs = &sys->font_size;
-	
-	SDL_Rect *left_frame = local.frames[FRAME_LEFT];
-	SDL_Rect *bottom_frame = local.frames[FRAME_BOTTOM];
-
-	SDL_Rect border;
-	static SDL_Rect text;
-
-	/* Make a 30 x 8 border (+1 character on each side) */ 
-	RECT_Text((&border), 8, 30);
-	border.h += fs->h / 2; /* Plus some extra pixels, because 'bottom box' is uneven */
-	border.x = left_frame->w;
-	border.y = screen->h - bottom_frame->h - border.h;
-
-	/* Actual text is 28 x 6 (meaning 28 cols per 6 rows, btw) */
-	RECT_Pos((&text), (&border));
-	text.y += fs->h;
-	text.x += fs->w;
-	RECT_Text((&text), 6, 28);
-
-	/* A nice frame */
-	SDL_FillRect(screen, &border, 0xFF0000);
-	SDL_TextRect(screen, &border, ui, bg);
-	SDL_FillRect(screen, &text, 0x00FF00);
-
-	return &text;
-}
-
-SDL_Rect* KB_BottomBox(const char *header, const char *str, int wait) {
-
-	SDL_Rect *fs = &sys->font_size;
-
-	SDL_Rect *text = KB_BottomFrame();	
-
-	/* Header (few pixels up) */	
-	KB_iloc(text->x, text->y - fs->h/4 - fs->h/8);
-	if (header) KB_iprint(header);
-
-	/* Message */
-	KB_iloc(text->x, text->y + fs->h/4);
-	if (header) KB_iprint("\n\n");	
-	KB_iprint(str);
-
-	SDL_Flip(sys->screen);
-
-	if (wait) KB_Pause();
-
-	return text;
-}
-
-SDL_Rect* KB_TopBox(const char *str) {
-
-	Uint32 *colors = KB_Resolve(COL_TEXT, 0);	
-
-	/* Clean line */
-	SDL_FillRect(sys->screen, &local.status, colors[0]);
-
-	/* Print string */
-	KB_iloc(local.status.x, local.status.y + 1);
-	KB_iprint(str);
-
-	return &local.status;
-}
-
-void KB_status_message(const char *fmt, ...) 
-{ 
-	Uint32 *colors;
-	char msg[1024];
-
-	/* Prepare message string */
-	va_list argptr;
-	va_start(argptr, fmt);
-	vsprintf(msg, fmt, argptr);
-	va_end(argptr);
-
-	/* Get colors :( Not like this tho! */
-	colors = KB_Resolve(COL_TEXT, 0); //YUCK
-
-	/* Fill status bar area */
-	SDL_FillRect(sys->screen, &local.status, colors[0]);
-
-	/* Move cursor there, and print the message */
-	KB_iloc(local.status.x, local.status.y + 1);
-	KB_iprint(" ");
-	KB_iprint(msg);
-
-	/* Update screen and wait ~1.5 seconds */
-	SDL_Flip(sys->screen);
-	SDL_Delay(1500);
-}
-
 /* "create game" screen (pick name and difficulty) */
 KBgame *create_game(int pclass) {
 
@@ -839,7 +221,9 @@ KBgame *create_game(int pclass) {
 
 	SDL_Rect *fs = &sys->font_size;
 
-	SDL_CenterRectTxt(&menu, rows, cols, screen);
+	RECT_Text(&menu, rows, cols);
+	RECT_Center(&menu, screen); 
+
 
 	int has_name = 0;
 	char *name;
@@ -918,6 +302,8 @@ KBgame *load_game() {
 	SDL_Surface *screen = sys->screen;
 	KBconfig *conf = sys->conf;
 	
+	Uint32 *colors = local.message_colors;
+	Uint32 *colors_inner = KB_Resolve(COL_TEXT, CS_MINIMENU);
 	KBgame *game = NULL;
 
 	int done = 0;
@@ -927,6 +313,7 @@ KBgame *load_game() {
 	int sel = 0;
 
 	SDL_Rect menu;
+	SDL_Rect menu_inner;
 
 	char filename[10][16];
 	char fullname[10][16];
@@ -987,6 +374,12 @@ KBgame *load_game() {
 		savegame_selection.spots[i + 3].coords.h = fs->h;
 	}
 
+	/* Inner menu position and size */
+	menu_inner.x = menu.x + fs->w*4 + fs->w/2;
+	menu_inner.y = menu.y + fs->h*4 - fs->h/4;
+	menu_inner.w = menu.w - fs->w*7;
+	menu_inner.h = fs->h * num_files + (fs->h/4)*2;
+
 	while (!done) {
 
 		key = KB_event( &savegame_selection );
@@ -1022,23 +415,25 @@ KBgame *load_game() {
 
 			int i;
 
-			SDL_TextRect(screen, &menu, 0xFFFFFF, 0x000000);
+			SDL_TextRect(screen, &menu, colors[COLOR_FRAME], colors[COLOR_BACKGROUND]);
 
-			incolor(0xFFFFFF, 0x000000);
+			incolor(colors[COLOR_TEXT], colors[COLOR_BACKGROUND]);
 			inprint(screen, " Select game:", menu.x + fs->w, menu.y + fs->w - fs->w/2);
 			inprint(screen, "   Overlord  ", menu.x + fs->w, menu.y + fs->w*2);
 			inprint(screen, "             ", menu.x + fs->w, menu.y + fs->w*4 - fs->w/2);
+			
+			SDL_FillRect(screen, &menu_inner, colors_inner[COLOR_BACKGROUND]);
 
 			for (i = 0; i < num_files; i++) {
-				incolor(0xFFFFFF, 0x000000);
+				incolor(colors[COLOR_TEXT], colors[COLOR_BACKGROUND]);
 				char buf[4];sprintf(buf, "%d.", i + 1);
 				inprint(screen, buf, menu.x + fs->w*2, fs->h * i + menu.y + fs->h*4);
-
-				if (i == sel) incolor(0x000000, 0xFFFFFF);
+				incolor(colors_inner[COLOR_TEXT], colors_inner[COLOR_BACKGROUND]);
+				if (i == sel) incolor(colors_inner[COLOR_SEL_TEXT], colors_inner[COLOR_SEL_BACKGROUND]);
 				inprint(screen, filename[i], menu.x + fs->w * 5, fs->h * i + menu.y + fs->h*4);
 			}
 
-	incolor(0xFFFFFF, 0x000000);
+	incolor(local.status_colors[COLOR_TEXT], local.status_colors[COLOR_BACKGROUND]);
 	inprint(screen, " 'ESC' to exit \x18\x19 Return to Select  ", local.status.x, local.status.y);
 
 	    	SDL_Flip( screen );
@@ -1047,49 +442,37 @@ KBgame *load_game() {
 		}
 
 	}
-
+	free(colors_inner);
 	return game;
 }
 
 void show_credits() {
 
 	SDL_Rect *fs = &sys->font_size;
+	SDL_Rect *max, pos = { 0 };
 
 	SDL_Surface *userpic = SDL_LoadRESOURCE(GR_SELECT, 2, 0);
 
-	SDL_Rect *max;
-
-	KB_MessageColor(0x0000AA, 0xFFFFFF, 0xFFFF55);
-
 	char *credits = KB_Resolve(STRL_CREDITS, 0);
-	if (credits == NULL) return;
-	int i, j = 0, n = 10;
-	char *credit = credits;
-	for (i = 0; i < n; ) {
-		if (*credit == '\0') {
-			i++;
-			*credit = '\n';
-		}
-		credit++;
-	}
-	
-	max = KB_MessageBox(credits, 2);
 
-	SDL_Rect pos = { 0 };
+	if (credits == NULL) credits = "openkb " PACKAGE_VERSION;
 
-	RECT_Size((&pos), userpic);
-	RECT_Right((&pos), max);
-	RECT_AddPos((&pos), max);	
+	max = KB_MessageBox(credits, MSG_HARDCODED);
 
-	pos.y += (fs->h * 2);
+	RECT_Size(&pos, userpic);
+	RECT_Right(&pos, max);
+	RECT_AddPos(&pos, max);
+
+	pos.x -= (fs->w * 1);
+	pos.y += (fs->h * 3);
 
 	SDL_BlitSurface(userpic, NULL, sys->screen, &pos);
 
-	SDL_Flip(sys->screen); 
+	KB_flip(sys);
+	KB_Pause();
 
 	SDL_FreeSurface(userpic);
-
-	KB_Pause();
+	free(credits);
 }
 
 KBgame *select_game(KBconfig *conf) {
@@ -1104,7 +487,7 @@ KBgame *select_game(KBconfig *conf) {
 
 	KBgame *game = NULL;
 
-	Uint32 *colors = KB_Resolve(COL_TEXT, 0);
+	Uint32 *colors = KB_Resolve(COL_TEXT, CS_CHROME);
 
 	SDL_Surface *title = SDL_LoadRESOURCE(GR_SELECT, 0, 0);
 
@@ -1116,13 +499,14 @@ KBgame *select_game(KBconfig *conf) {
 
 			SDL_Rect pos;
 
-			SDL_CenterRect(&pos, title, screen);
+			RECT_Size(&pos, title);
+			RECT_Center(&pos, screen);
 
 			SDL_BlitSurface( title, NULL , screen, &pos );
 
 			if (!credits) {
 				KB_iloc(local.status.x, local.status.y);
-				KB_icolor(colors);
+				KB_icolor(local.status_colors);
 				KB_iprint("Select Char A-D or L-Load saved game");
 			}
 
@@ -1278,7 +662,8 @@ void display_logo() {
 
 			SDL_Surface *title = SDL_LoadRESOURCE(GR_LOGO, 0, 0);
 
-			SDL_CenterRect(&pos, title, screen);
+			RECT_Size(&pos, title);
+			RECT_Center(&pos, screen);
 
 			SDL_FillRect( screen , NULL, 0xFF3366);
 
@@ -1317,7 +702,8 @@ void display_title() {
 
 			SDL_Surface *title = SDL_LoadRESOURCE(GR_TITLE, 0, 0);
 
-			SDL_CenterRect(&pos, title, screen);
+			RECT_Size(&pos, title);
+			RECT_Center(&pos, screen);
 
 			SDL_FillRect( screen , NULL, 0x000000);
 
@@ -1379,7 +765,8 @@ void display_debug() {
 		src.h = peasant->h;
 		pos2.h = peasant2->h/2;
 
-			SDL_CenterRect(&pos, peasant2, screen);
+			RECT_Size(&pos, peasant2);
+			RECT_Center(&pos, screen);
 
 			SDL_FillRect( screen , NULL, 0x4664B4);
 
@@ -1437,6 +824,33 @@ void KB_BlitMap(SDL_Surface *dest, SDL_Surface *tileset, SDL_Rect *viewport) {
 	KBconfig *conf = sys->conf;
 
 
+}
+
+inline byte KB_GetMapTile(KBgame *game, byte continent, int y, int x) {
+	/* If coordinates are in bounds, return the tile */
+	return  (y >= 0 && y < LEVEL_W - 1 && x >= 0 && x <= LEVEL_H - 1) 
+			? game->map[continent][y][x] & 0x7F /* ***WITH INTERACTIVITY BIT REMOVED*** */
+			: TILE_DEEP_WATER; /* otherwise, return water tile */
+}
+
+void KB_DrawMapTile(SDL_Surface *dest, SDL_Rect *dest_rect,	SDL_Surface *tileset, byte m) {
+
+	SDL_Rect src;
+	int th, tw;
+
+	/* Calculate needed offsets on the 8x? tileset */
+	th = m / 8;
+	tw = m - (th * 8);
+
+	src.w = dest_rect->w;
+	src.h = dest_rect->h;
+	src.x = tw * src.w;
+	src.y = th * src.h;
+
+/*	pos.x = i * (pos.w) + local.map.x;
+	pos.y = (perim_h - 1 - j) * (pos.h) + local.map.y; */
+
+	SDL_BlitSurface(tileset, &src, dest, dest_rect);
 }
 
 
@@ -1499,106 +913,149 @@ void draw_location(int loc_id, int troop_id, int frame) {
 	free(top_frame);
 	free(bar_frame);
 }
-
+/*
+ * Puzzle map screen.
+ *
+ * DOS aesthetics:
+ *  first, "Press 'ESC' to exit" is displayed.
+ *  then, whole puzzle map is shown
+ *  then, it gets cleared piece by piece from top left corner
+ *  artifacts actually go first, then villains
+ *  while the clearing is performed, villains continue their animation routine.
+ * NOTE:
+ *  Other modules might require different aesthetics later :(
+ */
 void view_puzzle(KBgame *game) {
 
 	SDL_Surface *artifacts = SDL_LoadRESOURCE(GR_VIEW, 0, 0);
-	
 	SDL_Surface *tile = SDL_LoadRESOURCE(GR_TILE, 0, 0);
-	
 	SDL_Surface *tileset = SDL_LoadRESOURCE(GR_TILESET, 0, 0);
 
-	SDL_Surface *faces[MAX_VILLAINS];
+	SDL_Surface *faces[MAX_VILLAINS]; /* Initialized below */
 
+	/* Local variables to handle "opening" animation */ 
+	int opened[PUZZLEMAP_W][PUZZLEMAP_H] = { 0 };
+	int open_x = 0;
+	int open_y = 0;
+	enum {
+		BEGIN,
+		ARTIFACTS,
+		VILLAINS,
+		DONE,
+	} open_mode = BEGIN;
 
-	/*---*/
-	SDL_Rect *fs = &sys->font_size;
+	/* Puzzle map is drawn over regular map */
 	SDL_Rect pos;
-	SDL_Rect *left_frame = RECT_LoadRESOURCE(RECT_UI, 1);
-	SDL_Rect *top_frame = RECT_LoadRESOURCE(RECT_UI, 0);
-	SDL_Rect *bar_frame  = RECT_LoadRESOURCE(RECT_UI, 4);
+	RECT_Pos(&pos, &local.map); 
 
-	//RECT_Size(&pos, bg); 
-	pos.x = left_frame->w;
-	pos.y = top_frame->h + bar_frame->h + fs->h + sys->zoom;
-	/*---*/
+	/* Display this as soon as possible: */
+	KB_TopBox(MSG_CENTERED, "Press 'ESC' to exit");
+	KB_flip(sys);
 
-	int i;	
-	
-	for (i = 0; i < MAX_VILLAINS; i++) {
-
+	/* Now, load all the villain faces */
+	int i;
+	for (i = 0; i < MAX_VILLAINS; i++)
 		faces[i] = SDL_LoadRESOURCE(GR_VILLAIN, i, 0);
 
-	}
-
-	SDL_Surface *screen = sys->screen;
-
 	int j;
-	
-	int border_x = game->scepter_x - 3;
-	int border_y = game->scepter_y - 3;
 
+	int border_x = game->scepter_x - (PUZZLEMAP_W / 2);// + PUZZLEMAP_W % 2);
+	int border_y = game->scepter_y - (PUZZLEMAP_H / 2);// + PUZZLEMAP_H % 2);
+ 
 	int frame = 0;
 	int done = 0;
 	int redraw = 1;
 	while (!done) {
 
 		int key = KB_event(&press_any_key_interactive);
-		
+
 		if (key == 0xFF) done = 1;
-		
+
 		if (key == 2) {
 			frame++;
 			if (frame > 3) frame = 0;
 			redraw = 1;
+
+			/* Attend to the "opening" animation */
+			if (open_mode == BEGIN) {
+				open_mode++;
+			} else if (open_mode != DONE) {
+				int id = puzzle_map[open_y][open_x];
+				/* "id"s < 0 refer to artifacts; only open those in ARTIFACTS mode */
+				if (id < 0 && open_mode == ARTIFACTS) {
+					int artifact_id = -id - 1;
+					if (game->artifact_found[artifact_id]) {
+						opened[open_y][open_x] = 1;
+					}
+				}
+				/* Other "id"s refer to villains; only open those in VILLAINS mode */
+				if (id >= 0 && open_mode == VILLAINS) {
+					if (game->villain_caught[id]) {
+						opened[open_y][open_x] = 1;
+					}
+				}
+				/* Advance the cursor */
+				open_x++;
+				if (open_x > PUZZLEMAP_W - 1) { open_x = 0; open_y++; }
+				if (open_y > PUZZLEMAP_H - 1) { open_x = 0; open_y = 0; open_mode++; }
+			}
 		}
 
 		if (redraw) {
-			
-			for (j = 0; j < 5; j ++) {	
-				for (i = 0; i < 5; i ++) {
 
-					int id = puzzle_map[j][i];
+			for (j = 0; j < PUZZLEMAP_H; j ++) {
+				for (i = 0; i < PUZZLEMAP_W; i ++) {
 
 					SDL_Rect dst = { pos.x + i * tile->w, pos.y + j * tile->h, tile->w, tile->h };
 
-					if (id < 0) {
+					/* Draw a map tile */
+					if (opened[j][i]) {
 
-						int artifact_id = -id - 1;
-						
-						if (game->artifact_found[artifact_id]) {
-						
-						
-						} else {
+							byte tile = KB_GetMapTile(game, game->scepter_continent,
+								 border_y + (PUZZLEMAP_H - j) - 1,
+								 border_x + i);
+
+							if (IS_MAPOBJECT(tile)) tile = 0; /* Hide important objects */
+
+							KB_DrawMapTile(sys->screen, &dst, tileset, tile);
+
+					}
+					/* Draw a villain face/artifact */
+					else {
+
+						int id = puzzle_map[j][i];
+
+						if (id < 0) {
+
+							int artifact_id = -id - 1;
 
 							SDL_Rect src = { artifact_id * tile->w, 0, tile->w, tile->h };
-	
-							SDL_BlitSurface( artifacts, &src, screen, &dst);
 
-						}
+							SDL_BlitSurface(artifacts, &src, sys->screen, &dst);
 
-					} else {
-
-
-						if (game->villain_caught[id] ) {
-						
 						} else {
+
 							SDL_Rect src = { frame * tile->w, 0, tile->w, tile->h };
-	
-							SDL_BlitSurface( faces[id], &src, screen, &dst);
+
+							SDL_BlitSurface(faces[id], &src, sys->screen, &dst);
 						}
 					}
 				}
 			}
 
-			SDL_Flip(sys->screen);
+			KB_flip(sys);
 			redraw = 0;
 		}
 	}
 
-	
+	/* Now UNLOAD all the villains */
+	for (i = 0; i < MAX_VILLAINS; i++)
+		SDL_FreeSurface(faces[i]);
 
-	KB_Pause();
+	/* And other resources */
+	SDL_FreeSurface(artifacts);
+	SDL_FreeSurface(tile);
+	SDL_FreeSurface(tileset);
 }
 
 KBgamestate minimap_toggle = {
@@ -1622,13 +1079,13 @@ void view_minimap(KBgame *game) {
 	border.y += fs->h;
 	border.x -= fs->w * 3;
 
-	Uint32 *colors = KB_Resolve(COL_TEXT, 0);
+	Uint32 *colors = local.message_colors;
 
 	Uint32 *map_colors = KB_Resolve(COL_MINIMAP, 0);
 
 	SDL_Surface *tile = SDL_LoadRESOURCE(GR_PURSE, 0, 0);
 
-	SDL_TextRect(sys->screen, &border, colors[0], colors[1]);
+	SDL_TextRect(sys->screen, &border, colors[COLOR_BACKGROUND], colors[COLOR_TEXT]);
 
 	SDL_Rect map;
 
@@ -1672,11 +1129,11 @@ void view_minimap(KBgame *game) {
 			int j;
 
 			if (!game->orb_found[game->continent])
-				KB_TopBox("        Press 'ESC' to exit");
+				KB_TopBox(MSG_CENTERED, "Press 'ESC' to exit");
 			else if (!orb)
-				KB_TopBox("  'ESC' to exit / 'SPC' whole map");
+				KB_TopBox(MSG_CENTERED, "'ESC' to exit / 'SPC' whole map");
 			else
-				KB_TopBox("  'ESC' to exit / 'SPC' your map");
+				KB_TopBox(MSG_CENTERED, "'ESC' to exit / 'SPC' your map");
 
 			for (j = 0; j < LEVEL_H; j++) {
 				for (i = 0; i < LEVEL_W; i++) {
@@ -1717,11 +1174,11 @@ void view_contract(KBgame *game) {
 	
 	border.y += fs->h/2;
 
-	Uint32 *colors = KB_Resolve(COL_TEXT, 0);
+	Uint32 *colors = local.message_colors;
 
 	SDL_Surface *tile = SDL_LoadRESOURCE(GR_PURSE, 0, 0);
 
-	SDL_TextRect(sys->screen, &border, colors[0], colors[1]);
+	SDL_TextRect(sys->screen, &border, colors[COLOR_BACKGROUND], colors[COLOR_TEXT]);
 
 	SDL_Rect hdst = { border.x + fs->w, border.y + fs->h, tile->w, tile->h };
 
@@ -1751,16 +1208,7 @@ void view_contract(KBgame *game) {
 
 		int j, continent = -1, castle = -1;
 
-		int desc_line = villain_id * 14;
-		
-		byte line_offsets[14] = {
-			7,
-			7,
-			7,
-			7,
-			10,
-			0,
-		};
+		char *text = KB_Resolve(STRL_VDESCS, villain_id);
 
 		/* Find his castle */
 		for (j = 0; j < MAX_CASTLES; j++) {
@@ -1773,25 +1221,12 @@ void view_contract(KBgame *game) {
 				break; /* No point in continuing from here, castle has been found */
 		}
 
-		/* Print all 14 lines */
+		/* Print description, along with known residence information */
 		KB_iloc(border.x + fs->w, border.y + fs->h);
-		for (j = 0; j < 14; j++) {
-			KB_icurs( line_offsets[j], j);
-			char *text = KB_Resolve(STR_VDESC, desc_line + j);
-			KB_iprintf("%s\n", text);
-		}
-
-		/* Print known info (continent and castle of residence) */
-		KB_icurs(18, 3);
-		if (continent == -1)
-			KB_iprint("Unknown");
-		else
-			KB_iprint(continent_names[continent]);
-		KB_icurs(18, 4);
-		if (castle == -1)
-			KB_iprint("Unknown");
-		else
-			KB_iprint(castle_names[castle]);
+		KB_iprintf(text,
+			(continent == -1 ? "Unknown" : continent_names[continent]),
+			(   castle == -1 ? "Unknown" : castle_names[castle])
+		);
 
 		int done = 0;
 		int frame = 0;
@@ -1882,7 +1317,7 @@ void view_character(KBgame *game) {
 	KB_iprintf("Followers killed   %5d\n", game->followers_killed);
 	KB_iprintf("Current score      %5d\n", player_score(game));
 
-	KB_TopBox("        Press 'ESC' to exit");
+	KB_TopBox(MSG_CENTERED, "Press 'ESC' to exit");
 
 	/* Draw artifacts (and maps) */
 	int i;
@@ -2031,7 +1466,7 @@ void view_army(KBgame *game) {
 				KB_iprintf("G-Cost:%d\n", troops[ troop_id ].recruit_cost / 10 * game->player_numbers[i]);
 			}
 
-			KB_TopBox("        Press 'ESC' to exit");
+			KB_TopBox(MSG_CENTERED, "Press 'ESC' to exit");
 
 			SDL_Flip(sys->screen);
 			redraw = 0;
@@ -2127,7 +1562,7 @@ void audience_with_king(KBgame *game) {
 		"arrival with regal fanfare.\n\n"
 		"King Maximus rises from his\n"
 		"throne to greet you and\n"
-		"proclaims:           (space)", 1);
+		"proclaims:           (space)", MSG_PAUSE);
 
 	sprintf(message, "\n\n"
 		"My dear %s,\n\n"
@@ -2136,7 +1571,7 @@ void audience_with_king(KBgame *game) {
 		"villains.",
 	game->name, needed);
 
-	KB_BottomBox(message, "", 1);
+	KB_BottomBox(message, "", MSG_PAUSE);
 }
 
 void recruit_soldiers(KBgame *game) {
@@ -2245,8 +1680,8 @@ void recruit_soldiers(KBgame *game) {
 				result = buy_troop(game, home_troops[whom-1], number);
 
 				/* Display error if any */
-				if (result == 2) KB_BottomBox("\n\n\nYou don't have enough gold!", "", 1);
-				else if (result == 1) KB_BottomBox("", "No troop slots left!", 1);//verify this one
+				if (result == 2) KB_BottomBox("\n\n\nYou don't have enough gold!", "", MSG_PAUSE);
+				else if (result == 1) KB_BottomBox("", "No troop slots left!", MSG_PAUSE);//verify this one
 
 				/* Calculate new "MAX YOU CAN HANDLE" number based on leadership (and troop hp?) */
 				max = army_leadership(game, home_troops[whom-1]) / troops [ home_troops[whom-1] ].hit_points;
@@ -2446,8 +1881,9 @@ void gather_information(KBgame *game, int id) {
 	if (game->castle_owner[id] == 0x7F) {
 		KB_iprint("no one's rule.\n");
 	} else {
-		char *name = KB_Resolve(STR_VNAME, game->castle_owner[id] & 0x1F);
+		char *name = STR_LoadRESOURCE(STRL_VNAMES, 0, game->castle_owner[id] & 0x1F);
 		KB_iprintf("%s's rule.\n", name);
+		free(name);
 	}
 
 	/* Army */
@@ -2481,7 +1917,7 @@ void visit_town(KBgame *game) {
 
 	int random_troop = rand() % MAX_TROOPS;
 
-	KB_TopBox("        Press 'ESC' to exit");
+	KB_TopBox(MSG_CENTERED, "Press 'ESC' to exit");
 
 	int done = 0;
 	int frame = 0;
@@ -2762,7 +2198,7 @@ void visit_dwelling(KBgame *game, byte rtype) {
 				game->dwelling_population[game->continent][id] -= number;
 
 			/* Display error if any */
-			else if (result == 2) KB_BottomBox("\n\n\nYou don't have enough gold!", "", 1);
+			else if (result == 2) KB_BottomBox("\n\n\nYou don't have enough gold!", "", MSG_PAUSE);
 			else if (result == 1) KB_BottomBox("", "No troop slots left!", 1);//verify this one
 
 			/* Calculate new "MAX YOU CAN HANDLE" number based on leadership (and troop hp?) */
@@ -2778,9 +2214,9 @@ void read_signpost(KBgame *game) {
 	int id = 0;
 	int ok = 0;
 	int i, j;
-	for (j = 0; j < 64; j++) {
-		for (i = 0; i < 64; i++) {
-			if (game->map[0][j][i] == 0x90) {
+	for (j = 0; j < LEVEL_H; j++) {
+		for (i = 0; i < LEVEL_W; i++) {
+			if (game->map[0][j][i] == TILE_SIGNPOST) {
 				if (i == game->x && j == game->y) { ok = 1; break; }
 				id ++;
 			}
@@ -2792,7 +2228,7 @@ void read_signpost(KBgame *game) {
 
 	KB_stdlog("Read sign post [%d] at %d, %d { %s }\n", id, game->x, game->y, sign);
 
-	KB_BottomBox("A sign reads:", sign, 1);
+	KB_BottomBox("A sign reads:", sign, MSG_PAUSE);
 
 	SDL_Flip(sys->screen);
 	KB_Pause();
@@ -2830,7 +2266,7 @@ void move_unit(KBcombat *war, int side, int id, int ox, int oy) {
 			if (war->umap[ny][nx] >= 1 && war->umap[ny][nx] <= MAX_UNITS) return;
 			/* Otherwise -- Hostile troop */
 
-			KB_status_message("PC Unit attacks!");
+			combat_log("PC Unit attacks!", NULL);
 		}
 		/* Right side */
 		else {
@@ -2838,7 +2274,7 @@ void move_unit(KBcombat *war, int side, int id, int ox, int oy) {
 			if (war->umap[ny][nx] >= (MAX_UNITS+1) && war->umap[ny][nx] <= (MAX_UNITS*2)) return;
 			/* Otherwise -- Hostile troop */
 			
-			KB_status_message("NPC Unit attacks!");
+			combat_log("NPC Unit attacks!", NULL);
 		}
 
 		return;
@@ -2967,7 +2403,7 @@ KBgamestate cross_choice = {
 
 int build_bridge(KBgame *game) {
 
-	KB_TopBox("Build bridge in which direction <>ud");
+	KB_TopBox(0, "Build bridge in which direction <>ud");
 
 	KB_flip(sys);
 
@@ -2975,11 +2411,11 @@ int build_bridge(KBgame *game) {
 	
 	if (key == 0xFF) return 1;
 
-	KB_TopBox("Not a suitable location for a bridge");
+	KB_TopBox(0, "Not a suitable location for a bridge");
 	KB_flip(sys);
 	KB_Pause();
 
-	KB_TopBox("What a waste of a good spell!");
+	KB_TopBox(0, "What a waste of a good spell!");
 	KB_flip(sys);
 	KB_Pause();
 	
@@ -2988,7 +2424,7 @@ int build_bridge(KBgame *game) {
 
 int instant_army(KBgame *game) {
 
-	KB_BottomBox("A few Sprites", "have joined to your army.", 1);
+	KB_BottomBox("A few Sprites", "have joined to your army.", MSG_PAUSE);
 
 	return 0;
 }
@@ -2999,7 +2435,7 @@ int clone_army(KBgame *game, KBcombat *war) {
 
 	KBunit *u = &war->units[war->side][war->unit_id];
 
-	KB_TopBox("     Select your army to Clone");// CENTERED
+	KB_TopBox(MSG_CENTERED, "Select your army to Clone");
 
 	x = u->x;
 	y = u->y;
@@ -3012,7 +2448,7 @@ int clone_army(KBgame *game, KBcombat *war) {
 
 		clones = clone_troop(game, war, unit_id);
 
-		KB_status_message("%d %s cloned", clones, troops[u->troop_id].name);
+		combat_log("%d %s cloned", clones, troops[u->troop_id].name);
 
 	}
 
@@ -3024,7 +2460,7 @@ int teleport_army(KBgame *game, KBcombat *war) {
 
 	KBunit *u = &war->units[war->side][war->unit_id];
 
-	KB_TopBox("     Select army to Teleport");// CENTERED
+	KB_TopBox(MSG_CENTERED, "Select army to Teleport");
 
 	x = u->x;
 	y = u->y;
@@ -3037,7 +2473,7 @@ int teleport_army(KBgame *game, KBcombat *war) {
 		unit_id = war->umap[y][x] - 1;
 		if (unit_id > 4) { side = 1; unit_id -= 5; }
 
-		KB_TopBox("     Select new location");// CENTERED
+		KB_TopBox(MSG_CENTERED, "Select new location");
 
 		ok = pick_target(war, &x, &y, 1);
 
@@ -3071,7 +2507,7 @@ int choose_spell(KBgame *game, KBcombat *combat) {
 
 	if (combat && combat->spells)
 	{
-		KB_TopBox("     Only 1 spell per round!");
+		KB_TopBox(MSG_CENTERED, "Only 1 spell per round!");
 		KB_flip(sys);
 		KB_Wait();
 		return;
@@ -3084,11 +2520,11 @@ int choose_spell(KBgame *game, KBcombat *combat) {
 	
 	border.y -= fs->h;
 
-	Uint32 *colors = KB_Resolve(COL_TEXT, 0);
+	Uint32 *colors = local.message_colors;
 
-	SDL_TextRect(sys->screen, &border, colors[0], colors[1]);
+	SDL_TextRect(sys->screen, &border, colors[COLOR_BACKGROUND], colors[COLOR_TEXT]);
 
-	KB_TopBox("        Press 'ESC' to exit");
+	KB_TopBox(MSG_CENTERED, "Press 'ESC' to exit");
 
 	KB_iloc(border.x + fs->w, border.y + fs->h/2);
 	KB_iprint("              Spells\n\n");
@@ -3143,7 +2579,7 @@ int choose_spell(KBgame *game, KBcombat *combat) {
 				KB_iloc(twirl_x, twirl_y);
 				KB_iprintf("%c", 'A' + key - 1);
 
-				KB_TopBox("     You don't know that spell!");
+				KB_TopBox(MSG_CENTERED, "You don't know that spell!");
 				KB_flip(sys);
 				KB_Pause();
 
@@ -3207,7 +2643,7 @@ int choose_spell(KBgame *game, KBcombat *combat) {
 
 void win_game(KBgame *game) {
 
-	KB_TopBox("Press 'ESC' to exit");
+	KB_TopBox(MSG_CENTERED, "Press 'ESC' to exit");
 
 	KB_Pause();
 
@@ -3262,7 +2698,7 @@ void lose_game(KBgame *game) {
 	RECT_Right(&pos, &full);
 	pos.x += full.x;
 
-	KB_TopBox("        Press 'ESC' to exit"); //CENTERED
+	KB_TopBox(MSG_CENTERED, "Press 'ESC' to exit");
 
 	SDL_BlitSurface( image, NULL, sys->screen, &pos );
 
@@ -3309,7 +2745,7 @@ int ask_search(KBgame *game) {
 		return 0;
 
 	} else {
-		KB_BottomBox(NULL, "\n\nYour search of this area has\nrevealed nothing.", 1);
+		KB_BottomBox(NULL, "\n\nYour search of this area has\nrevealed nothing.", MSG_PAUSE);
 		spend_days(game, days);
 	}
 
@@ -3570,24 +3006,13 @@ void draw_map(KBgame *game, int tick) {
 
 	for (j = 0; j < perim_h; j++)
 	for (i = 0; i < perim_w; i++) {
-		byte m;
-		
-		if (border_x + i > 63 || border_y + j > 63 || 
-			border_x + i < 0 || border_y + j < 0) m = 32;
-		else
-			m = game->map[0][border_y + j][border_x + i];
 
-		m &= 0x7F;
+		byte tile = KB_GetMapTile(game, game->continent, border_y + j, border_x + i); 
 
-		int th = m / 8;
-		int tw = m - (th * 8);
-
-		src.x = tw * src.w;
-		src.y = th * src.h;
 		pos.x = i * (pos.w) + local.map.x;
 		pos.y = (perim_h - 1 - j) * (pos.h) + local.map.y;
 
-		SDL_BlitSurface( tileset, &src , screen, &pos );
+		KB_DrawMapTile(screen, &pos, tileset, tile);
 	}
 
 	/** Draw boat **/
@@ -3711,10 +3136,10 @@ void draw_damage(KBcombat *war, KBunit *u) {
 
 void draw_combat_statusbar(KBcombat *war) {
 
-	Uint32 *colors = KB_Resolve(COL_TEXT, 0); //YUCK
+	Uint32 *colors = local.status_colors;
 
 	/* Status bar */
-	SDL_FillRect(sys->screen, &local.status, colors[0]);
+	SDL_FillRect(sys->screen, &local.status, colors[COLOR_BACKGROUND]);
 
 	if (war->side) return;
 
@@ -3856,7 +3281,7 @@ int unit_try_wait(KBcombat *war) {
 
 	if (war->phase) u->acted = 1;
 
-	KB_status_message("%s wait", t->name);
+	combat_log("%s wait", t->name);
 
 	return 1;
 }
@@ -3867,7 +3292,7 @@ void unit_try_pass(KBcombat *war) {
 
 	u->acted = 1;
 
-	KB_status_message("%s pass", t->name);
+	combat_log("%s pass", t->name);
 }
 
 void unit_try_fly(KBcombat *war) {
@@ -3879,7 +3304,7 @@ void unit_try_fly(KBcombat *war) {
 	KBtroop *t = &troops[u->troop_id];
 
 	if (!(t->abilities & ABIL_FLY)) {
-		KB_status_message("Can't Fly");
+		combat_error("Can't Fly", NULL);
 		return;
 	}
 
@@ -3933,7 +3358,7 @@ void unit_try_shoot(KBcombat *war) {
 
 		draw_damage(war, victim);
 
-		KB_status_message("%s shoot %s killing %d", troops[u->troop_id].name, troops[victim->troop_id].name, kills);
+		combat_log("%s shoot %s killing %d", troops[u->troop_id].name, troops[victim->troop_id].name, kills);
 
 		//unit_apply_damage(war, victim);
 
@@ -4160,7 +3585,7 @@ int ask_fast_quit(KBgame *game) {
 	byte twirl_pos = 0;
 	word twirl_x, twirl_y;
 
-	KB_TopBox(" Quit to DOS without saving (y/n) ");
+	KB_TopBox(0, " Quit to DOS without saving (y/n) ");
 
 	KB_getpos(sys, &twirl_x, &twirl_y);
 
@@ -4196,7 +3621,7 @@ void adventure_loop(KBgame *game) {
 
 	SDL_Surface *screen = sys->screen;
 
-	Uint32 *colors = KB_Resolve(COL_TEXT, 0);
+	Uint32 *colors = local.message_colors;
 
 	SDL_Rect status_rect = { local.status.x, local.status.y, local.status.w, local.status.h };
 
@@ -4314,9 +3739,9 @@ void adventure_loop(KBgame *game) {
 			int cursor_y = game->y + oy;
 
 			if (cursor_x < 0) cursor_x = 0;
-			if (cursor_x > 63) cursor_x = 63;
 			if (cursor_y < 0) cursor_y = 0;
-			if (cursor_y > 63) cursor_y = 63;
+			if (cursor_x > LEVEL_W - 1) cursor_x = LEVEL_W - 1;
+			if (cursor_y > LEVEL_H - 1) cursor_y = LEVEL_H - 1;
 
 			byte m = game->map[game->continent][cursor_y][cursor_x];		
 
@@ -4360,7 +3785,7 @@ void adventure_loop(KBgame *game) {
 				game->x = cursor_x;
 				game->y = cursor_y;
 
-				if (m == 0x8e && !visit_telecave(game, 1)) {
+				if (m == TILE_TELECAVE && !visit_telecave(game, 1)) {
 					printf("HUH %d %d\n", cursor_x, cursor_y);
 					m = game->map[game->continent][cursor_y][cursor_x];
 					walk = 0;
@@ -4388,17 +3813,17 @@ void adventure_loop(KBgame *game) {
 			byte m = game->map[game->continent][game->y][game->x];
 			if (IS_INTERACTIVE(m) && game->mount != KBMOUNT_FLY) {
 				switch (m) {
-					case 0x85:	visit_castle(game);	walk = 0; break;
-					case 0x8a:	visit_town(game); walk = 0; break;
-					case 0x8b:	take_chest(game);	break;
-					case 0x8e:	if (!visit_telecave(game, 0)) break;
-					case 0x8c:
-					case 0x8d:
-					case 0x8f:	visit_dwelling(game, m - 0x8c); walk = 0; break;
-					case 0x90:	read_signpost(game);		break;
-					case 0x91:	walk = !attack_foe(game);	break;
-					case 0x92:
-					case 0x93:	take_artifact(game, m - 0x92);	break;
+					case TILE_CASTLE:   	visit_castle(game);	walk = 0; break;
+					case TILE_TOWN:     	visit_town(game); walk = 0; break;
+					case TILE_CHEST:    	take_chest(game);       	break;
+					case TILE_DWELLING_4:	if (!visit_telecave(game, 0)) break;
+					case TILE_DWELLING_1:
+					case TILE_DWELLING_2:
+					case TILE_DWELLING_3:	visit_dwelling(game, m - TILE_DWELLING_1); walk = 0; break;
+					case TILE_SIGNPOST: 	read_signpost(game);    	break;
+					case TILE_FOE:      	walk = !attack_foe(game);	break;
+					case TILE_ARTIFACT_1:
+					case TILE_ARTIFACT_2:	take_artifact(game, m - TILE_ARTIFACT_1);	break;
 					default:
 						KB_errlog("Unknown interactive tile %02x at location %d, %d\n", m, game->x, game->y);
 					break;
@@ -4441,11 +3866,9 @@ void adventure_loop(KBgame *game) {
 			draw_sidebar(game, tick);
 
 			/* Status bar */
-			SDL_FillRect(screen, &status_rect, colors[0]);
-			KB_iloc(status_rect.x, status_rect.y + 1);
-			KB_printf(sys, " Options / Controls / Days Left:%d ", game->days_left);
+			KB_TopBox(0, " Options / Controls / Days Left:%d ", game->days_left);
 
-	    	SDL_Flip( screen );
+	    	KB_flip(sys);
 			redraw = 0;
 		}
 	}
@@ -4511,6 +3934,9 @@ int run_game(KBconfig *conf) {
 
 		/* And log it into stdout */
 		KB_stdlog("%s the %s (%d days left)\n", game->name, classes[game->class][game->rank].title, game->days_left);
+
+		/* HACK - Update color resource based on difficulty setting */
+		update_ui_colors(game);
 
 		/* PLAY THE GAME */
 		adventure_loop(game);

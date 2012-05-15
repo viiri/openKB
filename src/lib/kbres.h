@@ -26,97 +26,203 @@
  *
  * GR_ resources are ready-to-blit SDL_Surfaces.
  * SN_ resources are tunes in ? format
- * PAL_ are arrays of 255 SDL_Colors.
+ * PAL_ are arrays of 256 SDL_Colors.
+ * COL_ are arrays of Uint32 colors in 0xAARRGGBB format;
  * DAT_ are byte arrays of pre-defined length.
  * STR_ are asiiz strings.
  * STRL_ are asiiz-lists (\0 acts as a separator, \0\0 ends the list).
  */
-#define GR_LOGO 	0x00	/* subId - undefined */
-#define GR_TITLE 	0x01	/* subId - undefined */
+#define RESOURCES \
+	_(GR_LOGO)  	/* "company logo" ; subId - undefined */ \
+	_(GR_TITLE) 	/* game title ; subId - undefined */ \
+	_(GR_TROOP) 	/* troop spritesheet ; subId - troop index */ \
+	_(GR_TILE)  	/* single map tile ; subId - tile index */ \
+	_(GR_TILESET)	/* while map tileset ; subId - continent flavor */ \
+	_(GR_TILEROW)	/* a row of tiles ; subId - row index (1 row = 36 tiles) */ \
+	_(GR_TILESALT)	/* continent flavor tiles ; subId - 0=full; 1-3=continent */ \
+	_(GR_VILLAIN)	/* villain portrait ; subId - villain index */ \
+\
+	_(GR_FACE)  	/* ??? ; subId - face index (villain index * 4) */ \
+	_(GR_FACES) 	/* ??? ; subId - undefined */ \
+\
+	_(GR_COMTILE)	/* combat map tile ; subId - combat tile index */ \
+	_(GR_COMTILES)	/* combat map tileset; subId - undefined */ \
+\
+	_(GR_LOCATION)	/* location background ; subId - 0=home 1=town 2-6=dwelling */ \
+\
+	_(GR_FONT)  	/* bitmap font ; subId - undefined */ \
+\
+	_(GR_CURSOR)	/* hero spritesheet + UI elements ; subId - undefined */ \
+\
+	_(GR_UI)    	/* UI elements ; subId - undefined */ \
+	_(GR_SELECT)	/* title screen + misc elements ; subId - undefined */ \
+\
+	_(GR_PORTRAIT)	/* player portrait ; subId - player class */ \
+\
+	_(GR_GOLD)  	/* ??? ; subId - undefined */ \
+	_(GR_PURSE) 	/* ??? ; subId - undefined */ \
+	_(GR_COIN)  	/* coin ; subId - coin index (0-3) */ \
+	_(GR_COINS) 	/* coins ; subId - undefined */ \
+	_(GR_PIECE) 	/* puzzle piece ; subId - undefined */ \
+\
+	_(GR_VIEW)  	/* artifacts, maps, empty slot, empty map ; subId - undefined */ \
+	_(GR_ARTIFACTS)	/* artifacts ; subId - undefined */ \
+	_(GR_MAPS)  	/* filled maps ; subId - undefined */ \
+	_(GR_INVSLOT)	/* an empty inventory slot; subId - undefined */ \
+	_(GR_BLANKMAP)	/* an empty map tile ; subId - undefined */ \
+	_(GR_ARTIFACT)	/* artifact ; subId - artifact index (0-7) */ \
+	_(GR_ORBMAP)	/* filled map ; subId - continent index (0-3) */ \
+\
+	_(GR_ENDING)	/* endscreen background ; subId - 0=won, 1=lost */ \
+	_(GR_ENDTILE)	/* endscreen tile ; subId - 0=grass, 1=wall, 2=hero */ \
+	_(GR_ENDTILES)	/* endscreen tileset ; subId - undefined */ \
+\
+	_(SN_TUNE)  	/* subId - tune index (0-10) */ \
+	_(PAL_PALETTE)	/* subId - undefined */ \
+	_(COL_TEXT) 	/* textbox colorscheme ; subId - scheme type, see CS_ defines below */ \
+	_(COL_MINIMAP) 	/* minimap colorscheme ; subId - undefined */ \
+\
+	_(DAT_WORLD)	/* complete world map ; subId - undefined */ \
+	_(DAT_LAND) 	/* map for specific continent ; subId - continent index */ \
+\
+	_(RECT_MAP) 	/* SDL_Rect describing map area */ \
+	_(RECT_UI)  	/* SDL_Rect describing ui border area; subId - element index */ \
+	_(RECT_TILE)	/* SDL_Rect describing one map tile */ \
+	_(RECT_UITILE)	/* SDL_Rect describing sidebar button */ \
+\
+	_(STR_SIGN) 	/* signpost text ; subId - signpost index */ \
+	_(STR_TROOP)	/* troop name ; subId - troop index */ \
+	_(STR_MULTI)	/* troops name ; subId - troop index */ \
+	_(STR_VNAME)	/* villain name ; subId - villain index */ \
+	_(STR_VDESC)	/* villain description line ; subId - line (villain index * 14) */ \
+	_(STR_CREDIT)	/* a line of credits ; subId - line */ \
+	_(STR_ENDING)	/* line of ending text ; subId - line, 100<=game won, >100=game lost */ \
+\
+	_(STRL_SIGNS)	/* signpost texts ; subId - undefined */ \
+	_(STRL_TROOPS)	/* troop names ; subId - undefined */ \
+	_(STRL_MULTIS)	/* troops names ; subId - undefined */ \
+	_(STRL_VNAMES)	/* villains names ; subId - undefined */ \
+	_(STRL_VDESCS)	/* villains descriptions ; subId - villain id */ \
+	_(STRL_CREDITS)	/* credits ; subId - undefined */ \
+	_(STRL_ENDINGS)	/* ending text ; subId - 0=game won, 1=game lost */
 
-#define GR_TROOP	0x02	/* subId - troop index */
-#define GR_TILE		0x03	/* subId - tile index */
-#define GR_TILESET	0x04	/* subId - continent flavor */
-#define GR_TILEROW	0x0B	/* subId - row index (1 row = 36 tiles) */
-#define GR_VILLAIN	0x05	/* subId - villain index */
+#define _(R) R,
+enum { 
+	RESOURCES 
+	GR_HERO = GR_CURSOR,
+	FIRST_STR = STR_SIGN,
+	FIRST_STRL = STRL_SIGNS,
+};
+#undef _
 
-#define GR_FACE 	0x07	/* subId - face index (villain index * 4) */
-#define GR_FACES 	0x0C	/* subId - undefined */
+extern const char *KBresid_names[]; 
 
-#define GR_COMTILE	0x09	/* subId - combat tile index */
-#define GR_COMTILES	0x0A	/* subId - undefined */
-
-#define GR_LOCATION 0x06	/* subId - 0 home 1 town 2 - 6 dwelling */
-
-#define GR_FONT		0x08	/* subId - undefined */
-
-#define GR_CURSOR	0x10	/* subId - undefined */
-#define GR_HERO	GR_CURSOR
-
-#define GR_UI		0x20	/* subId - undefined */
-#define GR_SELECT	0x21	/* subId - undefined */
-
-#define GR_PORTRAIT	0x22	/* subId - player class */
-
-#define GR_GOLD 	0x25	/* subId - undefined */
-#define GR_PURSE	0x26	/* subId - undefined */
-#define GR_COIN		0x27	/* subId - coin index (0-3) */
-#define GR_COINS	0x28	/* subId - undefined */
-#define GR_PIECE 	0x29	/* subId - undefined */
-
-#define GR_VIEW 	0x30	/* artifacts, maps, empty slot, empty map ; subId - undefined */
-#define GR_ARTIFACTS 0x31	/* artifacts ; subId - undefined */
-#define GR_MAPS 	0x32	/* filled maps; subId - undefined */
-#define GR_INVSLOT	0x33	/* an empty inventory slot; subId - undefined */
-#define GR_BLANKMAP	0x34	/* an empty map tile; subId - undefined */
-#define GR_ARTIFACT	0x35	/* filled map; subId - artifact index (0-7) */
-#define GR_ORBMAP	0x36	/* filled map; subId - continent index (0-3) */
-
-#define GR_ENDING	0x40	/* subId - 0=won, 1=lost */
-#define GR_ENDTILE	0x41	/* subId - 0=grass, 1=wall, 2=hero */
-#define GR_ENDTILES	0x42	/* subId - undefined */
-
-#define SN_TUNE		0x60	/* subId - tune index (0-10) */
-#define PAL_PALETTE	0x70	/* subId - undefined */
-#define COL_TEXT	0x71	/* subId - undefined */
-#define COL_MINIMAP	0x72	/* subId - undefined */
-
-#define DAT_WORLD	0x90	/* complete world map ; subId - undefined */
-#define DAT_LAND	0x91	/* map for specific continent ; subId - continent index */
-
-#define RECT_MAP	0xA0	/* SDL_Rect describing map area */
-#define RECT_UI 	0xA1	/* SDL_Rect describing ui border area; subId - element index */
-#define RECT_TILE 	0xA2	/* SDL_Rect describing one map tile */
-#define RECT_UITILE	0xA3	/* SDL_Rect describing sidebar button */
-
-#define STR_SIGN	0xE0	/* signpost text ; subId - signpost index */
-#define STR_TROOP	0xE1	/* troop name ; subId - troop index */
-#define STR_MULTI	0xE2	/* troops name ; subId - troop index */
-#define STR_VNAME	0xE3	/* villain name ; subId - villain index */
-#define STR_VDESC	0xE4	/* villain description line ; subId - line (villain index * 14) */
-#define STR_CREDIT	0xE5	/* a line of credits ; subId - line */
-#define STR_ENDING	0xE6	/* line of ending text ; subId - line, 100<=game won, >100=game lost */
-
-#define STRL_SIGNS	0xF0	/* signpost texts ; subId - undefined */
-#define STRL_TROOPS	0xF1	/* troop names ; subId - undefined */
-#define STRL_MULTIS	0xF2	/* troops names ; subId - undefined */
-#define STRL_VNAMES 0xF3	/* villains names ; subId - undefined */
-#define STRL_VDESCS 0xF4	/* villains descriptions ; subId - villain id */
-#define STRL_CREDITS 0xF5	/* credits ; subId - undefined */
-#define STRL_ENDINGS 0xF6	/* ending text ; subId - 0=game won, 1=game lost */
-
+/* Possible values for RECT_UI subid: */
 #define FRAME_TOP   	0
 #define FRAME_LEFT  	1
 #define FRAME_RIGHT 	2
 #define FRAME_BOTTOM	3
 #define FRAME_MIDDLE	4
 
+/* Refrence to EGA pallete, mostly used by DOS module. */
+#define EGA_BLACK	0
+#define EGA_DBLUE	1
+#define EGA_DGREEN	2
+#define EGA_DCYAN	3
+#define EGA_DRED	4
+#define EGA_MAGENTA	5
+#define EGA_BROWN	6
+#define EGA_GREY	7
+#define EGA_DGREY	8
+#define EGA_BLUE	9
+#define EGA_GREEN	10
+#define EGA_CYAN	11
+#define EGA_RED 	12
+#define EGA_VIOLET	13
+#define EGA_YELLOW	14
+#define EGA_WHITE	15
+#define EGA_DVIOLET EGA_MAGENTA
+#define EGA_DYELLOW EGA_BROWN
+
+/* Possible values for COL_TEXT subid: */
+#define CS_GENERIC	0
+#define CS_STATUS_1	1
+#define CS_STATUS_2	2
+#define CS_STATUS_3	3
+#define CS_STATUS_4	4
+#define CS_STATUS_5	5
+#define CS_TOPMENU	6
+#define CS_CHROME	7
+#define CS_MINIMENU	8
+
+/* Color scheme for COL_TEXT: */
+enum {
+	COLOR_BACKGROUND,
+	COLOR_TEXT1,
+	COLOR_TEXT = COLOR_TEXT1,
+	COLOR_TEXT2,
+	COLOR_TEXT3,
+	COLOR_TEXT4,
+	COLOR_SHADOW1,
+	COLOR_SHADOW = COLOR_SHADOW1,
+	COLOR_SHADOW2,
+	COLOR_FRAME1,
+	COLOR_FRAME = COLOR_FRAME1,
+	COLOR_FRAME2,
+
+	COLOR_SEL_BACKGROUND,
+	COLOR_SELECTION = COLOR_SEL_BACKGROUND, //Mark first used "SEL_" value
+	COLOR_SEL_TEXT1,
+	COLOR_SEL_TEXT = COLOR_SEL_TEXT1,
+	COLOR_SEL_TEXT2,
+	COLOR_SEL_TEXT3,
+	COLOR_SEL_TEXT4,
+	COLOR_SEL_SHADOW1,
+	COLOR_SEL_SHADOW = COLOR_SEL_SHADOW1,
+	COLOR_SEL_SHADOW2,
+	COLOR_SEL_FRAME1,
+	COLOR_SEL_FRAME2,
+
+	COLORS_MAX
+};
+
+/* Tile indexes from DOS version. */
+#define TILE_GRASS      	0
+#define TILE_DEEP_WATER 	32
+#define TILE_CASTLE     	0x85
+#define TILE_TOWN       	0x8A
+#define TILE_CHEST      	0x8B
+#define TILE_DWELLING_1 	0x8C
+#define TILE_DWELLING_2 	0x8D
+#define TILE_DWELLING_3 	0x8E
+#define TILE_DWELLING_4 	0x8F
+#define TILE_TELECAVE   	TILE_DWELLING_3
+#define TILE_SIGNPOST   	0x90
+#define TILE_FOE        	0x91
+#define TILE_ARTIFACT_1 	0x92
+#define TILE_ARTIFACT_2 	0x93
+
+#define IS_GRASS(M) 	((M) < 2 || (M) == 0x80)
+#define IS_CASTLE(M)	((M) >= 0x02 && (M) <= 0x07)
+#define IS_MAPOBJECT(M)	((M) >= 0x0a && (M) <= 0x13)
+#define IS_WATER(M) 	((M) >= 0x14 && (M) <= 0x20)
+#define IS_TREE(M)  	((M) >= 0x21 && (M) <= 0x2D)
+#define IS_DESERT(M)	((M) >= 0x2e && (M) <= 0x3a)
+#define IS_ROCK(M)  	((M) >= 0x3b && (M) <= 0x47)
+
+#define IS_DEEP_WATER(M) ((M) == TILE_DEEP_WATER)
+
+#define IS_INTERACTIVE(M) ((M) & 0x80)
+
+
 #ifdef HAVE_LIBSDL
 /* SDL flavor. */
 #include <SDL.h>
 #include "kbdir.h" // for KB_DIR
+#include "kbconf.h" // for KBresolve_cb
 /* Provide usefull functions to modules */
 inline SDL_Surface* SDL_CreatePALSurface(Uint32 width, Uint32 height);
+inline void SDL_ClonePalette(SDL_Surface *dst, SDL_Surface *src);
 extern void SDL_BlitXBPP(const char *src, SDL_Surface *dest, SDL_Rect *dstrect, int bpp);
 extern void SDL_BlitMASK(const char *src, SDL_Surface *dest, SDL_Rect *dstrect);
 extern void SDL_ReplaceIndex(SDL_Surface *dest, SDL_Rect *dstrect, byte search, byte replace);
@@ -127,7 +233,12 @@ extern void put_cga_pal(SDL_Surface *dest);
 extern void put_ega_pal(SDL_Surface *dest);
 extern void put_vga_pal(SDL_Surface *dest);
 extern void put_color_pal(SDL_Surface *dest, Uint32 fore, Uint32 back);
+extern Uint32 ega_pallete_rgb[16]; 
 
+/* Tileset factories (make single SDL_Surface from multiple ones) */
+SDL_Surface* KB_LoadTileset_TILES(SDL_Rect *tilesize, KBresolve_cb resolve, KBmodule *mod);
+SDL_Surface* KB_LoadTileset_ROWS(SDL_Rect *tilesize, KBresolve_cb resolve, KBmodule *mod);
+SDL_Surface* KB_LoadTilesetSalted(byte continent, KBresolve_cb resolve, KBmodule *mod);
 
 /* Provide useful functions to potential resource loader */
 /*
