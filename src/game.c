@@ -2981,8 +2981,8 @@ void draw_map(KBgame *game, int tick) {
 	int i, j;
 
 	SDL_Surface *screen = sys->screen;
-	
-	SDL_Surface *tileset = SDL_TakeSurface(GR_TILESET, 0, 0);
+
+	SDL_Surface *tileset = SDL_TakeSurface(GR_TILESET, game->continent, 0);
 	SDL_Surface *hero = SDL_TakeSurface(GR_HERO, 0, 1);
 
 	SDL_Rect *tile = local.map_tile;
