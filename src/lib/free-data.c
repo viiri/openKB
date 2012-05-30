@@ -181,7 +181,15 @@ void* GNU_Resolve(KBmodule *mod, int id, int sub_id) {
 		case GR_TILESET:	/* subId - continent */
 		{
 			SDL_Rect tilesize = { 0, 0, TILE_W, TILE_H };
+			if (sub_id) return KB_LoadTilesetSalted(sub_id, GNU_Resolve, mod);
 			return KB_LoadTileset_ROWS(&tilesize, GNU_Resolve, mod);
+		}
+		break;
+		case GR_TILESALT:	/* subId - 0=full; 1-3=continent */
+		{
+			/* A row of replacement tiles. */
+			image_name = "tilesalt";
+			image_suffix = ".png";
 		}
 		break;
 		case STRL_CREDITS:	/* multiple lines of credits */
