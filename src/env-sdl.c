@@ -428,7 +428,15 @@ SDL_Surface *SDL_TakeSurface(int id, int sub_id, int flip) {
 	}
 	return ret;
 }
-
+void SDL_ReleaseSurface(int id, int sub_id) {
+	if (id < 64 && sub_id < 64) {
+		if (surf_cache[id][sub_id] != NULL)
+		{ 
+			SDL_FreeSurface( surf_cache[id][sub_id] );
+			surf_cache[id][sub_id] = NULL;
+		} 
+	}
+}
 void SDL_FreeCachedSurfaces() {
 	int id, sub_id;
 	for (id = 0; id < 64; id++)
