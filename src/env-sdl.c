@@ -21,9 +21,13 @@
 
 #include "lib/kbconf.h"
 #include "lib/kbres.h"
+#include "lib/kbsound.h"
 
 #include "../vendor/vendor.h"
 #include "env.h"
+
+/* Forward-declare audio callback */
+void KBenv_audio_callback(void *userdata, Uint8 *stream, int len);
 
 /*
  * Default config.
@@ -37,13 +41,19 @@ KBconfig *conf = NULL;
  */
 KBenv *KB_startENV(KBconfig *conf) {
 
-	Uint32 width, height, flags;
+	Uint32 width, height, flags, iflags;
+
+	SDL_AudioSpec desired;
 
 	KBenv *nsys = malloc(sizeof(KBenv));
 
 	if (!nsys) return NULL; 
+	
+	
+	iflags = SDL_INIT_VIDEO;
+	iflags |= SDL_INIT_AUDIO;
 
-    SDL_Init( SDL_INIT_VIDEO );
+    SDL_Init( iflags );
 
 	width = 320;
 	height = 200;
@@ -70,6 +80,29 @@ KBenv *KB_startENV(KBconfig *conf) {
 
 	SDL_WM_SetCaption("openkb " PACKAGE_VERSION, "openkb " PACKAGE_VERSION);
 
+	/* Open the audio device */
+	desired.freq = 22050/2;     		/* 22050Hz - FM Radio quality */
+	desired.format = AUDIO_FORMAT;		/* 16-bit signed audio */
+	desired.channels = 0;       		/* Mono */
+	desired.samples = 512;//8192;		/* Large audio buffer reduces risk of dropouts but increases response time */
+
+	desired.callback = KBenv_audio_callback;
+	desired.userdata = nsys;
+
+	if (SDL_OpenAudio(&desired, &nsys->mixer) < 0) {
+		KB_errlog("Couldn't open audio device: %s\n", SDL_GetError());
+		free(nsys);
+		return NULL;
+	}
+
+	KB_stdlog("Opened audio device: %d channels, %d frequency, %d sampling rate\n", 
+		nsys->mixer.channels, nsys->mixer.freq, nsys->mixer.samples);
+
+	SDL_PauseAudio(0);
+
+	nsys->sound = NULL;
+
+
     nsys->conf = conf;
 
 	nsys->font = NULL;
@@ -86,6 +119,8 @@ KBenv *KB_startENV(KBconfig *conf) {
 }
 
 void KB_stopENV(KBenv *env) {
+
+	SDL_CloseAudio();
 
 	if (env->font) SDL_FreeSurface(env->font);
 
@@ -573,3 +608,70 @@ void* KB_Resolve(int id, int sub_id) {
 	return ret;
 }
 
+/*
+ * SDL_SOUND internal mixer.
+ */
+void KB_play(KBenv *sys, KBsound *snd) {
+
+	int n;
+
+	if (snd == NULL) {
+		KB_debuglog(0, "(Non)Playing an empty sound\n");
+		return;
+	}
+
+	sys->sound = NULL;
+
+	switch (snd->type) {	//TODO: make this a callback, for speed
+		case KBSND_DOS:
+
+			n = tunFile_reset(snd->data);
+
+		break;
+		default:
+		break;
+	}
+
+	sys->sound = snd;
+}
+void KBenv_audio_callback(void *userdata, Uint8 *stream, int len) {
+
+	KBenv *sys = (KBenv *) userdata;
+
+	/* We need to figure out and write "len" samples,
+	 * so this condition for outer loop is a reasonable assumption. */
+	while (len) {
+
+		if (sys->sound == NULL) { /* No sample selected, fill with silence and break */
+			int i;
+			//for (i = 0; i < len; i++) *stream++ = sys->mixer.silence;
+			break;
+		}
+
+		int n = 0;
+
+		KBsound *snd = sys->sound;
+
+		switch (snd->type) {	//TODO: make this a callback, for speed
+			case KBSND_DOS:
+
+				n = tunFile_play(snd->data, stream, len, sys->mixer.freq);
+
+			break;
+			default:
+			break;
+		}
+
+		if (n == 0) {	/* Sample ended */
+			sys->sound = NULL;
+		}
+
+		if (n < 0) {
+			KB_errlog("Audio buffer underrun: need %d more bytes of samples\n", len);
+			break;
+		}
+		
+		len -= n;
+	}
+
+}

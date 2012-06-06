@@ -25,7 +25,7 @@
  * A "resource" is identified by 2 integers 'id' and 'sub_id'.
  *
  * GR_ resources are ready-to-blit SDL_Surfaces.
- * SN_ resources are tunes in ? format
+ * SN_ resources are sounds in KBsound format
  * PAL_ are arrays of 256 SDL_Colors.
  * COL_ are arrays of Uint32 colors in 0xAARRGGBB format;
  * DAT_ are byte arrays of pre-defined length.
@@ -123,6 +123,10 @@ extern const char *KBresid_names[];
 #define FRAME_RIGHT 	2
 #define FRAME_BOTTOM	3
 #define FRAME_MIDDLE	4
+
+/* Possible values for SN_TUNE subid: */
+#define TUNE_WALK	0
+#define TUNE_CHEST	5
 
 /* Refrence to EGA pallete, mostly used by DOS module. */
 #define EGA_BLACK	0

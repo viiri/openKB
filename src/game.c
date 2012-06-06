@@ -28,6 +28,7 @@
 #include "lib/kbres.h"
 #include "lib/kbauto.h"
 #include "lib/kbstd.h"
+#include "lib/kbsound.h"
 
 #include "../vendor/vendor.h" /* scale2x, inprint, etc */
 
@@ -2235,9 +2236,16 @@ void read_signpost(KBgame *game) {
 }
 
 void take_chest(KBgame *game) {
+
+	KBsound *snd_chest = KB_Resolve(SN_TUNE, TUNE_CHEST);
+
+	KB_play(sys, snd_chest);
+
 	SDL_Flip(sys->screen);
 	KB_Pause();
 	game->map[0][game->y][game->x] = 0;
+	
+	free(snd_chest);
 }
 
 void take_artifact(KBgame *game, byte id) {
@@ -3629,6 +3637,8 @@ void adventure_loop(KBgame *game) {
 
 	//int tileset_pitch = local.tileset->w / tile->w;
 
+	KBsound *snd_walk = KB_Resolve(SN_TUNE, TUNE_WALK);
+
 	int key = 0;
 	int done = 0;
 	int redraw = 1;
@@ -3731,6 +3741,8 @@ void adventure_loop(KBgame *game) {
 		}
 
 		if (key > 0 && key < ARROW_KEYS + 1 && !walk) {
+
+			KB_play(sys, snd_walk);
 
 			int ox = move_offset_x[(key-1)/2];
 			int oy = move_offset_y[(key-1)/2];
@@ -3873,6 +3885,7 @@ void adventure_loop(KBgame *game) {
 		}
 	}
 #undef KEY_ACT
+	free(snd_walk);
 }
 
 int run_game(KBconfig *conf) {

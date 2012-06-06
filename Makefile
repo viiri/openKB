@@ -31,7 +31,7 @@ LIB_SOURCES=\
 	src/lib/kbstd.c src/lib/kbconf.c \
 	src/lib/kbfile.c src/lib/kbdir.c src/lib/kbres.c \
 	src/lib/free-data.c \
-	src/lib/dos-data.c src/lib/dos-cc.c src/lib/dos-img.c \
+	src/lib/dos-data.c src/lib/dos-cc.c src/lib/dos-img.c src/lib/dos-snd.c \
 	src/lib/md-rom.c \
 	src/lib/kbauto.c
 

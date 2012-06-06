@@ -25,10 +25,15 @@
 #include "lib/kbsys.h"
 #include "lib/kbconf.h"
 
+#include "lib/kbsound.h"
+
 typedef struct KBenv {
 
 	SDL_Surface *screen;
 	SDL_Surface *font;
+
+	SDL_AudioSpec mixer;
+	KBsound *sound;
 
 	KBconfig *conf;
 

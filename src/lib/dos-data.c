@@ -2,6 +2,9 @@
 #include "kbconf.h"
 #include "kbfile.h"
 #include "kbres.h"
+#include "kbsound.h"
+
+#include "dos-snd.h"
 
 #define DATA_SEGMENT 0x15850
 
@@ -14,7 +17,47 @@ typedef struct DOS_Cache {
 
 	SDL_Color *vga_palette;
 
+	struct tunGroup *tunes;
+
 } DOS_Cache;
+
+KBsound* DOS_load_tune(KBmodule *mod, int tune_id) {
+	DOS_Cache *ch = mod->cache;
+
+	KBsound *snd;
+
+	if (tune_id < 0 || tune_id > ch->tunes->num_files - 1) return NULL; 
+
+	snd = malloc(sizeof(KBsound));
+
+	snd->type = KBSND_DOS;
+	snd->data = &ch->tunes->files[tune_id];
+
+	return snd;
+}
+
+struct tunGroup * DOS_ReadTunes(KBmodule *mod) {
+	struct tunGroup *tunes;
+	KB_File *f;
+	KB_debuglog(0,"? DOS EXE FILE: %s\n", "KB.EXE");
+	f = KB_fopen_with("kb.exe", "rb", mod);
+	if (f == NULL) { KB_errlog("! DOS EXE FILE\n"); return NULL; }
+
+	/* Load tune offsets */
+	KB_fseek(f, DATA_SEGMENT + TUNE_PTR_OFFSET, 0);
+	tunes = tunGroup_load(f);
+	if (tunes == NULL) { return NULL; }
+
+	/* Load palette */
+	KB_fseek(f, DATA_SEGMENT + TUNE_NOTES_OFFSET, 0);
+	tunPalette_load(&tunes->palette, f);
+
+	/* Load all tunes form offsets (palette is memcpy'd into each tune) */
+	tunGroup_loadfiles(tunes, f, DATA_SEGMENT);
+
+	KB_fclose(f);
+	return tunes;
+}
 
 SDL_Color * DOS_ReadPalette_RW(SDL_RWops *rw) {
 	SDL_Color *pal;
@@ -345,6 +388,7 @@ void DOS_Init(KBmodule *mod) {
 		if (mod->bpp == 8) {
 			cache->vga_palette = DOS_ReadPalette(mod, "MCGA.DRV");
 		}
+		cache->tunes = DOS_ReadTunes(mod);
 	}
 
 }
@@ -354,8 +398,8 @@ void DOS_Stop(KBmodule *mod) {
 	DOS_Cache *cache = mod->cache;
 	
 	free(cache->vga_palette);
+	free(cache->tunes);
 	free(mod->cache);
-
 }
 
 /* Whatever static resources need run-time initialization - do it here */
@@ -891,6 +935,11 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 				return DOS_read_strings(mod, 0x1B0E3, 0x1B212);
 			else    	/* Game won */
 				return DOS_read_strings(mod, 0x1AFB4, 0x1B0E2);
+		}
+		break;
+		case SN_TUNE:
+		{
+			return DOS_load_tune(mod, sub_id);
 		}
 		break;
 		case RECT_MAP:
