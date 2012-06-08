@@ -22,5 +22,8 @@ kbplay:
 kbrowse:
 	gcc $(SDL_CFLAGS) kbrowse.c ../../vendor/inprint.c $(LIB_SOURCES) -o kbrowse $(SDL_LFLAGS)
 
+kbmaped: kbmaped.c
+	gcc $(SDL_CFLAGS) kbmaped.c ../save.c ../../vendor/inprint.c $(LIB_SOURCES) -o kbmaped $(SDL_LFLAGS)
+
 clean:
 	rm -rf *.o *.a kbcc kbview kbplay kbrowse
