@@ -392,10 +392,11 @@ void reset_match(KBcombat *war) {
 		 * //TODO: Fixit ofcourse.
 		 */
 		for (j = 0; j < CLEVEL_H; j++)
-		for (i = 1; i < CLEVEL_W - 2; i++)
+		for (i = 1; i < CLEVEL_W - 2; i++) {
 			war->omap[j][i] = 0; 
 			if (!(rand()%10))
 				war->omap[j][i] = rand()%3 + 1;
+		}
 	}
 
 	/* Also reset turn */
