@@ -191,6 +191,7 @@ char* DOS_read_credits(KBmodule *mod, int off, int endoff) {
 	int max = endoff - off, newmax = max + 50;
 
 	raw = DOS_read_strings(mod, off, endoff);
+	if (raw == NULL) return NULL;
 
 	buf = malloc(sizeof(char) * newmax);
 

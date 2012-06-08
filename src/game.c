@@ -455,10 +455,11 @@ void show_credits() {
 	SDL_Surface *userpic = SDL_LoadRESOURCE(GR_SELECT, 2, 0);
 
 	char *credits = KB_Resolve(STRL_CREDITS, 0);
+	char *credits_ptr = credits;
 
-	if (credits == NULL) credits = "openkb " PACKAGE_VERSION;
+	if (credits == NULL) credits_ptr = "openkb " PACKAGE_VERSION;
 
-	max = KB_MessageBox(credits, MSG_HARDCODED);
+	max = KB_MessageBox(credits_ptr, MSG_HARDCODED);
 
 	RECT_Size(&pos, userpic);
 	RECT_Right(&pos, max);
