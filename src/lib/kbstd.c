@@ -151,7 +151,7 @@ char *vmakepath(int *_len, va_list arglist) {
 		arg = input;
 
 		/* Hack -- apply OS-specific directory separator instead of '/' */
-		if (input[0] == '/') {
+		if (input[0] == '/' && input[1] == '\0') {
 			if (str[used - 1] == PATH_SEP_SYM || str[used - 1] == '#') continue;
 			arg = PATH_SEP;
 		}
