@@ -44,11 +44,11 @@ typedef struct KBsound {
 
 #define AUDIO_16BIT
 #ifndef AUDIO_16BIT
-typedef unsigned char aword;
+typedef byte aword;
 #define AUDIO_FORMAT AUDIO_U8; 
 #else
-typedef unsigned short aword;
-#define AUDIO_FORMAT AUDIO_U16LSB;
+typedef word aword;
+#define AUDIO_FORMAT AUDIO_S16SYS;
 #endif
 
 #endif /* _OPENKB_LIBKB_SOUND */

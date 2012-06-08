@@ -166,7 +166,7 @@ struct tunFile* tunFile_load_BUF(const char *buf, int len) {
 	return fil;
 }
 
-int tunFile_reset(struct tunFile *tun) {
+int tunFile_reset(struct tunFile *tun, Uint16 format) {
 
 	tun->sampled = 0;
 
@@ -174,6 +174,13 @@ int tunFile_reset(struct tunFile *tun) {
 	tun->cur_note = 0;
 	tun->cone_pos = 0;
 	tun->cone_dir = 1;
+
+	tun->move_f = 8;
+	tun->move_l = 0;
+	if (format & 0x1000) {	/* Hack -- SDL sets bit 12 for MSB. */
+		tun->move_f = 0;
+		tun->move_l = 8;
+	}
 
 	return 0;
 }
@@ -246,6 +253,10 @@ int tunFile_play(struct tunFile *tun, Uint8 *stream, int len, int freq) {
 
 	word speed = (bay == 0 ? 0 : (PEAK - LEAK) / bay);
 
+	//those values swap depending on audio format endianess:
+	int moveH = tun->move_f; // ammount of shift-right needed for First byte
+	int moveL = tun->move_l; // ammount of shift-right needed for Last  byte
+
 	for (i = 0; i < samples; i++) {
 
 		int step = tun->cone_dir * speed;
@@ -263,11 +274,10 @@ int tunFile_play(struct tunFile *tun, Uint8 *stream, int len, int freq) {
 			tun->cone_pos += step;
 
 		aword sample = tun->cone_pos;
-
-#ifdef AUDIO_16BIT /* Hack -- assume 16bit LSB */
-		/* Be pedantic about LSB */
-		aword H = sample >> 8;
-		aword L = sample & 0x00FF;
+#ifdef AUDIO_16BIT
+		/* Be pedantic about byte order */
+		aword H = (sample >> moveH) & 0x00FF;
+		aword L = (sample >> moveL) & 0x00FF;
 		*stream++ = (Uint8)L;
 		*stream++ = (Uint8)H;
 #else

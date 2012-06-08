@@ -53,6 +53,8 @@ struct tunFile {
 	int cur_note;		/* to digitize it into a PCM stream */
 	int cone_pos;
 	int cone_dir;
+	int move_f;	/* 8 for LSB, 0 for MSB */
+	int move_l;	/* 0 for LSB, 8 for MSB */
 };
 
 struct tunGroup {
@@ -72,7 +74,7 @@ extern struct tunGroup* tunGroup_load(KB_File *f);
 extern void tunGroup_loadfiles(struct tunGroup* grp, KB_File *f, int base);
 
 extern int tunFile_play(struct tunFile *tun, Uint8 *stream, int len, int freq);
-extern int tunFile_reset(struct tunFile *tun);
+extern int tunFile_reset(struct tunFile *tun, Uint16 format);
 
 
 #endif

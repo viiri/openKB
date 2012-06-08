@@ -84,11 +84,11 @@ KBenv *KB_startENV(KBconfig *conf) {
 	SDL_WM_SetCaption("openkb " PACKAGE_VERSION, "openkb " PACKAGE_VERSION);
 
 	if (conf->sound) {
-		/* Open audio device */ 
-		desired.freq = 22050/2;     		/* 22050Hz - FM Radio quality */
-		desired.format = AUDIO_FORMAT;		/* 16-bit signed audio */
-		desired.channels = 0;       		/* Mono */
-		desired.samples = 512;//8192;		/* Large audio buffer reduces risk of dropouts but increases response time */
+		/* Open audio device */
+		desired.format = AUDIO_FORMAT;
+		desired.freq = 11025;	/* Common values are 11025, 22050 and 44100 hz. We don't need much (yet)! */
+		desired.channels = 2;  	// TODO: allow user selection
+		desired.samples = 512;	/* Large audio buffer reduces risk of dropouts but increases response time */
 
 		desired.callback = KBenv_audio_callback;
 		desired.userdata = nsys;
@@ -630,7 +630,7 @@ void KB_play(KBenv *sys, KBsound *snd) {
 	switch (snd->type) {	//TODO: make this a callback, for speed
 		case KBSND_DOS:
 
-			n = tunFile_reset(snd->data);
+			n = tunFile_reset(snd->data, sys->mixer.format);
 
 		break;
 		default:
@@ -660,7 +660,7 @@ void KBenv_audio_callback(void *userdata, Uint8 *stream, int len) {
 		switch (snd->type) {	//TODO: make this a callback, for speed
 			case KBSND_DOS:
 
-				n = tunFile_play(snd->data, stream, len, sys->mixer.freq);
+				n = tunFile_play(snd->data, stream, len, sys->mixer.freq * sys->mixer.channels);
 
 			break;
 			default:
