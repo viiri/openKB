@@ -52,6 +52,7 @@ int write_default_config(const char *path) {
 	fprintf(f, ";savedir = \n");
 	fprintf(f, ";datadir = \n");
 	fprintf(f, "[sdl]\n");
+	fprintf(f, "sound = 0\n");
 	fprintf(f, "fullscreen = 0\n");
 	fprintf(f, "filter = 0\n");
 	fprintf(f, "[module]\n");
@@ -91,6 +92,10 @@ int read_file_config(struct KBconfig *conf, const char *path) {
 				conf->fullscreen = atoi(buf2);
 				conf->set[C_fullscreen] = 1;
 			} else 
+			if (!KB_strcasecmp(buf1, "sound")) {
+				conf->sound = atoi(buf2);
+				conf->set[C_sound] = 1;
+			} else
 			if (!KB_strcasecmp(buf1, "datadir")) {
 				KB_dircpy(conf->data_dir, buf2);
 				conf->set[C_data_dir] = 1;
@@ -247,7 +252,13 @@ int read_cmd_config(struct KBconfig *conf, int argc, char *args[]) {
 				conf->fullscreen = 1;
 				conf->set[C_fullscreen] = 1;
 				continue;
-			}		
+			}
+
+			if (!KB_strcasecmp(args[i], "--nosound")) {
+				conf->sound = 0;
+				conf->set[C_sound] = 1;
+				continue;
+			}
 
 			if (i == argc - 1) {
 				KB_strcpy(conf->config_file, args[i]);
@@ -278,6 +289,9 @@ void wipe_config(struct KBconfig *conf) {
 
 	conf->fullscreen = 0;
 	conf->set[C_fullscreen] = 0;
+
+	conf->sound = 0;
+	conf->set[C_sound] = 0;
 
 	conf->filter = 0;
 	conf->set[C_filter] = 0;
@@ -330,6 +344,7 @@ void report_config(struct KBconfig *conf) {
 	KB_debuglog(0, "Data dir:\t %s\n", conf->data_dir);
 	KB_debuglog(0, "Save dir:\t %s\n", conf->save_dir);
 
+	KB_debuglog(0, "Enable Sound:\t %s\n", conf->sound ? "Yes" : "No");
 	KB_debuglog(0, "Fullscreen:\t %s\n", conf->fullscreen ? "Yes" : "No");
 	KB_debuglog(0, "Zoom Filter:\t %s\n", (conf->filter == 1 ? "Normal2x" : conf->filter ? "Scale2x" : "None" ));
 	KB_debuglog(0, "Auto-discover modules:\t %s\n", conf->autodiscover ? "Yes" : "No");
@@ -399,6 +414,8 @@ void apply_config(struct KBconfig* dst, struct KBconfig* src) {
 
 	if (src->set[C_fullscreen]) dst->fullscreen = src->fullscreen;
 	if (src->set[C_filter]) dst->filter = src->filter;
+	
+	if (src->set[C_sound]) dst->sound = src->sound;
 	
 	if (src->set[C_autodiscover]) dst->autodiscover = src->autodiscover;
 	if (src->set[C_fallback]) dst->fallback = src->fallback;

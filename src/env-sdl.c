@@ -51,7 +51,10 @@ KBenv *KB_startENV(KBconfig *conf) {
 	
 	
 	iflags = SDL_INIT_VIDEO;
-	iflags |= SDL_INIT_AUDIO;
+
+	if (conf->sound) {
+		iflags |= SDL_INIT_AUDIO;
+	}
 
     SDL_Init( iflags );
 
@@ -80,25 +83,27 @@ KBenv *KB_startENV(KBconfig *conf) {
 
 	SDL_WM_SetCaption("openkb " PACKAGE_VERSION, "openkb " PACKAGE_VERSION);
 
-	/* Open the audio device */
-	desired.freq = 22050/2;     		/* 22050Hz - FM Radio quality */
-	desired.format = AUDIO_FORMAT;		/* 16-bit signed audio */
-	desired.channels = 0;       		/* Mono */
-	desired.samples = 512;//8192;		/* Large audio buffer reduces risk of dropouts but increases response time */
+	if (conf->sound) {
+		/* Open audio device */ 
+		desired.freq = 22050/2;     		/* 22050Hz - FM Radio quality */
+		desired.format = AUDIO_FORMAT;		/* 16-bit signed audio */
+		desired.channels = 0;       		/* Mono */
+		desired.samples = 512;//8192;		/* Large audio buffer reduces risk of dropouts but increases response time */
 
-	desired.callback = KBenv_audio_callback;
-	desired.userdata = nsys;
+		desired.callback = KBenv_audio_callback;
+		desired.userdata = nsys;
 
-	if (SDL_OpenAudio(&desired, &nsys->mixer) < 0) {
-		KB_errlog("Couldn't open audio device: %s\n", SDL_GetError());
-		free(nsys);
-		return NULL;
+		if (SDL_OpenAudio(&desired, &nsys->mixer) < 0) {
+			KB_errlog("Couldn't open audio device: %s\n", SDL_GetError());
+
+			conf->sound = 0; /* Turn sound off */
+		} else {
+			KB_stdlog("Opened audio device: %d channels, %d frequency, %d sampling rate\n", 
+				nsys->mixer.channels, nsys->mixer.freq, nsys->mixer.samples);
+
+			SDL_PauseAudio(0); /* Start playing */
+		}
 	}
-
-	KB_stdlog("Opened audio device: %d channels, %d frequency, %d sampling rate\n", 
-		nsys->mixer.channels, nsys->mixer.freq, nsys->mixer.samples);
-
-	SDL_PauseAudio(0);
 
 	nsys->sound = NULL;
 

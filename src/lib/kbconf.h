@@ -63,6 +63,7 @@ typedef void*	(*KBresolve_cb)(KBmodule *mod, int id, int sub_id);
 #define C_module       6
 #define C_autodiscover 7
 #define C_fallback     8
+#define C_sound        9
 
 typedef struct KBconfig {
 
@@ -76,6 +77,7 @@ typedef struct KBconfig {
 	int module;
 	int autodiscover;
 	int fallback;
+	int sound;
 
 	int set[16];//what is SET
 

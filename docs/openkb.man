@@ -18,6 +18,9 @@ command line argument or from config file.
 .BI \-c " CONFIG-FILE"
 Point to specific configuration file instead of searching 
 all over the place in \fI$HOME\fR and \fI$CWD\fR.
+.TP
+.BI \--nosound
+Disable sound.
 .SH "CONFIGURATION FILE"
 Few words about the file in general.
 .TP
@@ -31,6 +34,8 @@ Turning this off requires each and every module be explicitly specified in the
 config file. See below.
 .TP
 .BR fullscreen =(0|1)
+.TP
+.BR sound =(0|1)
 .TP
 .BR fallback =(0|1)
 Try every module in list when searching for a resource.
