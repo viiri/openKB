@@ -242,12 +242,12 @@ int KB_event(KBgamestate *state) {
 
 		if (event.type == SDL_KEYUP) {
 			SDL_keysym *kbd = &event.key.keysym;
-			kbd_state[kbd->scancode] = 0;
+			kbd_state[kbd->sym] = 0;
 		}
 
 		if (event.type == SDL_KEYDOWN) {
 			SDL_keysym *kbd = &event.key.keysym;
-			kbd_state[kbd->scancode] = 1;
+			kbd_state[kbd->sym] = 1;
 			for (i = 0; i < state->max_spots; i++) {
 				KBhotspot *sp = &state->spots[i];
 				if ((sp->flag & KFLAG_ANYKEY) || 
