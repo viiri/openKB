@@ -26,6 +26,7 @@ KBsound* DOS_load_tune(KBmodule *mod, int tune_id) {
 
 	KBsound *snd;
 
+	if (ch->tunes == NULL) return NULL;
 	if (tune_id < 0 || tune_id > ch->tunes->num_files - 1) return NULL; 
 
 	snd = malloc(sizeof(KBsound));
