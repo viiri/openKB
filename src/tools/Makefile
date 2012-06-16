@@ -1,32 +1,32 @@
 CC=gcc
 
 CFLAGS=-g
-LFLAGS=
+LDFLAGS=
 
 SDL_CFLAGS=-g `sdl-config --cflags` -DHAVE_LIBSDL
-SDL_LFLAGS=`sdl-config --libs` -lSDL_image
+SDL_LDFLAGS=`sdl-config --libs` -lSDL_image
 
-LIB_SOURCES=../lib/kbdir.c ../lib/kbfile.c ../lib/dos-data.c ../lib/dos-img.c ../lib/dos-cc.c ../lib/kbstd.c ../lib/kbres.c ../lib/kbauto.c ../../vendor/strlcat.c ../../vendor/strlcpy.c
+LIB_SOURCES=../lib/kbdir.c ../lib/kbfile.c ../lib/dos-data.c ../lib/dos-img.c ../lib/dos-snd.c ../lib/dos-cc.c ../lib/kbstd.c ../lib/kbres.c ../lib/kbsound.c ../lib/kbauto.c ../../vendor/strlcat.c ../../vendor/strlcpy.c
 
-all: kbcc kbview kbplay kbrowse
+all: unexepack kbcc kbview kbrowse kbmaped
 
 unexepack:
-	gcc $(CFLAGS) unexepack.c -o unexepack $(LFLAGS)
+	$(CC) $(CFLAGS) unexepack.c -o unexepack $(LDFLAGS)
 
 kbcc:
-	gcc $(CFLAGS) kbcc.c -o kbcc $(LFLAGS)
+	$(CC) $(CFLAGS) kbcc.c -o kbcc $(LDFLAGS)
 
 kbview:
-	gcc $(SDL_CFLAGS) kbview.c -o kbview $(SDL_LFLAGS)
+	$(CC) $(SDL_CFLAGS) kbview.c -o kbview $(SDL_LDFLAGS)
 
 kbplay:
-	gcc $(SDL_CFLAGS) kb_play.c -o kbplay $(SDL_LFLAGS)
+	$(CC) $(SDL_CFLAGS) kb_play.c -o kbplay $(SDL_LDFLAGS)
 
 kbrowse:
-	gcc $(SDL_CFLAGS) kbrowse.c ../../vendor/inprint.c $(LIB_SOURCES) -o kbrowse $(SDL_LFLAGS)
+	$(CC) $(SDL_CFLAGS) kbrowse.c ../../vendor/inprint.c $(LIB_SOURCES) -o kbrowse $(SDL_LDFLAGS)
 
 kbmaped: kbmaped.c
-	gcc $(SDL_CFLAGS) kbmaped.c ../save.c ../../vendor/inprint.c $(LIB_SOURCES) -o kbmaped $(SDL_LFLAGS)
+	$(CC) $(SDL_CFLAGS) kbmaped.c ../save.c ../../vendor/inprint.c $(LIB_SOURCES) -o kbmaped $(SDL_LDFLAGS)
 
 clean:
-	rm -rf *.o *.a kbcc kbview kbplay kbrowse
+	rm -f *.o *.a unexepack kbcc kbview kbplay kbrowse kbmaped
