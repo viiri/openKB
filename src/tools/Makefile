@@ -10,6 +10,9 @@ LIB_SOURCES=../lib/kbdir.c ../lib/kbfile.c ../lib/dos-data.c ../lib/dos-img.c ..
 
 all: kbcc kbview kbplay kbrowse
 
+unexepack:
+	gcc $(CFLAGS) unexepack.c -o unexepack $(LFLAGS)
+
 kbcc:
 	gcc $(CFLAGS) kbcc.c -o kbcc $(LFLAGS)
 
