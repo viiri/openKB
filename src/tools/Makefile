@@ -8,7 +8,10 @@ SDL_LDFLAGS=`sdl-config --libs` -lSDL_image
 
 LIB_SOURCES=../lib/kbdir.c ../lib/kbfile.c ../lib/dos-data.c ../lib/dos-img.c ../lib/dos-snd.c ../lib/dos-cc.c ../lib/kbstd.c ../lib/kbres.c ../lib/kbsound.c ../lib/kbauto.c ../../vendor/strlcat.c ../../vendor/strlcpy.c
 
-all: unexepack kbcc kbview kbrowse kbmaped
+all: unexecomp unexepack kbcc kbview kbrowse kbmaped
+
+unexecomp: unexecomp.c
+	$(CC) $(CFLAGS) unexecomp.c -o unexecomp $(LDFLAGS)
 
 unexepack:
 	$(CC) $(CFLAGS) unexepack.c -o unexepack $(LDFLAGS)
@@ -29,4 +32,4 @@ kbmaped: kbmaped.c
 	$(CC) $(SDL_CFLAGS) kbmaped.c ../save.c ../../vendor/inprint.c $(LIB_SOURCES) -o kbmaped $(SDL_LDFLAGS)
 
 clean:
-	rm -f *.o *.a unexepack kbcc kbview kbplay kbrowse kbmaped
+	rm -f *.o *.a unexecomp unexepack kbcc kbview kbplay kbrowse kbmaped
