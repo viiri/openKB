@@ -1,6 +1,6 @@
 ------------------------------------------------------------------------------
     openkb -- an open source King's Bounty reimplementation
-    Copyright (C) 2011 Vitaly Driedfruit
+    Copyright (C) 2011,2012 Vitaly Driedfruit
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -18,13 +18,24 @@ copyrights when submitting patches.
 
 ------------------------------------------------------------------------------
 
-This program uses software components made by third-parties. 
+This program includes software components made by third-parties.
 All such code is GPLv3-compatible, and is either
 	a) GPLv2 licensed
 	b) BSD licensed
 	c) Public domain code
 
 See vendor/COPYING for the specific licenses.
+
+------------------------------------------------------------------------------
+
+This copyright notice DOES NOT affect non-source code files ("assets")
+distributed with openkb. See COPYING file in their respective directories,
+(i.e. data/free/COPYING) to see their license information.
+
+------------------------------------------------------------------------------
+
+man pages, README, INSTALL, .gitignore and similar minor files are under
+Public Domain and are not subject to copyright.
 
 ------------------------------------------------------------------------------
 
