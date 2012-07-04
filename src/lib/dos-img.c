@@ -172,7 +172,7 @@ byte imgGroup_filename_to_bpp(const char *filename) {
 
 	byte bpp = 0;
 
-	name_split(filename, &buf, &ext);
+	name_split(filename, buf, ext);
 
 	if (!strcasecmp(ext, "256")) bpp = 8;
 	if (!strcasecmp(ext, "16")) bpp = 4;
