@@ -174,6 +174,8 @@ byte imgGroup_filename_to_bpp(const char *filename) {
 
 	name_split(filename, buf, ext);
 
+	strtok(ext, "#"); /* only take left part */
+
 	if (!strcasecmp(ext, "256")) bpp = 8;
 	if (!strcasecmp(ext, "16")) bpp = 4;
 	if (!strcasecmp(ext, "4")) bpp = 2;
@@ -235,7 +237,7 @@ struct KB_Entry * KB_readdirIMG(KB_DIR *dirp)
 	entry->d_ino = grp->i;//grp->head.files[grp->i].key;
 
 	/* Name */
-	sprintf(entry->d_name, "img.%d", grp->i, grp->head.files[grp->i].offset);
+	sprintf(entry->d_name, "%d", grp->i);
 
 	/* [Read w & h] */
 	imgGroup_read(grp, grp->i, 1);
