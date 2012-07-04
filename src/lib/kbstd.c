@@ -268,3 +268,27 @@ int hex2dec(const char *hex_str) {
 	else
 		return 0;
 }
+
+void name_nsplit(const char *name, char *base, int base_max, char *ext, int ext_max) {
+	int i = 0;
+	int l = strlen(name);
+	int dot = -1;
+
+	for (i = l - 1; i > -1; i--) {
+		if (name[i] == '.') {
+			dot = i;
+			break;
+		}
+	}
+
+	if (dot == -1) {
+		KB_strncpy(base, name, base_max);
+		KB_strncpy(ext, "", ext_max);
+	} else if (dot == 0) {
+		KB_strncpy(base, "", base_max);
+		KB_strncpy(ext, name + 1, ext_max);
+	} else {
+		KB_strncpy(base, name, base_max); base[dot] = '\0';
+		KB_strncpy(ext, name + dot + 1, ext_max);
+	}
+}

@@ -109,4 +109,7 @@ extern int hex2dec(const char *hex_str);
 extern int file_size(const char *filename);
 extern int test_directory(const char *path, int make); 
 
+extern void name_nsplit(const char *name, char *base, int base_max, char *ext, int ext_man);
+#define name_split(NAME, BASE, EXT) name_nsplit(NAME, BASE, sizeof(BASE), EXT, sizeof(EXT));
+
 #endif /* _OPENKB_LIBKB_STD */

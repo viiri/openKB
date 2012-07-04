@@ -96,30 +96,6 @@ struct KBfileid fingerprints[] = {
 
 int fingerprints_num = sizeof(fingerprints) / sizeof(struct KBfileid);
 
-void name_split(const char *name, char *base, char *ext) {
-	int i = 0;
-	int l = strlen(name);
-	int dot = -1;
-	
-	for (i = l - 1; i > -1; i--) {
-		if (name[i] == '.') {
-			dot = i;
-			break;
-		}	
-	}
-	
-	if (dot == -1) {
-		strcpy(base, name);
-		strcpy(ext, "");
-	} else if (dot == 0) {
-		strcpy(base, "");
-		strcpy(ext, name + 1);
-	} else {
-		strcpy(base, name);
-		base[dot] = '\0';
-		strcpy(ext, name + dot +1);
-	}
-}
 
 int verify_file(const char *name, const char *path) {
 
@@ -133,7 +109,7 @@ int verify_file(const char *name, const char *path) {
 			char base[NAME_MAX];
 			char ext[NAME_MAX];
 
-			name_split(name, base, ext);
+			name_nsplit(name, base, NAME_MAX, ext, NAME_MAX);
 
 			// todo: test basename and extension separately
 			if (fp->filename[0] != '\0' && strcasecmp(fp->filename, base)) continue;
