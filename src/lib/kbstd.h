@@ -105,6 +105,7 @@ extern void KB_dirncpy(char *dst, const char *src, unsigned int n);
 #define KB_dircpy(DST, SRC) KB_dirncpy(DST, SRC, sizeof(DST))
 
 
+extern int hex2dec(const char *hex_str);
 extern int file_size(const char *filename);
 extern int test_directory(const char *path, int make); 
 

@@ -261,3 +261,10 @@ int test_directory(const char *path, int make) {
 	}
 	return 0;
 }
+
+int hex2dec(const char *hex_str) {
+	if (isxdigit(hex_str[0]))
+		return (int)strtol(hex_str, NULL, 16);
+	else
+		return 0;
+}
