@@ -43,6 +43,9 @@
 #define PATH_SEP_SYM '/'
 #endif
 
+#define GROUP_SEP "#"
+#define GROUP_SEP_SYM '#'
+
 extern void KB_stdlog(char *fmt, ...);
 extern void KB_errlog(char *fmt, ...);
 
@@ -93,9 +96,11 @@ extern char *KB_makepath(int *len, ...); /* Allocate new string and concat varar
 
 #define KB_fastpath(ARGS...) KB_makepath(NULL, ARGS, NULL);
 
+extern void KB_grpnsep(char *dst, unsigned int n);
 extern void KB_dirnsep(char *dst, unsigned int n);
 extern void KB_dirncpy(char *dst, const char *src, unsigned int n);
 
+#define KB_grpsep(DST) KB_grpnsep(DST, sizeof(DST))
 #define KB_dirsep(DST) KB_dirnsep(DST, sizeof(DST))
 #define KB_dircpy(DST, SRC) KB_dirncpy(DST, SRC, sizeof(DST))
 

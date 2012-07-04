@@ -222,9 +222,15 @@ void KB_strncpy_dbg(char *dst, const char *src, unsigned int n, const char *dst_
 		KB_errlog("[strlcpy] Can't copy '%s' \"%s\" into %d-sized buffer '%s'; %s:%d\n", src_name, src, n, dst_name, filename, line);
 }
 
+void KB_grpnsep(char *dst, unsigned int n) {
+	int l = strlen(dst);
+	if (dst[l - 1] == PATH_SEP_SYM || dst[l - 1] == GROUP_SEP_SYM) return;
+	KB_strncat(dst, GROUP_SEP, n);
+}
+
 void KB_dirnsep(char *dst, unsigned int n) {
 	int l = strlen(dst);
-	if (dst[l - 1] == PATH_SEP_SYM || dst[l - 1] == '#') return;
+	if (dst[l - 1] == PATH_SEP_SYM || dst[l - 1] == GROUP_SEP_SYM) return;
 	KB_strncat(dst, PATH_SEP, n);
 }
 
