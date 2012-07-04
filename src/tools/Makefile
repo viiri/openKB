@@ -25,7 +25,7 @@ kbview:
 kbplay:
 	$(CC) $(SDL_CFLAGS) kb_play.c -o kbplay $(SDL_LDFLAGS)
 
-kbrowse:
+kbrowse: kbrowse.c
 	$(CC) $(SDL_CFLAGS) kbrowse.c ../../vendor/inprint.c $(LIB_SOURCES) -o kbrowse $(SDL_LDFLAGS)
 
 kbmaped: kbmaped.c
