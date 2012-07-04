@@ -258,6 +258,7 @@ extern SDL_Surface* DOS_LoadRAWCH_BUF(char *buf, int len);
 extern SDL_Surface* DOS_LoadRAWIMG_BUF(char *buf, int len, byte bpp);
 extern SDL_Surface* DOS_LoadIMGROW_RW(SDL_RWops *rw, word first, word frames); 
 
+extern SDL_Surface* DOS_LoadRAWIMG_RW(SDL_RWops *rw, byte bpp);
 extern SDL_Surface* DOS_LoadIMGROW_DIR(KB_DIR *d, word first, word frames);
 
 /* Laziest function */ 

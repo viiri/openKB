@@ -419,6 +419,14 @@ SDL_Surface *DOS_LoadRAWIMG_BUF(char *buf, int len, byte bpp)
 	return surf;
 }
 
+SDL_Surface *DOS_LoadRAWIMG_RW(SDL_RWops *rw, byte bpp)
+{
+	char buf[0xFA00];
+	int len;
+	len = SDL_RWread(rw, &buf[0], sizeof(char), 0xFA00);
+	return DOS_LoadRAWIMG_BUF(&buf[0], len, bpp);
+}
+
 SDL_Surface *DOS_LoadIMGROW_DIR(KB_DIR *dirp, word first, word frames) 
 {
 	SDL_Surface *surf;

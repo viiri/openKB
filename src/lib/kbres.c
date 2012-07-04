@@ -210,7 +210,10 @@ SDL_Surface* KB_LoadIMG(const char *filename) {
 	f = KB_fopen(filename, "rb");
 	if (f == NULL) return NULL;
 	rw = KBRW_open(f);
-	surf = DOS_LoadIMGROW_RW(rw, 0, 255);
+	if (f->type == KBFTYPE_INIMG)
+		surf = DOS_LoadRAWIMG_RW(rw, imgGroup_filename_to_bpp(filename));
+	if (surf == NULL)
+		surf = DOS_LoadIMGROW_RW(rw, 0, 255);
 	if (surf == NULL)
 		surf = IMG_Load_RW(rw, 0);
 	SDL_RWclose(rw);
