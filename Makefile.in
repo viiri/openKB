@@ -34,7 +34,7 @@ LIB_SOURCES=\
 	src/lib/dos-data.c src/lib/dos-cc.c src/lib/dos-img.c src/lib/dos-snd.c \
 	src/lib/md-rom.c \
 	src/lib/kbauto.c
- 
+
 LIB_BINARY=src/libkb.a
 
 VEND_SOURCES=vendor/scale2x.c vendor/inprint.c vendor/savepng.c
