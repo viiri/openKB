@@ -125,4 +125,7 @@ extern SDL_Surface* SDL_TakeSurface(int id, int sub_id, int flip);
 
 extern void SDL_FreeCachedSurfaces();
 
+extern char **STRL_LoadArray(int id, int sub_id);
+extern void STRL_FreeArray(char **arr);
+
 #endif /* _OPENKB_ENV */
