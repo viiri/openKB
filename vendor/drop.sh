@@ -95,8 +95,12 @@ install_sha256()
 
 install_savepng()
 {
-    cp ${WORKDIR}${DROP_NAME}/savepng.c ${WORKDIR}${LAST_NAME}
-    cp ${WORKDIR}${DROP_NAME}/savepng.h ${WORKDIR}.
+    echo "#ifdef HAVE_LIBPNG" > ${WORKDIR}savepng.c
+    echo "#ifdef HAVE_LIBPNG" > ${WORKDIR}savepng.h
+    cat ${WORKDIR}${DROP_NAME}/savepng.c >> ${WORKDIR}${LAST_NAME}
+    cat ${WORKDIR}${DROP_NAME}/savepng.h >> ${WORKDIR}savepng.h
+    echo "#endif /* HAVE_LIBPNG */" >> ${WORKDIR}savepng.c
+    echo "#endif /* HAVE_LIBPNG */" >> ${WORKDIR}savepng.h
 }
 
 REMOTE_NAME=scale2x-2.4
