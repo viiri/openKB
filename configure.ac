@@ -11,10 +11,41 @@ AC_CONFIG_HEADERS([src/config.h])
 AC_PROG_CC
 AC_PROG_INSTALL
 
+# Searches for *-config
+AC_PATH_PROG(SDL_CONFIG, sdl-config)
+#AC_PATH_PROG(PKG_CONFIG, pkg-config)
+
 # Checks for libraries.
-AC_CHECK_LIB([SDL], [SDL_Init])
+AC_CHECK_LIB([SDL], [SDL_Init], [
+
+	if test -n "$SDL_CONFIG"; then
+		LIBS="$LIBS `$SDL_CONFIG --libs`"
+		CFLAGS="$CFLAGS `$SDL_CONFIG --cflags`"
+		AC_DEFINE([HAVE_LIBSDL], [1], [Define to 1 if you have the `SDL' library (-lSDL)])
+	else
+		AC_MSG_ERROR(cannot find `sdl-config' tool)
+	fi
+
+	], [AC_MSG_ERROR([cannot find `SDL' library, a mandatory dependancy])])
 AC_CHECK_LIB([SDL_image], [IMG_Load])
 AC_CHECK_LIB([SDL_net], [SDLNet_Init])
+AC_CHECK_LIB([png], [png_create_write_struct])
+
+# Optional libraries.
+AC_ARG_WITH([png], AS_HELP_STRING([--without-png], [Build without png library (default: test)]))
+AC_ARG_WITH([sdl_image], AS_HELP_STRING([--without-sdl_image], [Build without SDL_image library (default: test)]))
+
+# Enables/Disables features based on ARG_WITH variables.
+AS_IF([test "$with_png" != no], [HAVE_LIBPNG=1], [HAVE_LIBPNG=0])
+AS_IF([test "$with_sdl_image" != no], [HAVE_LIBSDL_IMAGE=1], [HAVE_LIBSDL_IMAGE=0])
+
+# Enables/Disables features based on CHECK_LIB tests.
+AS_IF([test "$ac_cv_lib_png_png_create_write_struct" = yes], [], [HAVE_LIBPNG=0])
+AS_IF([test "$ac_cv_lib_SDL_image_IMG_Load" = yes], [], [HAVE_LIBSDL_IMAGE=0])
+
+# Exports defines.
+AC_DEFINE_UNQUOTED(HAVE_LIBPNG, [$HAVE_LIBPNG])
+AC_DEFINE_UNQUOTED(HAVE_LIBSDL_IMAGE, [$HAVE_LIBSDL_IMAGE])
 
 # Checks for header files.
 AC_CHECK_HEADERS([string.h])
