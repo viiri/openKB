@@ -93,6 +93,12 @@ install_sha256()
 #	cp ${WORKDIR}${DROP_NAME}/sha2-1.0.1/sha2.h ${WORKDIR}sha2.h
 }
 
+install_savepng()
+{
+    cp ${WORKDIR}${DROP_NAME}/savepng.c ${WORKDIR}${LAST_NAME}
+    cp ${WORKDIR}${DROP_NAME}/savepng.h ${WORKDIR}.
+}
+
 REMOTE_NAME=scale2x-2.4
 REMOTE_FILE=${REMOTE_NAME}.tar.gz
 REMOTE_URL="http://downloads.sourceforge.net/scale2x/${REMOTE_FILE}?download"
@@ -106,6 +112,14 @@ REMOTE_URL="git://github.com/driedfruit/${REMOTE_NAME}.git"
 DOWN_CALLBACK=download_git
 INST_CALLBACK=install_inprint
 test_file "inprint.c" "${REMOTE_NAME}" "${REMOTE_FILE}" "${REMOTE_URL}" 
+
+REMOTE_NAME=SDL_SavePNG
+REMOTE_FILE=SDL_SavePNG
+REMOTE_URL="git://github.com/driedfruit/${REMOTE_NAME}.git"
+DOWN_CALLBACK=download_git
+INST_CALLBACK=install_savepng
+test_file "savepng.c" "${REMOTE_NAME}" "${REMOTE_FILE}" "${REMOTE_URL}"
+test_file "savepng.h" "${REMOTE_NAME}" "${REMOTE_FILE}" "${REMOTE_URL}"
 
 REMOTE_NAME=sha2-1.0.1
 REMOTE_FILE=${REMOTE_NAME}.tgz

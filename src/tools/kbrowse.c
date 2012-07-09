@@ -125,7 +125,10 @@ void examine_directory(const char *path) {
 		if (miniread == 1) {
 			int i = selected_file - reading_offset;
 			KB_dircpy(buffer, path);
-			KB_dirsep(buffer);
+			if (dirp->type == KBDTYPE_DIR)
+				KB_dirsep(buffer);
+			else
+				KB_grpsep(buffer);
 			KB_strcat(buffer, list[i].d_name);
 
 			miniread = 0;
@@ -136,7 +139,6 @@ void examine_directory(const char *path) {
 
 			if (draw) SDL_FreeSurface(draw);
 			draw = KB_LoadIMG(buffer);
-			
 			redraw = 1;
 		}
 		if (key == SDLK_RETURN) {

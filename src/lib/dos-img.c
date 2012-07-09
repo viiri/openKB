@@ -172,7 +172,9 @@ byte imgGroup_filename_to_bpp(const char *filename) {
 
 	byte bpp = 0;
 
-	name_split(filename, &buf, &ext);
+	name_split(filename, buf, ext);
+
+	strtok(ext, "#"); /* only take left part */
 
 	if (!strcasecmp(ext, "256")) bpp = 8;
 	if (!strcasecmp(ext, "16")) bpp = 4;
@@ -235,7 +237,7 @@ struct KB_Entry * KB_readdirIMG(KB_DIR *dirp)
 	entry->d_ino = grp->i;//grp->head.files[grp->i].key;
 
 	/* Name */
-	sprintf(entry->d_name, "img.%d", grp->i, grp->head.files[grp->i].offset);
+	sprintf(entry->d_name, "%d", grp->i);
 
 	/* [Read w & h] */
 	imgGroup_read(grp, grp->i, 1);
@@ -417,6 +419,14 @@ SDL_Surface *DOS_LoadRAWIMG_BUF(char *buf, int len, byte bpp)
 	DOS_BlitRAWIMG(surf, &dest, &buf[4], bpp, mask_pos);
 
 	return surf;
+}
+
+SDL_Surface *DOS_LoadRAWIMG_RW(SDL_RWops *rw, byte bpp)
+{
+	char buf[0xFA00];
+	int len;
+	len = SDL_RWread(rw, &buf[0], sizeof(char), 0xFA00);
+	return DOS_LoadRAWIMG_BUF(&buf[0], len, bpp);
 }
 
 SDL_Surface *DOS_LoadIMGROW_DIR(KB_DIR *dirp, word first, word frames) 

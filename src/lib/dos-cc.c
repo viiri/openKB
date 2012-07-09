@@ -556,6 +556,19 @@ KB_File * KB_fopenCC_in( const char * filename, const char * mode, KB_DIR *dirp 
 		} 
 	}
 
+	/* HACK! If file extension ends in "%04x" hex, try to use _that_ as hash.
+	 * Allows us to load files in "unknown.xxxx" format, i.e. files with no names. */
+	int ext_len;
+	const char *ext = strrchr(filename, '.');
+	if (ext && (ext_len = strlen(ext)) >= 4) {
+		hash = hex2dec(&ext[ext_len-4]);
+		for (i = 0; i < grp->head.num_files; i++) {
+			if (grp->head.files[i].key == hash) {
+				return KB_fopenCC_by( i, dirp );
+			}
+		}
+	}
+
 	return NULL;
 }
 
