@@ -15,7 +15,7 @@ test_file()
 
 		fetch_drop $2 $3 $4
 		
-		if [ $? == 1 ]; then
+		if [ $! ]; then
 			return 1
 		fi 
 
@@ -38,12 +38,15 @@ fetch_drop()
 	if [ ! -d ${WORKDIR}${DROP_NAME} ]; then
 	
 		if [ ! -f ${WORKDIR}${FILE_NAME} ]; then
+
 			${DOWN_CALLBACK}
+
+			if [ $! ]; then
+				return 1
+			fi
+
 		fi
 
-		if [ $? == 1 ]; then
-			return 1
-		fi
 	fi
 	return 0
 }
