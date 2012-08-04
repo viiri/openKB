@@ -855,19 +855,7 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 		case STR_SIGN:
 		{
 			char *list = DOS_Resolve(mod, STRL_SIGNS, 0);
-			char *rem = list;
-			int i = 0;
-			while (1) {
-				if (*list == '\0') {
-					if (i == sub_id) break;
-					i++;
-					list++;
-					if (*list == '\0') break;
-					rem = list;
-					continue;
-				}
-				list++;				
-			}
+			char *rem = KB_strlist_peek(list, sub_id);
 			return rem;
 		}
 		break;
@@ -890,7 +878,7 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 		break;
 		case STR_VNAME:
 		{
-			return KB_strlist_ind(DOS_Resolve(mod, STRL_VNAMES, 0), sub_id);
+			return KB_strlist_peek(DOS_Resolve(mod, STRL_VNAMES, 0), sub_id);
 		}
 		break;
 		case STRL_VNAMES:
@@ -901,7 +889,7 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 		break;
 		case STR_VDESC:
 		{
-			return KB_strlist_ind(DOS_Resolve(mod, STRL_VDESCS, 0), sub_id);
+			return KB_strlist_peek(DOS_Resolve(mod, STRL_VDESCS, 0), sub_id);
 		}
 		break;
 		case STRL_VDESCS:
@@ -913,7 +901,7 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 		break;
 		case STR_CREDIT:
 		{
-			return KB_strlist_ind(DOS_Resolve(mod, STRL_CREDITS, 0), sub_id);
+			return KB_strlist_peek(DOS_Resolve(mod, STRL_CREDITS, 0), sub_id);
 		}
 		break;
 		case STRL_CREDITS:
@@ -925,9 +913,9 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 		{
 			/* A small string containing part of the ending message. */
 			if (sub_id > 100)	/* Game lost */
-				return KB_strlist_ind(DOS_Resolve(mod, STRL_ENDINGS, 1), sub_id - 100);
+				return KB_strlist_peek(DOS_Resolve(mod, STRL_ENDINGS, 1), sub_id - 100);
 			else            	/* Game won */
-				return KB_strlist_ind(DOS_Resolve(mod, STRL_ENDINGS, 0), sub_id);
+				return KB_strlist_peek(DOS_Resolve(mod, STRL_ENDINGS, 0), sub_id);
 		}
 		break;
 		case STRL_ENDINGS:

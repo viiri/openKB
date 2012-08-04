@@ -55,7 +55,7 @@ extern void  KB_debuglog(int mod, char *fmt, ...);
  * Return Nth word in an asciiz-list
  */
 extern char* KB_strlist_ind(const char *list, int id);
-
+extern char* KB_strlist_ind_dbg(const char *list, int id, const char *list_name, const char *filename, unsigned int line); /* debug version */
 /*
  * Match a string in an asciiz-list, return word_index+1 on success, 0 on failure
  */
@@ -84,11 +84,13 @@ extern void KB_strncpy_dbg(char *dst, const char *src, unsigned int n, const cha
 
 #define KB_strcpy(DST, SRC) KB_strncpy(DST, SRC, sizeof(DST))
 #define KB_strcat(DST, SRC) KB_strncat(DST, SRC, sizeof(DST))
+#define KB_strlist_peek(LST, ID) KB_strlist_ind(LST, ID)
 
 #else
 
 #define KB_strcpy(DST, SRC) KB_strncpy_dbg(DST, SRC, sizeof(DST), # DST, # SRC, __FILE__, __LINE__)
 #define KB_strcat(DST, SRC) KB_strncat_dbg(DST, SRC, sizeof(DST), # DST, # SRC, __FILE__, __LINE__)
+#define KB_strlist_peek(LST, ID) KB_strlist_ind_dbg(LST, ID, # LST, __FILE__, __LINE__)
 
 #endif
 

@@ -83,6 +83,22 @@ int KB_strlist_max(const char *list)
 	return ind;
 }
 
+
+char* KB_strlist_ind_dbg(const char *list, int id, const char *list_name, const char *filename, unsigned int line)
+{
+	const char *match = NULL;
+	if (list == NULL) {
+		KB_errlog("[strlist_ind] Can't parse NULL list '%s' in %s line %d\n", list_name, filename, line);
+		return NULL;
+	}
+	match = KB_strlist_ind(list, id);
+	if (match == NULL) {
+		KB_errlog("[strlist_ind] No match found for position %d in list '%s' in %s line %d\n", id, list_name, filename, line);
+		return NULL;
+	}
+	return match; 
+}
+
 char* KB_strlist_ind(const char *list, int id)
 {
 	const char *match = list;
