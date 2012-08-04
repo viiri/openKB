@@ -864,6 +864,8 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 			char *buf = DOS_read_strings(mod, 0x191CB, 0x19815);
 			//int ptroff = 0x1844D;
 			int len = 0x19815 - 0x191CB;
+			/* HACK -- do not process failed read_strings result */
+			if (buf == NULL) len = 0;
 			/* Signs need some extra work */
 			int i, j = 1;
 			for (i = 0; i < len - 1; i++)  {

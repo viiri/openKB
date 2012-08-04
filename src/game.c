@@ -2228,6 +2228,11 @@ void read_signpost(KBgame *game) {
 
 	char *sign = KB_Resolve(STR_SIGN, id);
 
+	if (sign == NULL) {
+		KB_errlog("Unable to read Signpost #%d\n", id);
+		return;
+	}
+
 	KB_stdlog("Read sign post [%d] at %d, %d { %s }\n", id, game->x, game->y, sign);
 
 	KB_BottomBox("A sign reads:", sign, MSG_PAUSE);
