@@ -2236,9 +2236,6 @@ void read_signpost(KBgame *game) {
 	KB_stdlog("Read sign post [%d] at %d, %d { %s }\n", id, game->x, game->y, sign);
 
 	KB_BottomBox("A sign reads:", sign, MSG_PAUSE);
-
-	SDL_Flip(sys->screen);
-	KB_Pause();
 }
 
 void take_chest(KBgame *game) {
