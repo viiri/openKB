@@ -137,7 +137,7 @@ int KB_fclose( KB_File * stream )
 	KB_DIR *prev;
 
 	if (stream->ref_count) {
-		KB_errlog("Unable to close file with %d refrences.\n", stream->ref_count);
+		KB_errlog("[KB_fclose] Not closing file with %d refrence(s).\n", stream->ref_count);
 		return -1;
 	}
 
