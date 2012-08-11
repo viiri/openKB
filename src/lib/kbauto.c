@@ -510,3 +510,57 @@ KB_File *KB_fopen_with(const char *filename, char *mode, KBmodule *mod) {
 	}
 	return f;
 }
+
+/* Case-insensitive version of KB_fopen_with */
+KB_File *KB_fcaseopen_with(const char *filename, char *mode, KBmodule *mod) {
+	int i;
+	char buffer[PATH_MAX];
+	int done, close = 0;
+	KB_File *f = NULL;
+	KB_DIR *dirp = NULL;
+	KB_Entry *e;
+
+	char *buf_ptr[3] = {
+		mod->slotA_name,
+		mod->slotB_name,
+		mod->slotC_name,
+	};
+
+	KB_DIR *dir_ptr[3] = {
+		mod->slotA,
+		mod->slotB,
+		mod->slotC,
+	};
+
+	for (i = 0; i < 3; i++) {
+		if (buf_ptr[i][0] == '\0') break;
+
+		done = 0;
+		close = 0;
+		dirp = dir_ptr[i];//KB_opendir(path);
+
+		if (dirp == NULL) {
+			close = 1;
+			KB_debuglog(0, "Dir not pre-opened '%s'\n", buf_ptr[i]);
+			dirp = KB_opendir(buf_ptr[i]);
+			if (dirp == NULL) continue;
+		}
+
+		while ((e = KB_readdir(dirp)) != NULL) {
+			//KB_debuglog(0, "Matching: %s with exp %s\n", e->d_name, filename);
+			if (!strcasecmp(filename, e->d_name)) {
+
+				KB_dircpy(buffer, buf_ptr[i]);
+				KB_dirsep(buffer);
+				KB_strcat(buffer, e->d_name);
+
+				f = KB_fopen_in(buffer, "rb", dir_ptr[i]);
+				if (f) { done = 1; break; }
+			}
+		}
+		//if (close) KB_closedir(dirp);
+		if (done) break;
+	}
+
+	return f;
+}

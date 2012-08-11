@@ -37,5 +37,6 @@ extern void register_module(KBconfig *conf, KBmodule *mod);
 
 extern KB_DIR  * KB_opendir_with(const char *filename, KBmodule *mod);
 extern KB_File * KB_fopen_with(const char *filename, char *mode, KBmodule *mod);
+extern KB_File * KB_fcaseopen_with(const char *filename, char *mode, KBmodule *mod);
 
 #endif /* _OPENKB_LIBKB_AUTO */
