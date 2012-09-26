@@ -94,12 +94,14 @@ int main(int argc, char* argv[]) {
 	/* Verify data dir */
 	if (test_directory(KBconf.data_dir, 0)) {
 		KB_errlog("Unable to read '%s' directory\n", KBconf.data_dir);
+		KB_errlog("Fatal Error: Can't start without a proper datadir\n");
 		return 1;
 	}
 
 	/* Verify save dir */
 	if (test_directory(KBconf.save_dir, 1)) {
 		KB_errlog("Unable to read/write '%s' directory\n", KBconf.save_dir);
+		KB_errlog("Fatal Error: Can't start without a proper savedir\n");
 		return 1;
 	}
 
@@ -108,7 +110,7 @@ int main(int argc, char* argv[]) {
 		playing = run_game(&KBconf);
 
 	if (!playing) KB_stdlog("Thank you for playing!\n");
-	else KB_errlog("A Fatal Error has occured, terminating!\n");
+	else KB_errlog("A Fatal Error has occurred, terminating!\n");
 
 	return playing;
 }
