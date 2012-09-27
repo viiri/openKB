@@ -86,4 +86,13 @@ typedef struct KBconfig {
 
 } KBconfig;
 
+extern void wipe_config(struct KBconfig *conf);
+extern int read_env_config(struct KBconfig *conf);
+extern int read_cmd_config(struct KBconfig *conf, int argc, char *args[]);
+extern int read_file_config(struct KBconfig *conf, const char *path);
+extern int test_config(const char *path, int make);
+extern int find_config(struct KBconfig *conf);
+extern void apply_config(struct KBconfig* dst, struct KBconfig* src);
+extern void report_config(struct KBconfig *conf);
+		
 #endif /* _OPENKB_LIBKB_CONFIG */
