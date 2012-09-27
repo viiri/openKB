@@ -21,7 +21,9 @@
 #include "kbstd.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #define DEFAULT_DATA_DIR "/usr/local/games/openkb-data/"
 #define DEFAULT_SAVE_DIR "/var/games/openkb-saves/"
@@ -32,6 +34,9 @@
 
 #define CONFIG_BASE_DIR "/.openkb/"
 #define CONFIG_INI_NAME "openkb.ini"
+
+extern void register_module(KBconfig *conf, KBmodule *mod);
+extern void wipe_module(KBmodule *mod);
 
 /* Test file by attempting a read operation */
 int test_file(const char *path) {
@@ -310,7 +315,7 @@ void wipe_config(struct KBconfig *conf) {
 		wipe_module(&conf->modules[i]);
 }
 
-void read_env_config(struct KBconfig *conf) {
+int read_env_config(struct KBconfig *conf) {
 
 	char *pPath;
 #ifdef USE_WINAPI
@@ -318,6 +323,8 @@ void read_env_config(struct KBconfig *conf) {
 #else
 	pPath = (char*)getenv("HOME");
 #endif
+	if (pPath == NULL) return -1;
+
 	KB_strcpy(conf->config_dir, pPath);
 	KB_strcat(conf->config_dir, CONFIG_BASE_DIR);
 
@@ -337,6 +344,7 @@ void read_env_config(struct KBconfig *conf) {
 	KB_strcat(conf->data_dir, DATA_BASE_DIR);
 
 	//printf("Data DIR: %s\n", KBconf.data_dir);
+	return 0;
 }
 
 void report_config(struct KBconfig *conf) {
@@ -406,7 +414,6 @@ int find_config(struct KBconfig *conf) {
 	return 1;
 }
 
-extern void register_module(KBconfig *conf, KBmodule *mod);
 void apply_config(struct KBconfig* dst, struct KBconfig* src) {
 
 	if (src->set[C_save_dir]) KB_strcpy(dst->save_dir, src->save_dir);
