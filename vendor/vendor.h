@@ -2,6 +2,11 @@
  * vendor.h -- externs for bare third-party code 
  */
 
+#include "../src/config.h"
+
+#ifdef HAVE_LIBSDL
+#include <SDL.h>
+
 /* scale2x.c */
 extern void scale2x(SDL_Surface *src, SDL_Surface *dst);
 
@@ -14,3 +19,11 @@ extern void inprint(SDL_Surface *dst, const char *str, Uint32 x, Uint32 y);
 
 /* savepng.c */
 #include "savepng.h"
+
+#endif
+
+/* strlcat.c */
+size_t strlcat(char *dst, const char *src, size_t siz);
+
+/* strlcpy.c */
+size_t strlcpy(char *dst, const char *src, size_t siz);
