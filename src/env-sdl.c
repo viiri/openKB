@@ -47,16 +47,23 @@ KBenv *KB_startENV(KBconfig *conf) {
 
 	KBenv *nsys = malloc(sizeof(KBenv));
 
-	if (!nsys) return NULL; 
-	
-	
+	if (!nsys) {
+		KB_errlog("Out of memory!\n");
+		return NULL;
+	}
+
+
 	iflags = SDL_INIT_VIDEO;
 
 	if (conf->sound) {
 		iflags |= SDL_INIT_AUDIO;
 	}
 
-    SDL_Init( iflags );
+	if ( SDL_Init( iflags ) == -1 ) {
+		KB_errlog("Couldn't initialize SDL: %s\n", SDL_GetError());
+		free(nsys);
+		return NULL;
+	}
 
 	width = 320;
 	height = 200;
@@ -80,6 +87,12 @@ KBenv *KB_startENV(KBconfig *conf) {
 	}
 
     nsys->screen = SDL_SetVideoMode( width, height, 32, flags );
+   
+	if (nsys->screen == NULL) {
+		KB_errlog("Couldn't create output screen: %s\n", SDL_GetError());
+		free(nsys);
+		return NULL;
+	}
 
 	SDL_WM_SetCaption("openkb " PACKAGE_VERSION, "openkb " PACKAGE_VERSION);
 
