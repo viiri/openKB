@@ -58,6 +58,7 @@ int main(int argc, char* argv[]) {
 			KB_errlog("[config] Unable to read config file '%s'\n", &CMDconf.config_file[0]); 
 			return 1;
 		}
+		KB_strcpy(KBconf.config_file, CMDconf.config_file);
 	}
 	/* Search for a config file */
 	else
