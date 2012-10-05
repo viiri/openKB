@@ -192,6 +192,25 @@ void* GNU_Resolve(KBmodule *mod, int id, int sub_id) {
 			image_suffix = ".png";
 		}
 		break;
+		case STR_SIGN:
+		{
+			return KB_strlist_peek(GNU_Resolve(mod, STRL_SIGNS, 0), sub_id);
+		}
+		break;
+		case STRL_SIGNS:
+		{
+			char *list = GNU_read_textfile(mod, "signs.txt");
+			/* Convert multi-line file to a strlist (aka "signs need some extra work") */
+			int n = (list ? strlen(list) : 0);
+			int i, j = 0;
+			for (i = 0; i < n; i++) {
+				if (list[i] == '\n') {
+					if (j) list[i] = '\0';
+					j = 1 - j;
+				}
+			}
+			return list;
+		}
 		case STRL_CREDITS:	/* multiple lines of credits */
 		{
 			return GNU_read_textfile(mod, "credits.txt");
