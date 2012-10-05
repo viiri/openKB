@@ -19,6 +19,7 @@
  */
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>	// For strtol().
 #include <string.h>
 
 #include <errno.h>
@@ -26,9 +27,13 @@
 #include <sys/types.h>  // For stat().
 #include <sys/stat.h>   // For stat().
 
+#include <ctype.h>	// For isxdigit().
+
 #ifdef USE_WINAPI
 #include <windows.h>
 #endif
+
+#include "../../vendor/vendor.h" // For strlcat() and strlcpy().
 
 #include "kbstd.h"
 
@@ -86,7 +91,7 @@ int KB_strlist_max(const char *list)
 
 char* KB_strlist_ind_dbg(const char *list, int id, const char *list_name, const char *filename, unsigned int line)
 {
-	const char *match = NULL;
+	char *match = NULL;
 	if (list == NULL) {
 		KB_errlog("[strlist_ind] Can't parse NULL list '%s' in %s line %d\n", list_name, filename, line);
 		return NULL;
@@ -162,7 +167,7 @@ char *vmakepath(int *_len, va_list arglist) {
 	}
 
 	str[0] = '\0';
-	while (input = va_arg(arglist, char*)) {
+	while ((input = va_arg(arglist, char*))) {
 
 		arg = input;
 
