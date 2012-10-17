@@ -33,6 +33,8 @@ extern int army_leadership(KBgame *game, byte troop_id);
 
 extern int known_spells(KBgame *game);
 
+extern int has_power(KBgame *game, byte power);
+
 extern int player_army(KBgame *game);
 
 extern int player_castles(KBgame *game);

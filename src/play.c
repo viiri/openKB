@@ -143,6 +143,16 @@ int known_spells(KBgame *game) {
 	return spells;
 }
 
+/* Return 1 if any of the artifacts in player's possession have "power"; 0 otherwise */
+int has_power(KBgame *game, byte power) {
+	int i;
+	for (i = 0; i < MAX_ARTIFACTS; i++) {
+		if (game->artifact_found[i] && (artifact_powers[i] & power))
+			return 1;
+	}
+	return 0;
+}
+
 /* Return total number of troops in player army */
 int player_army(KBgame *game) {
 	int followers = 0;

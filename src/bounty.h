@@ -265,6 +265,16 @@ typedef struct KBcombat {
 	byte unit_id;	/* units[side][unit_id], obviously */
 } KBcombat;
 
+/* Artifact powers */
+#define POWER_INSTANT_LEADERSHIP	0x01
+#define POWER_QUARTER_PROTECTION	0x02
+#define POWER_DOUBLE_LEADERSHIP 	0x04
+#define POWER_DOUBLE_SPELL_POWER	0x08
+#define POWER_INCREASE_COMMISSION	0x10
+#define POWER_CHEAPER_BOAT_RENTAL	0x20
+#define POWER_INSTANT_MAX_SPELLS	0x40
+#define POWER_DOUBLE_DAMAGE     	0x80
+
 /* Data provided by bounty.c */
 extern KBtroop troops[MAX_TROOPS];
 extern byte morale_chart[5][5];
@@ -276,6 +286,8 @@ extern char *town_names[MAX_TOWNS];
 extern char *castle_names[MAX_CASTLES + 1];
 extern char *spell_names[MAX_SPELLS];
 extern word spell_costs[MAX_SPELLS];
+extern char *artifact_names[MAX_ARTIFACTS];
+extern byte artifact_powers[MAX_ARTIFACTS];
 extern char *number_names[6];
 extern word number_mins[6];
 extern char *number_name(word num);

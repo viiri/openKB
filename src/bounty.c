@@ -283,6 +283,27 @@ word spell_costs[MAX_SPELLS] = {
 	14,//0D
 };
 
+char *artifact_names[MAX_ARTIFACTS] = {
+	"The Ring of Heroism",      	//0
+	"The Shield of Protection", 	//1
+	"The Crown of Command",     	//2
+	"The Amulet of Augmentation",	//3
+	"The Articles of Nobility", 	//4
+	"The Anchor of Admirability",	//5
+	"The Book of Necros",       	//6
+	"The Sword of Prowess",     	//7
+};
+
+byte artifact_powers[MAX_ARTIFACTS] = {
+	POWER_INSTANT_LEADERSHIP,	//00
+	POWER_QUARTER_PROTECTION,	//01
+	POWER_DOUBLE_LEADERSHIP,	//02
+	POWER_DOUBLE_SPELL_POWER,	//03
+	POWER_INCREASE_COMMISSION,	//04
+	POWER_CHEAPER_BOAT_RENTAL,	//05
+	POWER_INSTANT_MAX_SPELLS,	//06
+	POWER_DOUBLE_DAMAGE,    	//07
+};
 
 char *number_names[6] = {
 	"A multitude of",	/* 0	(500+) */
