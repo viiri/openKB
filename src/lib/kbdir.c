@@ -185,6 +185,7 @@ struct KB_Entry * KB_readdirD(KB_DIR *dirp)
 
 int KB_closedirD(KB_DIR *dirp)
 {
-	closedir((DIR*)dirp->d);
-	free(dirp);
+	int err = closedir((DIR*)dirp->d);
+	if (!err) free(dirp);
+	return err;
 }

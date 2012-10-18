@@ -144,6 +144,8 @@ int verify_file(const char *name, const char *path) {
 }
 
 extern void DOS_Init(KBmodule *mod);
+extern void DOS_Stop(KBmodule *mod);
+
 
 void init_module(KBmodule *mod) {
 	switch (mod->kb_family) {
