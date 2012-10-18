@@ -113,7 +113,7 @@ int tunFile_read_BUF(struct tunFile* tun, const char *buf, int len) {
 	int i;
 
 	/* Parse data */
-	const byte *tune = &buf[0];
+	const byte *tune = (byte*) &buf[0];
 
 	i = 0;
 	while (len > 1) {
