@@ -76,6 +76,10 @@ void  KB_errlog(char *fmt, ...)
 	va_end(argptr);
 }
 
+int KB_rand(int min, int max) {
+	return (int)(rand() % max + min);
+}
+
 int KB_strlist_max(const char *list)
 {
 	int ind = 0, i = 0, n = sizeof(list);

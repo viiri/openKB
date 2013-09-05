@@ -52,6 +52,11 @@ extern void KB_errlog(char *fmt, ...);
 extern void  KB_debuglog(int mod, char *fmt, ...); 
 
 /*
+ * Generic RND
+ */
+int KB_rand(int min, int max);
+
+/*
  * Return Nth word in an asciiz-list
  */
 extern char* KB_strlist_ind(const char *list, int id);
