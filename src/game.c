@@ -1599,8 +1599,7 @@ void recruit_soldiers(KBgame *game) {
 	SDL_Rect *text = KB_BottomFrame();
 
 	/* Status bar */
-	KB_iloc(0, 0);
-	KB_iprint("Press 'ESC' to exit");
+	KB_TopBox(MSG_CENTERED, "Press 'ESC' to exit");
 
 	int done = 0;
 	int redraw = 1;
@@ -1712,8 +1711,7 @@ void visit_home_castle(KBgame *game) {
 	SDL_Rect *fs = &sys->font_size;
 
 	/* Status bar */
-	KB_iloc(0, 0);
-	KB_iprint("Press 'ESC' to exit");
+	KB_TopBox(MSG_CENTERED, "Press 'ESC' to exit");
 
 	int random_troop = home_troops[ rand() % 5 ];
 
@@ -2146,8 +2144,7 @@ void visit_dwelling(KBgame *game, byte rtype) {
 	SDL_Rect *text = KB_BottomFrame();
 
 	/* Status bar */
-	KB_iloc(0, 0);
-	KB_iprint("Press 'ESC' to exit");
+	KB_TopBox(MSG_CENTERED, "Press 'ESC' to exit");
 
 	/* Calculate "MAX YOU CAN HANDLE" number based on leadership (and troop hp?) */
 	max = army_leadership(game, troop_id) / troops [ troop_id ].hit_points;

@@ -507,7 +507,7 @@ SDL_Rect* KB_TopBox(byte flag, const char *str, ...) {
 	if (flag & MSG_CENTERED) {
 		int len = strlen(str);
 		int max = local.status.w / sys->font_size.w;
-		if (len < max) padding = (max - len) / 2 + (max - len) % 2;
+		if (len < max) padding = (max - len) / 2 ;//+ (max - len) % 2;
 	} else if (flag & MSG_PADDED) {
 		padding = 1;
 	}
@@ -517,7 +517,7 @@ SDL_Rect* KB_TopBox(byte flag, const char *str, ...) {
 
 	/* Print string [with varargs] */
 	KB_icolor(colors);
-	KB_iloc(local.status.x, local.status.y + 1);
+	KB_iloc(local.status.x, local.status.y + sys->font_size.h / 8);
 	KB_icurs(padding, 0);
 	KB_ivprintf(str, argptr);
 
