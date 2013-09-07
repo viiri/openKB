@@ -77,7 +77,7 @@ void interactive_main(KBgame *game) {
 void stdout_game(KBgame *game) {
 
 	printf("Difficulty: %d\n", game->difficulty);
-	printf("Scepter: %d, %d, %d\n", game->scepter_continent, game->scepter_x, game->scepter_y);
+	printf("Scepter: %d, X=%d, Y=%d\n", game->scepter_continent, game->scepter_x, game->scepter_y);
 
 	printf("Player: %s the %s\n", game->name, "Player");
 	printf("Player: Level %d\n", game->rank);
@@ -92,7 +92,7 @@ void stdout_game(KBgame *game) {
 	printf("Player: Siege Weapons: %s\n", game->siege_weapons ? "YES" : "NO");
 	printf("Player: Knows Magic: %s\n", game->knows_magic ? "YES" : "NO");
 	printf("Player: Owns Boat: %s\n", game->boat != 0xFF ? "YES" : "NO");
-	
+
 	printf("Artifcats: ");
 	int i = 0;
 	for (i = 0; i < MAX_ARTIFACTS; i++) {
@@ -110,11 +110,25 @@ void stdout_game(KBgame *game) {
 	for (i = 0; i < MAX_CONTINENTS; i++) {
 		printf("[%c] ", game->continent_found[i] ? 'X' : ' ');
 	}
+	for (i = 0; i < MAX_CONTINENTS; i++) {
+		printf("%d,%d ", game->map_coords[i][0], game->map_coords[i][1]);
+	}
 	printf("\n");
 	
 	printf("MapOrbs: ");
 	for (i = 0; i < MAX_CONTINENTS; i++) {
 		printf("[%c] ", game->orb_found[i] ? 'X' : ' ');
+	}
+	for (i = 0; i < MAX_CONTINENTS; i++) {
+		printf("%d,%d ", game->orb_coords[i][0], game->orb_coords[i][1]);
+	}
+	printf("\n");
+
+	printf("Telecaves: ");
+	for (i = 0; i < MAX_CONTINENTS; i++) {
+		printf("[%d] ", i);
+		printf("%d,%d->", game->teleport_coords[i][0][0], game->teleport_coords[i][0][1]);
+		printf("%d,%d  ", game->teleport_coords[i][1][0], game->teleport_coords[i][1][1]);
 	}
 	printf("\n");
 
