@@ -1,6 +1,6 @@
 CC=gcc
 
-CFLAGS=-g
+CFLAGS=-g -Wall
 LDFLAGS=
 
 SDL_CFLAGS=-g `sdl-config --cflags` -DHAVE_LIBSDL
