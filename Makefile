@@ -13,8 +13,8 @@ bindir=${exec_prefix}/bin
 datadir=${datarootdir}
 
 
-CFLAGS=-g `sdl-config --cflags` -DHAVE_LIBSDL
-LDFLAGS=`sdl-config --libs` -lSDL_image
+CFLAGS=-g -O2 -I/usr/include/SDL -D_GNU_SOURCE=1 -D_REENTRANT
+LDFLAGS=-lpng -lSDL_image  -L/usr/lib/x86_64-linux-gnu -lSDL
 
 VERSION=0.0.1
 
@@ -37,7 +37,7 @@ LIB_SOURCES=\
 
 LIB_BINARY=src/libkb.a
 
-VEND_SOURCES=vendor/scale2x.c vendor/inprint.c vendor/savepng.c vendor/sha2.c
+VEND_SOURCES=vendor/scale2x.c vendor/inprint.c vendor/savepng.c
 
 GAME_SOURCES=src/main.c src/save.c src/game.c src/play.c src/bounty.c src/env-sdl.c src/ui.c
 GAME_BINARY=openkb
