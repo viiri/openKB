@@ -133,6 +133,24 @@ int army_leadership(KBgame *game, byte troop_id) {
 	return free_leadership;
 }
 
+/* Calculate and return morale for troop */
+byte troop_morale(KBgame *game, byte slot) {
+	int j;
+	byte morale = MORALE_HIGH;
+	//if (game->player_numbers[i] == 0) break;
+	byte troop_id = game->player_troops[slot];
+	byte groupI = troops[ troop_id ].morale_group;
+	for (j = 0; j < 5; j++) {
+		if (game->player_numbers[j] == 0) break;
+		//if (i == j) continue;
+		byte ctroop_id = game->player_troops[j];
+		byte groupJ = troops[ ctroop_id ].morale_group;
+		byte nm = morale_chart[groupI][groupJ];
+		if (nm < morale) morale = nm;
+	}
+	return morale;
+}
+
 /* Return total number of spells known */ 
 int known_spells(KBgame *game) {
 	int i;

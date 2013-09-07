@@ -31,6 +31,8 @@ extern KBgame* spawn_game(char *name, int pclass, int difficulty);
 
 extern int army_leadership(KBgame *game, byte troop_id);
 
+extern byte troop_morale(KBgame *game, byte slot);
+
 extern int known_spells(KBgame *game);
 
 extern int has_power(KBgame *game, byte power);

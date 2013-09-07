@@ -1398,23 +1398,12 @@ void view_army(KBgame *game) {
 	
 	pos.w = sys->screen->w - left_frame->w - right_frame->w;
 
-	byte troop_morale[5] = { 0 };
+	byte troop_morals[5] = { 0 };
 
 	int i, j;
 	for (i = 0; i < 5; i++) {
-		byte morale = MORALE_HIGH;
 		if (game->player_numbers[i] == 0) break;
-		byte troop_id = game->player_troops[i];
-		byte groupI = troops[ troop_id ].morale_group;
-		for (j = 0; j < 5; j++) {
-			if (game->player_numbers[j] == 0) break;
-			//if (i == j) continue;
-			byte ctroop_id = game->player_troops[j];
-			byte groupJ = troops[ ctroop_id ].morale_group;
-			byte nm = morale_chart[groupI][groupJ];
-			if (nm < morale) morale = nm;
-		}
-		troop_morale[i] = morale;
+		troop_morals[i] = troop_morale(game, i);
 	}
 	tile = SDL_TakeSurface(GR_TILE, 0, 0);
 
@@ -1459,7 +1448,7 @@ void view_army(KBgame *game) {
 				if (army_leadership(game, troop_id) <= 0)
 					KB_iprint(" Out of control!");
 				else
-					KB_iprintf(" Morale:%s\n", morale_names[ troop_morale[i] ]);
+					KB_iprintf(" Morale:%s\n", morale_names[ troop_morals[i] ]);
 
 				KB_iloc(tbox.x + fs->w * 16, tbox.y + fs->h / 2);
 				KB_ilh(fs->h + 4);
