@@ -20,9 +20,13 @@
 #include "bounty.h"
 
 #define _FLY ABIL_FLY
+#define _REGEN ABIL_REGEN
+#define _MAGIC ABIL_MAGIC
+#define _IMMUNE ABIL_IMMUNE
 #define _ABSORB ABIL_ABSORB
 #define _LEECH ABIL_LEECH
-#define _REGEN ABIL_REGEN
+#define _SCYTHE ABIL_SCYTHE
+#define _UNDEAD ABIL_UNDEAD
 
 #define _CASTLE DWELLING_CASTLE
 #define _PLAINS DWELLING_PLAINS
@@ -37,89 +41,95 @@
 #define _D 3
 #define _E 4
 
-	/*  Name		   SL, HP, MV   	Melee	Ranged	Recruitment Cost	*
+	/*  Name		   SL, HP, MV   	Melee	Ranged	  G-Cost, Spoils	*
 	 *	(ABILITIES)		Dwelling	MoraleGroup      						*/
 KBtroop troops[MAX_TROOPS] = {
-	{	"Peasants",		1, 1, 1,   		1,1,	0,0,0,  	10,
-		(0),        	_PLAINS, 250,	_A,
+	{	"Peasants",		1, 1, 1,   		1,1,	0,0,0,  	10, 1
+		(0),        	_PLAINS,250,6,	_A,
 	},
-	{	"Sprites",		1, 1, 1,   		1,2,	0,0,0,  	15,
-		(_FLY),			_FOREST, 250,	_C,
+	{	"Sprites",		1, 1, 1,   		1,2,	0,0,0,  	15, 1
+		(_FLY),			_FOREST,200,6,	_C,
 	},
-	{	"Militia",		2, 2, 2,   		1,2,	0,0,0,  	50,
-		(0),        	_CASTLE, 250,	_A,
+	{	"Militia",		2, 2, 2,   		1,2,	0,0,0,  	50, 5
+		(0),        	_CASTLE, 0,5, 	_A,
 	},
-	{	"Wolves",		2, 3, 3,   		1,3,	0,0,0,  	40,	
-		(0),        	_PLAINS, 250,	_D,
+	{	"Wolves",		2, 3, 3,   		1,3,	0,0,0,  	40,	4
+		(0),        	_PLAINS, 150,5	_D,
 	},
-	{	"Skeletons",	2, 3, 2,   		1,2,	0,0,0,  	40,	
-		(0),        	_DUNGEON, 250,	_E,
+	{	"Skeletons",	2, 3, 2,   		1,2,	0,0,0,  	40,	4
+		(_UNDEAD),     	_DUNGEON, 150,5	_E,
 	},
-	{	"Zombies",		2, 5, 1,   		2,2,	0,0,0,  	50,	
-		(0),        	_DUNGEON, 250,	_E,
+	{	"Zombies",		2, 5, 1,   		2,2,	0,0,0,  	50,	5
+		(_UNDEAD),     	_DUNGEON, 100,5	_E,
 	},
-	{	"Gnomes",   	2, 5, 1,   		1,3,	0,0,0,  	60,	
-		(0),        	_FOREST, 250,	_C,
+	{	"Gnomes",   	2, 5, 1,   		1,3,	0,0,0,  	60,	6
+		(0),        	_FOREST, 250,5	_C,
 	},
-	{	"Orcs",			2, 5, 2,   		2,3,	1,2,10, 	75,	
-		(0),        	_HILL, 250, 	_D,
+	{	"Orcs",			2, 5, 2,   		2,3,	1,2,10, 	75,	7
+		(0),        	_HILL, 200,5 	_D,
 	},
-	{	"Archers",		2, 10, 2,   	1,2,	1,3,12, 	250,
-		(0),        	_CASTLE, 250,	_B,
+	{	"Archers",		2, 10, 2,   	1,2,	1,3,12, 	250, 25
+		(0),        	_CASTLE, 0,5 	_B,
 	},
-	{	"Elves",		3, 10, 3,   	1,2,	2,4,24, 	200,	
-		(0),        	_FOREST, 250,	_C,
+	{	"Elves",		3, 10, 3,   	1,2,	2,4,24, 	200, 20
+		(0),        	_FOREST, 100,4	_C,
 	},
-	{	"Pikemen",		3, 10, 2,   	2,4,	0,0,0,  	800,
-		(0),        	_CASTLE, 250,	_B,
+	{	"Pikemen",		3, 10, 2,   	2,4,	0,0,0,  	800, 30
+		(0),        	_CASTLE, 0,4 	_B,
 	},
-	{	"Nomads",   	3, 15, 2,   	2,4,	0,0,0,  	300,	
-		(0),        	_PLAINS, 250,	_C,
+	{	"Nomads",   	3, 15, 2,   	2,4,	0,0,0,  	300, 30
+		(0),        	_PLAINS, 150,4	_C,
 	},
-	{	"Dwarves",		3, 20, 1,   	2,4,	0,0,0,  	350,	
-		(0),        	_HILL, 250, 	_C,
+	{	"Dwarves",		3, 20, 1,   	2,4,	0,0,0,  	350, 30
+		(0),        	_HILL, 100,4 	_C,
 	},
-	{	"Ghosts",		4, 10, 3,   	3,4,	0,0,0,  	400,	
-		(_ABSORB),  	_DUNGEON, 250,	_E,
+	{	"Ghosts",		4, 10, 3,   	3,4,	0,0,0,  	400, 40
+		(_ABSORB | _UNDEAD),
+						_DUNGEON, 25,3	_E,
 	},
-	{	"Knights",		5, 35, 1,   	6,10,	0,0,0,  	1000,	
-		(0),        	_CASTLE, 250,	_B,
+	{	"Knights",		5, 35, 1,   	6,10,	0,0,0,  	1000, 100
+		(0),        	_CASTLE, 250,3	_B,
 	},
-	{	"Ogres",		4, 40, 1,   	3,5,	0,0,0,  	750,	
-		(0),        	_HILL, 250,  	_D,
+	{	"Ogres",		4, 40, 1,   	3,5,	0,0,0,  	750, 75
+		(0),        	_HILL, 200,3  	_D,
 	},
-	{	"Barbarians",	4, 40, 3,   	1,6,	0,0,0,  	750,	
-		(0),    		_PLAINS, 250,	_C,
+	{	"Barbarians",	4, 40, 3,   	1,6,	0,0,0,  	750, 75
+		(0),    		_PLAINS, 100,3	_C,
 	},
-	{	"Trolls",		4, 50, 1,   	2,5,	0,0,0,  	1000,
-		(_REGEN), 		_FOREST, 250,	_D,
+	{	"Trolls",		4, 50, 1,   	2,5,	0,0,0,  	1000, 100
+		(_REGEN), 		_FOREST, 25,3	_D,
 	},
-	{	"Cavalry",		4, 20, 4,   	3,5,	0,0,0,  	800,	
-		(0),        	_CASTLE, 250,	_B,
+	{	"Cavalry",		4, 20, 4,   	3,5,	0,0,0,  	800, 80
+		(0),        	_CASTLE, 0,2 	_B,
 	},
-	{	"Druids",		5, 25, 2,    	2,3,	0,0,0,  	700,	
-		(0),        	_FOREST, 250,	_C,
+	{	"Druids",		5, 25, 2,    	2,3,	0,0,0,  	700, 70
+		(_MAGIC),     	_FOREST, 25,2	_C,
 	},
-	{	"Archmages",	5, 25, 1,   	2,3,	0,0,0,  	1200,	
-		(_FLY),     	_PLAINS, 250,	_C,
+	{	"Archmages",	5, 25, 1,   	2,3,	0,0,0,  	1200, 120
+		(_FLY | _MAGIC),_PLAINS, 25,2	_C,
 	},
-	{	"Vampires",		5, 30, 1,   	3,6,	0,0,0,  	1500,	
-		(_LEECH | _FLY),_DUNGEON, 250,	_E,
+	{	"Vampires",		5, 30, 1,   	3,6,	0,0,0,  	1500, 150
+		(_LEECH| _FLY | _UNDEAD),
+						_DUNGEON, 50,2	_E,
 	},
-	{	"Giants",		5, 60, 3,   	10,20,	5,10,6, 	2000,	
-		(0),			_HILL, 250,  	_C,
+	{	"Giants",		5, 60, 3,   	10,20,	5,10,6, 	2000, 200
+		(0),			_HILL, 50,2  	_C,
 	},
-	{	"Demons",		6, 50, 1,   	5,7,	0,0,0,  	3000,	
-		(_FLY),			_DUNGEON, 250,	_E,
+	{	"Demons",		6, 50, 1,   	5,7,	0,0,0,  	3000, 300
+		(_FLY|_SCYTHE),	_DUNGEON, 25,1	_E,
 	},
-	{	"Dragons",		6, 200, 1,  	25,50,	0,0,0,  	5000,	
-		(_FLY), 		_HILL, 250,  	_D,
+	{	"Dragons",		6, 200, 1,  	25,50,	0,0,0,  	5000, 500
+		(_FLY|_IMMUNE),	_HILL, 25,1  	_D,
 	},
 };
 #undef _FLY
+#undef _REGEN
+#undef _MAGIC
+#undef _IMMUNE
 #undef _ABSORB
 #undef _LEECH
-#undef _REGEN
+#undef _SCYTHE
+#undef _UNDEAD
 
 #undef _CASTLE
 #undef _PLAINS

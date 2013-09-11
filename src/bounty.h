@@ -177,12 +177,12 @@ struct KBgame {
 
 #define ABIL_FLY	0x01
 #define ABIL_REGEN	0x02
-#define ABIL_XXX1	0x04
-#define ABIL_XXX2	0x08
+#define ABIL_MAGIC	0x04
+#define ABIL_IMMUNE	0x08
 #define ABIL_ABSORB	0x10
 #define ABIL_LEECH	0x20
-#define ABIL_XXX3	0x40
-#define ABIL_XXX4	0x80
+#define ABIL_SCYTHE	0x40
+#define ABIL_UNDEAD	0x80
 
 typedef struct KBtroop {
 
@@ -200,11 +200,13 @@ typedef struct KBtroop {
 	byte	ranged_ammo;
 
 	word 	recruit_cost;	/* In gold */
+	word	spoils_factor;
 
 	byte	abilities;		/* Bit-flags, see ABIL_ defines */
 
 	byte	dwells;			/* Which dwelling is it's home */
 	byte	max_population;	/* Maximum number per dwelling */
+	byte	growth;			/* Castle and foe troop growth on chosen week */
 	byte	morale_group;	/* Morale group, use special chart to determine final troop morale */
 } KBtroop;
 
