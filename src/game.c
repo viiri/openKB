@@ -1068,7 +1068,7 @@ KBgamestate minimap_toggle = {
 	0
 };
 
-void view_minimap(KBgame *game) {
+void view_minimap(KBgame *game, int force_orb) {
 	SDL_Rect border;
 
 	SDL_Surface *screen = sys->screen;
@@ -1112,14 +1112,13 @@ void view_minimap(KBgame *game) {
 	int done = 0;
 	int redraw = 1;
 	int orb = 0;
-	int have_orb = 1;
 	while (!done) {
 	
 		int key = KB_event(&minimap_toggle);
 
 		if (key == 0xFF) done = 1;
 		else if (key) { /* Toggle orb */
-			if (game->orb_found[game->continent]) {
+			if (game->orb_found[game->continent] && !force_orb) {
 				orb = 1 - orb;
 				redraw = 1;
 			}
@@ -1130,7 +1129,7 @@ void view_minimap(KBgame *game) {
 			int i;
 			int j;
 
-			if (!game->orb_found[game->continent])
+			if (!game->orb_found[game->continent] || force_orb)
 				KB_TopBox(MSG_CENTERED, "Press 'ESC' to exit");
 			else if (!orb)
 				KB_TopBox(MSG_CENTERED, "'ESC' to exit / 'SPC' whole map");
@@ -1145,7 +1144,7 @@ void view_minimap(KBgame *game) {
 					pixel.x = map.x + (i * pixel.w);
 					pixel.y = map.y + ((LEVEL_H - j - 1) * pixel.h);
 		
-					if (orb || game->fog[game->continent][j][i]) { 
+					if (force_orb || orb || game->fog[game->continent][j][i]) {
 						byte tile = game->map[game->continent][j][i];
 						color = map_colors[tile];
 					}
@@ -3675,7 +3674,7 @@ void adventure_loop(KBgame *game) {
 		}
 
 		if (key == KEY_ACT(VIEW_MAP)) {
-			view_minimap(game);
+			view_minimap(game, 0);
 		}
 
 		if (key == KEY_ACT(VIEW_PUZZLE)) {
