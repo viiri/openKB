@@ -31,17 +31,21 @@
 		&KB_fread ## SUFFIX , \
 		&KB_fclose ## SUFFIX
 
-KB_FileDriver KB_FS[MAX_KBDTYPE] = {
+KB_FileDriver KB_FS[MAX_KBFTYPE] = {
 	{
-		KBDTYPE_DIR,
+		KBFTYPE_BUF,
+		KB_FILE_IF_REP_ADD(BUF),
+	},
+	{
+		KBFTYPE_FILE,
 		KB_FILE_IF_REP_ADD(F),
 	},
 	{
-		KBDTYPE_GRPCC,
+		KBFTYPE_INCC,
 		KB_FILE_IF_REP_ADD(CC),
 	},
 	{
-		KBDTYPE_GRPIMG,
+		KBFTYPE_INIMG,
 		KB_FILE_IF_REP_ADD(IMG),
 	},
 };
@@ -218,6 +222,70 @@ int KB_freadF ( void * ptr, int size, int count, KB_File * stream )
 int KB_fcloseF( KB_File * stream )
 {
 	fclose(stream->d);
+	free(stream);
+	return 0;
+}
+
+/*
+ * "Buffered file" wrapper
+ * All functions have "BUF" suffix.
+ */
+KB_File * KB_fopenBUF_in( const char * filename, const char * mode, KB_DIR *wth )
+{
+	KB_errlog("Can't open file '%s' as BUF directly\n", filename);
+	return NULL;
+}
+
+int KB_fseekBUF(KB_File *stream, long int offset, int origin)
+{
+	int err = 0;
+	long int roffset = offset;
+	if (origin == SEEK_END) roffset = stream->len - offset;
+	if (origin == SEEK_CUR) roffset = stream->pos + offset;
+	if (roffset < 0) {
+		roffset = 0;
+		err = 1;
+	}
+	if (roffset > stream->len) {
+		roffset = stream->len;
+		err = 1;
+	}
+#if 0
+	printf("Seeking inside stream: %ld, asked %ld, error %d\n", roffset, offset, err);
+#endif
+	stream->pos = roffset;
+	return err;
+}
+
+long int KB_ftellBUF(KB_File *stream)
+{
+	return stream->pos;
+}
+
+int KB_freadBUF(void * ptr, int size, int count, KB_File * stream)
+{
+	char *data = stream->d;
+	/* Bytes left */
+	int rcount = stream->len - stream->pos;
+#if 0
+	printf("Guy asked for %d bytes, not giving more then %d to him....\n", count, rcount);
+#endif
+	/* If he asked more than that */
+	if (count > rcount) count = rcount;
+
+	/* --read-- */
+	memcpy(ptr, &data[stream->pos], count);
+
+	/* Public view: */
+	stream->pos += count;
+
+	return count;
+}
+
+int KB_fcloseBUF(KB_File *stream)
+{
+	char *data = stream->d;
+	free(data);
 	free(stream);
 	return 0;
 }

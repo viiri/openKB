@@ -32,6 +32,10 @@
 
 KB_DirDriver KB_DIRS[MAX_KBDTYPE] = {
 	{
+		KBDTYPE_NULL,
+		NULL, NULL, NULL, NULL, NULL,
+	},
+	{
 		KBDTYPE_DIR,
 		KB_DIR_IF_REP_ADD(D),
 	},

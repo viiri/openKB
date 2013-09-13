@@ -28,11 +28,12 @@
 #ifndef _OPENKB_LIBKB_FILE
 #define _OPENKB_LIBKB_FILE
 
-#define MAX_KBFTYPE	3
+#define MAX_KBFTYPE	4
 
-#define KBFTYPE_FILE	0x00
-#define KBFTYPE_INCC	0x01
-#define KBFTYPE_INIMG	0x02
+#define KBFTYPE_BUF 	0x00
+#define KBFTYPE_FILE	0x01
+#define KBFTYPE_INCC	0x02
+#define KBFTYPE_INIMG	0x03
 
 #ifndef PATH_MAX
 #define PATH_MAX 260
@@ -103,6 +104,10 @@ KB_FILE_IF_NAME_ADD(CC);
  * IMG Inline File ("IMG") 
  */
 KB_FILE_IF_NAME_ADD(IMG);
+/*
+ * BUF Array Access ("BUF")
+ */
+KB_FILE_IF_NAME_ADD(BUF);
 #undef KB_FILE_IF_NAME_ADD
 
 #ifdef HAVE_LIBSDL

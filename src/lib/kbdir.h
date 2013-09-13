@@ -28,12 +28,12 @@
 #ifndef _OPENKB_LIBKB_DIR
 #define _OPENKB_LIBKB_DIR
 
-#define MAX_KBDTYPE	3
+#define MAX_KBDTYPE	4
 
-#define KBDTYPE_DIR 	0x00
-
-#define KBDTYPE_GRPCC 	0x01
-#define KBDTYPE_GRPIMG 	0x02
+#define KBDTYPE_NULL	0x00 /* only exists to compliment KBFTYPE_BUF */
+#define KBDTYPE_DIR 	0x01
+#define KBDTYPE_GRPCC 	0x02
+#define KBDTYPE_GRPIMG	0x03
 
 //#include "kbfile.h"
 
