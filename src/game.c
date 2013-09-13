@@ -1485,7 +1485,7 @@ void dismiss_army(KBgame *game) {
 		KB_imenu(&five_choices, i, 16);
 		KB_iprintf("  %c) %3d %s\n", 'A'+i, game->player_numbers[i], troops[ game->player_troops[i] ].name); 
 	}
-	max = i + 1;
+	max = i;
 
 	const char *twirl = "\x1D" "\x05" "\x1F" "\x1C" ; /* stands for: | / - \ */  
 	byte twirl_pos = 0;
@@ -1505,12 +1505,47 @@ void dismiss_army(KBgame *game) {
 		}
 
 		if (key && key <= max) {
+			int confirm = 1;
 			if (max == 1) {
-				printf("If you Dismiss your last\narmy, you will be sent back to the King in disgrace.\n");
-				printf("Dismiss last army (y/n)?/");
+				int _redraw = 0;
+
+				/* Clear old twirl */
+				KB_iloc(text->x + fs->w * 19, text->y - fs->h / 4);
+				KB_iprint(" ");
+
+				KB_iloc(text->x, text->y + fs->h * 3 - fs->h / 4);
+				KB_ilh(fs->h + fs->h / 8);
+				KB_iprint(
+					"If you Dismiss your last\n"
+					"army, you will be sent back\n"
+					"to the King in disgrace.\n"
+					"Dismiss last army (y/n)?");
+
+				KB_flip(sys);
+
+				confirm = 0;
+				while (!confirm) {
+
+					int _key = KB_event(&yes_no_interactive);
+					if (_key == 1 || _key == 2) { confirm = _key; }
+					if (_key == 3) {
+						twirl_pos++;
+						if (twirl_pos > 3) twirl_pos = 0;
+						_redraw = 1;
+					}
+
+					if (_redraw) {
+						KB_iloc(text->x + fs->w * 24, text->y + fs->h * 6 + fs->h / 8);
+						KB_iprintf("%c", twirl[twirl_pos]);
+						KB_flip(sys);
+						_redraw = 0;
+					}
+				}
 			}
-		
-			dismiss_troop(game, key - 1);
+
+			if (confirm == 1) {
+				dismiss_troop(game, key - 1);
+			}
 			done = 1;
 		}
 
