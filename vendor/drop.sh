@@ -6,12 +6,19 @@ if [ ! ${WORKDIR} ]; then
 	WORKDIR="./"
 fi
 
+if [ ! -f ${WORKDIR}drop.sh ]; then
+	echo "Refusing to use suspicious WORKDIR. Are you sure it is 'vendor'?"
+	exit 1
+fi
+
 
 test_file()
 {
 	LAST_NAME=$1
 
 	if [ ! -f ${WORKDIR}${LAST_NAME} ]; then
+
+#		echo "Missing file: ${WORKDIR}${LAST_NAME}"
 
 		fetch_drop $2 $3 $4
 		
