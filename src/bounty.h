@@ -274,7 +274,7 @@ typedef struct KBcombat {
 #define POWER_DOUBLE_SPELL_POWER	0x08
 #define POWER_INCREASE_COMMISSION	0x10
 #define POWER_CHEAPER_BOAT_RENTAL	0x20
-#define POWER_INSTANT_MAX_SPELLS	0x40
+#define POWER_DOUBLE_MAX_SPELLS 	0x40
 #define POWER_DOUBLE_DAMAGE     	0x80
 
 /* Data provided by bounty.c */
@@ -293,6 +293,16 @@ extern byte artifact_powers[MAX_ARTIFACTS];
 extern char *number_names[6];
 extern word number_mins[6];
 extern char *number_name(word num);
+extern byte chance_for_gold[MAX_CONTINENTS];
+extern byte chance_for_commission[MAX_CONTINENTS];
+extern byte chance_for_spellpower[MAX_CONTINENTS];
+extern byte chance_for_maxspell[MAX_CONTINENTS];
+extern byte chance_for_newspell[MAX_CONTINENTS];
+extern word min_gold[MAX_CONTINENTS];
+extern word max_gold[MAX_CONTINENTS];
+extern word min_commission[MAX_CONTINENTS];
+extern word max_commission[MAX_CONTINENTS];
+extern word base_maxspell[MAX_CONTINENTS];
 extern char *morale_names[3];
 extern char *continent_names[4];
 

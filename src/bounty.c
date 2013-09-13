@@ -311,7 +311,7 @@ byte artifact_powers[MAX_ARTIFACTS] = {
 	POWER_DOUBLE_SPELL_POWER,	//03
 	POWER_INCREASE_COMMISSION,	//04
 	POWER_CHEAPER_BOAT_RENTAL,	//05
-	POWER_INSTANT_MAX_SPELLS,	//06
+	POWER_DOUBLE_MAX_SPELLS,	//06
 	POWER_DOUBLE_DAMAGE,    	//07
 };
 
@@ -331,6 +331,68 @@ char *number_name(word num) {
 		if (num >= number_mins[i]) break;
 	return number_names[i];
 }
+
+byte chance_for_gold[MAX_CONTINENTS] = {
+	0x3d,
+	0x42,
+	0x4c,
+	0x47,
+};
+byte chance_for_commission[MAX_CONTINENTS] = {
+	0x51,
+	0x56,
+	0x56,
+	0x51,
+};
+byte chance_for_spellpower[MAX_CONTINENTS] = {
+	0x56,
+	0x5c,
+	0x5d,
+	0x5b,
+};
+byte chance_for_maxspell[MAX_CONTINENTS] = {
+	0x56,
+	0x5c,
+	0x5d,
+	0x5b,
+};
+byte chance_for_newspell[MAX_CONTINENTS] = {
+	0x65,
+	0x65,
+	0x65,
+	0x65,
+};
+
+word min_gold[MAX_CONTINENTS] = {
+	0x00,
+	0x04,
+	0x09,
+	0x13,
+};
+word max_gold[MAX_CONTINENTS] = {
+	0x05,
+	0x10,
+	0x15,
+	0x1f,
+};
+word min_commission[MAX_CONTINENTS] = {
+	0x09,
+	0x31,
+	0x63,
+	0xc7,
+};
+word max_commission[MAX_CONTINENTS] = {
+	0x0029,
+	0x0033,
+	0x0065,
+	0x012d,
+};
+word base_maxspell[MAX_CONTINENTS] = {
+	0x01,
+	0x01,
+	0x02,
+	0x02,
+};
 
 char *morale_names[3] = {
 	"Norm",

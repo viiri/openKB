@@ -2223,16 +2223,201 @@ void read_signpost(KBgame *game) {
 	KB_BottomBox("A sign reads:", sign, MSG_PAUSE);
 }
 
+KBgamestate two_choices = {
+	{
+		{	{ 0 }, SDLK_a, 0, 0      	},
+		{	{ 0 }, SDLK_b, 0, 0      	},
+
+		{	{ 60 }, SDLK_SYN, 0, KFLAG_TIMER },
+		0,
+	},
+	0
+};
+
+/* returns 0 for gold, 1 for leadership */
+int gold_or_leadership(KBgame *game, int gold, int leadership) {
+	int key;
+	int done = 0;
+	int redraw = 1;
+	while (!done) {
+		key = KB_event(&two_choices);
+		if (key == 1 || key == 2) done = 1;
+		if (redraw) {
+			char buf[256];
+			sprintf(buf,
+				"After scouring the area,\n"
+				"you fall upon a hidden\n"
+				"treasure cache. You may:\n"
+				"A) Take the %d gold.\n"
+				"B) Distribute the gold to\n"
+				"the peasants, increasing\n"
+				"your leadership by %d.",  gold, leadership);
+			KB_BottomBox(buf, "", 0);
+			KB_flip(sys);
+			redraw = 0;
+		}
+	}
+	return key - 1;
+}
+
 void take_chest(KBgame *game) {
+	char msg[512];
 
 	KBsound *snd_chest = KB_Resolve(SN_TUNE, TUNE_CHEST);
 
+	/* Hack -- whatever it is, we start by playing happy music. */
 	KB_play(sys, snd_chest);
 
-	SDL_Flip(sys->screen);
-	KB_Pause();
-	game->map[0][game->y][game->x] = 0;
-	
+	/* 0a. See if it's a navmap. */
+	if (game->continent < MAX_CONTINENTS - 1
+	 && game->map_coords[game->continent][1] == game->y
+	 && game->map_coords[game->continent][0] == game->x) {
+
+			game->continent_found[game->continent + 1] = 1;
+
+			sprintf(msg,
+				"Hidden within an ancient\n"
+				"chest, you find maps and\n"
+				"charts describing passage to\n"
+				"%s.", continent_names[game->continent + 1]);
+			KB_BottomBox(msg, "", MSG_PAUSE);
+
+			KB_stdlog("Found map for %s\n", continent_names[game->continent + 1]);
+	} /* 0b. See if it's an orb. */
+	else if (game->orb_coords[game->continent][1] == game->y
+	      && game->orb_coords[game->continent][0] == game->x) {
+
+			game->orb_found[game->continent] = 1;
+
+			sprintf(msg,
+				"Peering through a magical\n"
+				"orb you are able to view the\n"
+				"entire continent. Your map\n"
+				"of this area is complete.");
+			KB_BottomBox(msg, "", MSG_WAIT);
+
+			view_minimap(game, 1);
+
+			KB_stdlog("Found orb for %s\n", continent_names[game->continent]);
+	} /* 1. It's a treasure. */
+	else {
+		/* Roll dice for Treasure Type */
+		int chance = KB_rand(1, 100); /* 1 to 100 */
+
+		/* Chest full of gold */
+		if (chance < chance_for_gold[game->continent]) {
+
+			int points = KB_rand(1, max_gold[game->continent]) + min_gold[game->continent];
+
+			word gold = points * 100;
+			word leadership = gold / 50;
+
+			if (has_power(game, POWER_DOUBLE_LEADERSHIP)) leadership *= 2;
+
+			/* Player choice */
+			if (!gold_or_leadership(game, gold, leadership)) {
+
+				game->gold += gold;
+
+			} else {
+
+				game->leadership += leadership;
+
+			}
+
+		}
+		/* +Weekly income */
+		else if (chance < chance_for_commission[game->continent]) {
+
+			int points = KB_rand(1, max_commission[game->continent]) + min_commission[game->continent];
+
+			game->commission += points;
+
+			sprintf(msg,
+				"After surveying the area,\n"
+				"you discover that it is\n"
+				"rich in mineral deposits.\n"
+				"\n"
+				"The King rewards you for\n"
+				"your find by increasing\n"
+				"your weekly income by %d", points);
+			KB_BottomBox(msg, "", MSG_PAUSE);
+
+			KB_stdlog("Weekly commission increased by %d\n", points);
+		}
+		/* +Spell power */
+		else if (chance < chance_for_spellpower[game->continent]) {
+
+			int points = 1; //Sadly, yeah, always 1.
+
+			game->spell_power += points;
+
+			sprintf(msg,
+				"Traversing the area, you\n"
+				"stumble upon a time worn\n"
+				"cannister. Curious, you un-\n"
+				"stop the bottle, releasing\n"
+				"a powerful genie who raises\n"
+				"your Spell Power by %d and\n"
+				"vanishes.", points);
+			KB_BottomBox(msg, "", MSG_PAUSE);
+
+			KB_stdlog("Spell power increased by %d\n", points);
+		}
+		/* +Max spells */
+		else if (chance < chance_for_maxspell[game->continent]) {
+
+			int points = base_maxspell[game->continent];
+
+			if (has_power(game, POWER_DOUBLE_MAX_SPELLS)) points *= 2;
+
+			game->max_spells += points;
+
+			sprintf(msg,
+				"A tribe of nomads greet you\n"
+				"and your army warmly. Their\n"
+				"shaman, in awe of your\n" 
+				"prowess, teaches you the\n" 
+				"secret of his tribe's magic.\n"
+				"Your maximum spell capacity\n"
+				"is increased by %d", points);
+			KB_BottomBox(msg, "", MSG_PAUSE);
+
+			KB_stdlog("Max # of spells increased by %d\n", points);
+		}
+		/* +New spell(s) */
+		else if (chance < chance_for_newspell[game->continent]) {
+
+			int spell_type = KB_rand(0, (MAX_SPELLS-1));
+			int spell_num = KB_rand(1, (game->continent+1));
+
+			game->spells[spell_type] += spell_num;
+
+			sprintf(msg,
+				"You have captured a\n"
+				"mischevious imp which has\n"
+				"been terrorizing the\n"
+				"region. In exchange for\n"
+				"its release, you receive:\n"
+				"\n"
+   				"   %d %s spell.", spell_num, spell_names[spell_type]); 
+			KB_BottomBox(msg, "", MSG_PAUSE);
+
+			KB_stdlog("Found spell '%s' x %d\n", spell_names[spell_type], spell_num);
+		}
+		/* Fail... */
+		else {
+			//Hack -- openkb-specific -- instead of empty BottomBox 
+			//(what DOS version did), pretend it's not a bug...
+			KB_BottomBox("", "The chest was empty!", MSG_PAUSE);
+
+			KB_errlog("Chance tables for treasure are impossible!");
+		}
+	}
+
+	/* Remove chest tile from the map */
+	game->map[game->continent][game->y][game->x] = 0;
+
 	free(snd_chest);
 }
 
