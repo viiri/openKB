@@ -3348,8 +3348,21 @@ void draw_combat_statusbar(KBcombat *war) {
 	}
 }
 
-void draw_defeat() {
+void draw_defeat(KBgame *game) {
 
+	draw_map(game, 0); // arg2 is useless
+
+	draw_player(game, 3);
+
+	KB_ilh(9);
+	KB_BottomBox(
+		"After being disgraced on the\n"
+		"field of battle, King\n"
+		"Maximus summons you to his\n"
+		"castle. After a lesson in\n"
+		"tactics, he reluctantly re-\n"
+		"issues your commission and\n"
+		"sends you on your way.", "", MSG_HARDCODED | MSG_PAUSE);
 }
 
 static signed char target_move_offset_x[9] = { -1, 0, 1, -1, 1, -1, 0, 1 };
@@ -3894,7 +3907,7 @@ void adventure_loop(KBgame *game) {
 			dismiss_army(game);
 			if (!test_defeat(game, NULL)) {
 				temp_death(game);
-				draw_defeat();
+				draw_defeat(game);
 			}
 			redraw = 1;
 		}

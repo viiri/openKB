@@ -281,15 +281,23 @@ void dismiss_troop(KBgame *game, byte slot) {
 }
 
 void temp_death(KBgame *game) {
+	int i;
+
+	/* Teleport back home */
 	game->continent = HOME_CONTINENT;
-	game->x = HOME_X;
-	game->y = HOME_Y - 1;
+	game->last_x = game->x = HOME_X;
+	game->last_y = game->y = HOME_Y - 1;
+	game->mount = KBMOUNT_RIDE;
 
-	game->gold += game->commission;
+	/* Wipe army */
+	for (i = 1; i < 5; i++) {
+		game->player_troops[i] = game->player_troops[i + 1];
+		game->player_numbers[i] = game->player_numbers[i + 1];
+	}
 
-	//redraw screen somehow...
-	//KB_BottomBox("After being disgraced...", "", 1);
-	//TODO
+	/* Give free peasants */
+	game->player_troops[0] = 0; /* MAGIC NUMBER for "Peasants" */
+	game->player_numbers[0] = 20;
 }
 
 
