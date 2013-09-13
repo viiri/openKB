@@ -38,6 +38,7 @@ LIB_SOURCES=\
 LIB_BINARY=src/libkb.a
 
 VEND_SOURCES=vendor/scale2x.c vendor/inprint.c vendor/savepng.c
+VEND_DEPS=vendor/hfs.h vendor/rsrc.h vendor/libhfs/hfs.c vendor/librsrc/rsrc.c
 
 GAME_SOURCES=src/main.c src/save.c src/game.c src/play.c src/bounty.c src/env-sdl.c src/ui.c
 GAME_BINARY=openkb
@@ -50,7 +51,10 @@ GAME2_BINARY=netkb
 MAN_SOURCES=docs/openkb.man docs/netkb.man
 MAN_PAGES=$(MAN_SOURCES:.man=.6)
 
-LIB_OBJECTS=$(LIB_SOURCES:.c=.o)
+LIBHFS_BINARY=vendor/libhfs.a
+LIBRSRC_BINARY=vendor/librsrc.a
+
+LIB_OBJECTS=$(LIB_SOURCES:.c=.o) $(LIBHFS_BINEARY) $(LIBRSRC_BINARY)
 VEND_OBJECTS=$(VEND_SOURCES:.c=.o)
 GAME_OBJECTS=$(GAME_SOURCES:.c=.o)
 GAME2_OBJECTS=$(GAME2_SOURCES:.c=.o)
@@ -58,6 +62,16 @@ GAME2_OBJECTS=$(GAME2_SOURCES:.c=.o)
 .SUFFIXES: .6 .man
 
 all: $(GAME_BINARY)
+
+$(LIBHFS_BINARY): $(VEND_DEPS)
+	cd vendor/libhfs; ./configure; cd ../..
+	make -C vendor/libhfs
+	cp vendor/libhfs/libhfs.a vendor/.
+
+$(LIBRSRC_BINARY): $(VEND_DEPS)
+	cd vendor/librsrc; ./configure; cd ../..
+	make -C vendor/librsrc
+	cp vendor/librsrc/librsrc.a vendor/.
 
 $(LIB_BINARY): $(CONFIG_HEADER) $(LIB_OBJECTS)
 	ar rcs $(LIB_BINARY) $(LIB_OBJECTS)
@@ -72,7 +86,7 @@ $(GAME2_BINARY): $(CONFIG_HEADER) $(GAME2_OBJECTS) $(LIB_BINARY) $(VEND_OBJECTS)
 	$(CC) -c $(CFLAGS) $< -o $@
 
 clean:
-	rm -rf vendor/*.o src/*.o src/lib/*.o *.o *.a $(GAME_BINARY) $(LIB_BINARY)
+	rm -rf vendor/*.o src/*.o $(LIB_OBJECTS) *.o *.a $(GAME_BINARY) $(LIB_BINARY)
 
 .man.6:
 	$(GROFF) $< > $@
@@ -80,11 +94,14 @@ clean:
 mans: $(MAN_PAGES)
 	@true
 
+$(VEND_DEPS):
+	vendor/drop.sh vendor/
+
 $(VEND_SOURCES):
 	vendor/drop.sh vendor/
 
 vendor-clean:
-	rm $(VEND_SOURCES)
+	rm $(VEND_SOURCES) $(VEND_DEPS)
 
 vendor: $(VEND_SOURCES)
 	@true
@@ -95,7 +112,7 @@ config:
 	autoconf
 	automake -a -c >/dev/null || echo "Ignoring any errors"
 
-dist: vendor clean config $(MAN_PAGES)
+dist: vendor-clean vendor clean config $(MAN_PAGES)
 	echo "Making dist"
 	mkdir -p $(GAME_DIST)
 	cp Makefile $(GAME_DIST)
@@ -104,6 +121,8 @@ dist: vendor clean config $(MAN_PAGES)
 	cp -r src $(GAME_DIST)
 	mkdir $(GAME_DIST)/vendor
 	cp vendor/*.c vendor/*.h $(GAME_DIST)/vendor/
+	cp -r vendor/libhfs $(GAME_DIST)/vendor/libhfs
+	cp -r vendor/librsrc $(GAME_DIST)/vendor/librsrc
 	cp configure $(GAME_DIST)/.
 	cp configure.ac $(GAME_DIST)/.
 	mkdir $(GAME_DIST)/man

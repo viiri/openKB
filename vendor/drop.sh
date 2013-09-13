@@ -106,6 +106,21 @@ install_savepng()
     echo "#endif /* HAVE_LIBPNG */" >> ${WORKDIR}savepng.h
 }
 
+install_hfsutils()
+{
+    tar xzf ${WORKDIR}${FILE_NAME} --directory ${WORKDIR}
+
+    # mkdir
+    rm -rf ${WORKDIR}/libhfs
+    rm -rf ${WORKDIR}/librsrc
+    cp -r ${WORKDIR}${REMOTE_NAME}/libhfs ${WORKDIR}libhfs
+    cp -r ${WORKDIR}${REMOTE_NAME}/librsrc ${WORKDIR}librsrc
+
+    # headers
+    cp ${WORKDIR}libhfs/hfs.h ${WORKDIR}hfs.h
+    cp ${WORKDIR}librsrc/rsrc.h ${WORKDIR}rsrc.h
+}
+
 REMOTE_NAME=scale2x-2.4
 REMOTE_FILE=${REMOTE_NAME}.tar.gz
 REMOTE_URL="http://downloads.sourceforge.net/scale2x/${REMOTE_FILE}?download"
@@ -135,5 +150,17 @@ DOWN_CALLBACK=download_wget
 INST_CALLBACK=install_sha256
 test_file "sha2.c" "${REMOTE_NAME}" "${REMOTE_FILE}" "${REMOTE_URL}"
 test_file "sha2.h" "${REMOTE_NAME}" "${REMOTE_FILE}" "${REMOTE_URL}"
+
+REMOTE_NAME=hfsutils-3.2.6
+REMOTE_FILE=${REMOTE_NAME}.tar.gz
+REMOTE_URL="ftp://ftp.mars.org/pub/hfs/${REMOTE_FILE}"
+DOWN_CALLBACK=download_wget
+INST_CALLBACK=install_hfsutils
+test_file "libhfs/hfs.c" "${REMOTE_NAME}" "${REMOTE_FILE}" "${REMOTE_URL}"
+test_file "hfs.h" "${REMOTE_NAME}" "${REMOTE_FILE}" "${REMOTE_URL}"
+test_file "librsrc/rsrc.c" "${REMOTE_NAME}" "${REMOTE_FILE}" "${REMOTE_URL}"
+test_file "rsrc.h" "${REMOTE_NAME}" "${REMOTE_FILE}" "${REMOTE_URL}"
+
+
 
 exit 0
