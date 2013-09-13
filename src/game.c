@@ -3054,7 +3054,7 @@ KBgamestate combat_state = {
 };
 
 #define ARROW_KEYS 18
-#define ACTION_KEYS 14
+#define ACTION_KEYS 16
 
 #define SYN_EVENT (ACTION_KEYS + ARROW_KEYS + 1)
 
@@ -3072,6 +3072,8 @@ KBgamestate combat_state = {
 #define KBACT_SAVE_QUIT 	11
 #define KBACT_FAST_QUIT 	12
 #define KBACT_DISMISS_ARMY 	13
+#define KBACT_VIEW_OPTIONS 	14
+#define KBACT_NEW_CONTINENT	15
 
 KBgamestate adventure_state = {
 	{
@@ -3109,6 +3111,8 @@ KBgamestate adventure_state = {
 
 		{	{ 0 }, SDLK_q, KMOD_CTRL, 0	},
 		{	{ 0 }, SDLK_d, 0, 0      	},
+		{	{ 0 }, SDLK_o, 0, 0      	},
+		{	{ 0 }, SDLK_n, 0, 0      	},
 
 		{	{ SOFT_WAIT }, SDLK_SYN, 0, KFLAG_TIMER },
 		0,
