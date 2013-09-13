@@ -317,7 +317,7 @@ int KB_event(KBgamestate *state) {
 	return eve;
 }
 
-void SDL_TextRect(SDL_Surface *dest, SDL_Rect *r, Uint32 fore, Uint32 back) {
+void SDL_TextRect(SDL_Surface *dest, SDL_Rect *r, Uint32 fore, Uint32 back, int top) {
 
 	int i, j;
 
@@ -329,17 +329,17 @@ void SDL_TextRect(SDL_Surface *dest, SDL_Rect *r, Uint32 fore, Uint32 back) {
 
 	/* Top and bottom (horizontal fill) */
 	for (i = r->x ; i + fs->w < r->x + r->w; i += fs->w) {
-		inprint(dest, "\x0E", i, r->y);
+		if (top) inprint(dest, "\x0E", i, r->y);
 		inprint(dest, "\x0F", i, r->y + r->h - fs->h);
 	}
 	/* Left and right (vertical fill) */
-	for (j = r->y ; j + fs->h < r->y + r->h; j += fs->h) {
+	for (j = r->y + fs->h; j + fs->h < r->y + r->h; j += fs->h) {
 		inprint(dest, "\x14", r->x, j);
 		inprint(dest, "\x15", i, j);
 	}
 	/* Corners */
-	inprint(dest, "\x10", r->x, r->y);/* Top-left */ 
-	inprint(dest, "\x11", i, r->y);/* Top-right */
+	if (top) inprint(dest, "\x10", r->x, r->y);/* Top-left */
+	if (top) inprint(dest, "\x11", i, r->y);/* Top-right */
 	inprint(dest, "\x12", r->x, r->y + r->h - fs->h);/* Bottom-left */
 	inprint(dest, "\x13", i, r->y + r->h - fs->h);/* Bottom-right */
 }
@@ -405,7 +405,7 @@ SDL_Rect* KB_MessageBox(const char *str, byte flag) {
 	frame.y = text.y - fs->h;
 	frame.w = text.w + fs->w * 2;
 	frame.h = text.h + fs->h * 2;
-	SDL_TextRect(screen, &frame, ui, bg);
+	SDL_TextRect(screen, &frame, ui, bg, 1);
 	SDL_FillRect(screen, &text, 0xFF0000);
 
 	/* Restore color */
@@ -461,7 +461,7 @@ SDL_Rect* KB_BottomFrame() {
 	RECT_Text((&text), 6, 28);
 
 	/* A nice frame */
-	SDL_TextRect(screen, &border, ui, bg);
+	SDL_TextRect(screen, &border, ui, bg, 1);
 	SDL_FillRect(screen, &text, 0x00FF00);//debug fill
 
 	return &text;

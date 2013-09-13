@@ -256,7 +256,7 @@ KBgame *create_game(int pclass) {
 
 		if (redraw) {
 
-			SDL_TextRect(screen, &menu, 0xFFFFFF, 0x000000);
+			SDL_TextRect(screen, &menu, 0xFFFFFF, 0x000000, 1);
 
 			KB_iloc(menu.x + fs->w, menu.y + fs->h);	
 			KB_iprintf(" %-9s Name: ", classes[pclass][0].title);
@@ -416,7 +416,7 @@ KBgame *load_game() {
 
 			int i;
 
-			SDL_TextRect(screen, &menu, colors[COLOR_FRAME], colors[COLOR_BACKGROUND]);
+			SDL_TextRect(screen, &menu, colors[COLOR_FRAME], colors[COLOR_BACKGROUND], 1);
 
 			incolor(colors[COLOR_TEXT], colors[COLOR_BACKGROUND]);
 			inprint(screen, " Select game:", menu.x + fs->w, menu.y + fs->w - fs->w/2);
@@ -622,7 +622,7 @@ int select_module() {
 
 			SDL_FillRect( screen, NULL, 0x333333 );
 
-			SDL_TextRect(screen, &menu, 0, 0xFFFFFF);
+			SDL_TextRect(screen, &menu, 0, 0xFFFFFF, 1);
 
 			for (i = 0; i < conf->num_modules; i++) {
 				if (i == sel)	incolor(0xFFFFFF, 0x000000);
@@ -1087,7 +1087,7 @@ void view_minimap(KBgame *game, int force_orb) {
 
 	SDL_Surface *tile = SDL_LoadRESOURCE(GR_PURSE, 0, 0);
 
-	SDL_TextRect(sys->screen, &border, colors[COLOR_BACKGROUND], colors[COLOR_TEXT]);
+	SDL_TextRect(sys->screen, &border, colors[COLOR_BACKGROUND], colors[COLOR_TEXT], 1);
 
 	SDL_Rect map;
 
@@ -1179,7 +1179,7 @@ void view_contract(KBgame *game) {
 
 	SDL_Surface *tile = SDL_LoadRESOURCE(GR_PURSE, 0, 0);
 
-	SDL_TextRect(sys->screen, &border, colors[COLOR_BACKGROUND], colors[COLOR_TEXT]);
+	SDL_TextRect(sys->screen, &border, colors[COLOR_BACKGROUND], colors[COLOR_TEXT], 1);
 
 	SDL_Rect hdst = { border.x + fs->w, border.y + fs->h, tile->w, tile->h };
 
@@ -2703,7 +2703,7 @@ int choose_spell(KBgame *game, KBcombat *combat) {
 
 	Uint32 *colors = local.message_colors;
 
-	SDL_TextRect(sys->screen, &border, colors[COLOR_BACKGROUND], colors[COLOR_TEXT]);
+	SDL_TextRect(sys->screen, &border, colors[COLOR_BACKGROUND], colors[COLOR_TEXT], 1);
 
 	KB_TopBox(MSG_CENTERED, "Press 'ESC' to exit");
 

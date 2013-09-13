@@ -164,7 +164,7 @@ extern void KB_imenu(KBgamestate *state, int id, int cols);
 extern int KB_reset(KBgamestate *state);
 extern int KB_event(KBgamestate *state);
 /* Utilities */
-extern void SDL_TextRect(SDL_Surface *dest, SDL_Rect *r, Uint32 fore, Uint32 back);
+extern void SDL_TextRect(SDL_Surface *dest, SDL_Rect *r, Uint32 fore, Uint32 back, int top);
 inline void KB_Wait();
 inline void KB_Pause();
 /* Text output */
