@@ -881,12 +881,14 @@ KBgamestate five_choices = {
 
 
 void draw_location(int loc_id, int troop_id, int frame) {
+	SDL_Rect *tile = local.map_tile;
+
 	SDL_Surface *bg = SDL_LoadRESOURCE(GR_LOCATION, loc_id, 0);
 	SDL_Surface *troop = SDL_LoadRESOURCE(GR_TROOP, troop_id, 1);
 
 	SDL_Rect pos;
 	SDL_Rect tpos;
-	SDL_Rect troop_frame = { 0, 0, troop->w / 4, troop->h };
+	SDL_Rect troop_frame = { 0, 0, troop->w / 4, tile->h };
 
 	SDL_Rect *fs = &sys->font_size;
 
@@ -3324,6 +3326,7 @@ void draw_combat_statusbar(KBcombat *war) {
 
 	if (war->side) return;
 
+	KB_icolor(colors);
 	KB_iloc(local.status.x, local.status.y + 1);
 	KB_iprint(" ");
 	KB_iprint("Options");
