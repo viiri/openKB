@@ -164,6 +164,70 @@ void stdout_game(KBgame *game) {
 		}
 	}
 
+	for (cont = 0; cont < MAX_CONTINENTS; cont++) {
+		printf("Dwellings %d: ", cont);
+		for (i = 0; i < MAX_DWELLINGS; i++) {
+			printf("%02x ", 
+				game->dwelling_troop[cont][i] // type
+			);
+		}
+		printf("| ");
+		for (i = 0; i < MAX_DWELLINGS; i++) {
+			printf("%d,%d ", 
+				game->dwelling_coords[cont][i][0],//x
+				game->dwelling_coords[cont][i][1]//y
+			);
+		}
+		printf("\n");
+	}
+
+//#define TEST_SCEPTER_TILES 0x58 //AX at 0788:0A8B
+#ifdef TEST_SCEPTER_TILES
+	for (cont = 0; cont < MAX_CONTINENTS; cont++) {
+		printf("Puzzle%d: ", cont);
+		int gtiles = TEST_SCEPTER_TILES;
+		for (j = 0; j < LEVEL_H; j++) {
+			for (i = 0; i < LEVEL_W; i++) {
+				if (!(game->map[cont][j][i] & 0x7F)) {//no "tiling" bits sets
+					gtiles--;
+					if (gtiles == 0) {
+						printf("X=%d, Y=%d\n", i, j);
+						break;
+					}
+				}
+
+			}
+			if (gtiles == 0) break;
+		}
+		if (gtiles != 0) {
+			printf("Not found\n");
+		}
+	}
+#endif
+
+	for (j = 0; j < MAX_VILLAINS; j++) {
+		char *names[] = { "Mury","Hack","Ammi","Baro","Drea","Cane","Mora","Barr",
+					"Barg","Rina","Ragf","Mahk","Auri","Czar","Magu","Urth","Arec" };
+		//char *name = STR_LoadRESOURCE(STRL_VNAMES, 0, j);
+		printf("Villain%d: %s [%s]\n", j, names[j], game->villain_caught[j] ? "X" : " ");
+		//free(name);
+		if (game->villain_caught[j]) continue;
+		int k;
+		for (k = 0; k < MAX_CASTLES; k++) {
+			if ((game->castle_owner[k] & 0x7F) == j) {
+				char *troops[] = {
+				"Peasant","Sprite","Milita","Wolf","Skelet","Zombi","Gnome","Orc",
+				"Archer","Elf","Pikeman","Nomad","Dwarf","Ghost","Knight","Ogre", 
+				"Barbarian","Troll","Cavalery","Druid","Arcmag","Vampir","Giant","Demon","Dragon" };
+				/* Army */
+				for (i = 0; i < 5; i++) {
+					if (game->castle_numbers[k][i] == 0) break;
+					printf("Villain%d: Castle%2d: Troop%d: %02d x %s\n", j, k, i, game->castle_numbers[k][i], troops[game->castle_troops[k][i]]);
+				}
+				break;
+			}
+		}
+	}
 }
 
 int main(int argc, char* argv[]) {
