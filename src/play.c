@@ -621,7 +621,7 @@ int deal_damage(KBcombat *war, int a_side, int a_id, int t_side, int t_id, int i
 			}
 		}
 
-		if (war->powers[a_side] & POWER_DOUBLE_DAMAGE) {
+		if (war->powers[a_side] & POWER_INCREASED_DAMAGE) {
 			final_damage +=
 			final_damage / 2;
 			//same as * 1.5f
