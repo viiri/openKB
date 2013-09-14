@@ -466,9 +466,35 @@ SDL_Rect DOS_frame_tile =	/* Size of one tile */
 	{	0, 0, DOS_TILE_W, DOS_TILE_H };
 
 
+void DOS_AdjustSlots(KBmodule *mod) {
+
+	/* Hack -- if only one slot was provided, assume it's ROOT DIR with the CC and EXE files */
+	if (mod->slotB_name[0] == 0) { //empty string
+
+		char name[8];
+
+		KB_dircpy(mod->slotB_name, mod->slotA_name);
+		if (test_directory(mod->slotB_name, 0))
+			KB_grpsep(mod->slotB_name);
+		else
+			KB_dirsep(mod->slotB_name);
+
+		if (!match_file(mod->slotB_name, mod->bpp == 8 ? "256.CC" : "416.CC", &name[0]))
+			return;
+
+		KB_strcat(mod->slotB_name, name);
+		KB_strcat(mod->slotB_name, "#");
+
+		KB_debuglog(0, "* SlotB: %s\n", mod->slotB_name);
+	}
+
+}
+
 void DOS_Init(KBmodule *mod) {
 
 	DOS_Cache *cache = malloc(sizeof(DOS_Cache));
+
+	DOS_AdjustSlots(mod);
 
 	if (cache) { 
 		/* Init */

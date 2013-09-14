@@ -566,3 +566,34 @@ KB_File *KB_fcaseopen_with(const char *filename, char *mode, KBmodule *mod) {
 
 	return f;
 }
+
+/* Case-insensitive verify that filename exists in path, put matched version into match  */
+int match_file(const char *path, const char *filename, char *match) {
+	int i, l;
+	int found;
+	KB_DIR *dirp;
+	KB_Entry *e;
+
+	found = 0;
+
+	dirp = KB_opendir(path);
+	if (dirp == NULL) return 0;
+
+	l = strlen(filename) + 1;
+
+	while ((e = KB_readdir(dirp)) != NULL) {
+		//KB_debuglog(0, "Matching: %s with exp %s\n", e->d_name, filename);
+		if (strcmp(filename, e->d_name)) {
+			KB_strncpy(match, filename, l);
+			found = 2;
+			break;
+		}
+		if (!found && !strcasecmp(filename, e->d_name)) {
+			KB_strncpy(match, e->d_name, l);
+			found = 1;
+		}
+	}
+
+	KB_closedir(dirp);
+	return found;
+}
