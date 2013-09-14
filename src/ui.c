@@ -475,16 +475,19 @@ SDL_Rect* KB_BottomBox(const char *header, const char *str, byte flag) {
 
 	/* Header (few pixels up) */	
 	KB_iloc(text->x, text->y - fs->h/4 - fs->h/8);
+	if (flag & MSG_HARDCODED) KB_ilh(fs->h + 1);
 	if (header) KB_iprint(header);
 
 	/* Message */
 	KB_iloc(text->x, text->y + fs->h/4);
 	if (header) KB_iprint("\n\n");	
+	if (flag & MSG_PADDED) KB_iloc(text->x, text->y + fs->h * 5);
 	KB_iprint(str);
 
 	/* Update screen and possibly wait */
 	if (flag & MSG_FLUSH) KB_flip(sys);
 	if (flag & MSG_PAUSE) KB_Pause();
+	if (flag & MSG_WAIT)  KB_Wait();
 
 	return text;
 }
