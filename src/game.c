@@ -3215,6 +3215,14 @@ void draw_sidebar(KBgame *game, int tick) {
 	hsrc.x = 8 * hsrc.w;
 	SDL_BlitSurface( sidebar, &hsrc, screen, &hdst);
 
+	/* ..Face */
+	if (game->contract != 0xFF) {
+		SDL_Surface *face = SDL_LoadRESOURCE(GR_VILLAIN, game->contract, 0);
+		SDL_Rect vsrc = { tick * hsrc.w, 0, hsrc.w, hsrc.h };
+		SDL_BlitSurface( face, &vsrc, screen, &hdst);
+		SDL_FreeSurface(face);
+	}
+
 	/* Siege weapons */
 	hdst.y += hsrc.h;
 	hsrc.x = (game->siege_weapons ? tick * hsrc.w : 9 * hsrc.w);
