@@ -95,6 +95,8 @@
 	_(STR_MULTI)	/* troops name ; subId - troop index */ \
 	_(STR_VNAME)	/* villain name ; subId - villain index */ \
 	_(STR_VDESC)	/* villain description line ; subId - line (villain index * 14) */ \
+	_(STR_ANAME)	/* artifact name ; subId - artifact index */ \
+	_(STR_ADESC)	/* artifact description line ; subId - line (artifact index * 5) */ \
 	_(STR_CREDIT)	/* a line of credits ; subId - line */ \
 	_(STR_ENDING)	/* line of ending text ; subId - line, 100<=game won, >100=game lost */ \
 \
@@ -103,6 +105,8 @@
 	_(STRL_MULTIS)	/* troops names ; subId - undefined */ \
 	_(STRL_VNAMES)	/* villains names ; subId - undefined */ \
 	_(STRL_VDESCS)	/* villains descriptions ; subId - villain id */ \
+	_(STRL_ANAMES)	/* artifact names ; subId - undefined */ \
+	_(STRL_ADESCS)	/* artifact descriptions ; subId - artifact id */ \
 	_(STRL_CREDITS)	/* credits ; subId - undefined */ \
 	_(STRL_ENDINGS)	/* ending text ; subId - 0=game won, 1=game lost */
 

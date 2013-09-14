@@ -294,25 +294,36 @@ word spell_costs[MAX_SPELLS] = {
 };
 
 char *artifact_names[MAX_ARTIFACTS] = {
-	"The Ring of Heroism",      	//0
-	"The Shield of Protection", 	//1
-	"The Crown of Command",     	//2
-	"The Amulet of Augmentation",	//3
-	"The Articles of Nobility", 	//4
-	"The Anchor of Admirability",	//5
-	"The Book of Necros",       	//6
-	"The Sword of Prowess",     	//7
+	"The Sword of Prowess",     	//00 (7)
+	"The Shield of Protection", 	//01 (1)
+	"The Crown of Command",     	//02 (2)
+	"The Articles of Nobility", 	//03 (4)
+	"The Amulet of Augmentation",	//04 (3)
+	"The Ring of Heroism",      	//05 (0)
+	"The Book of Necros",       	//06 (6)
+	"The Anchor of Admirability",	//07 (5)
 };
 
 byte artifact_powers[MAX_ARTIFACTS] = {
-	POWER_INSTANT_LEADERSHIP,	//00
+	POWER_INCREASED_DAMAGE,    	//00
 	POWER_QUARTER_PROTECTION,	//01
 	POWER_DOUBLE_LEADERSHIP,	//02
-	POWER_DOUBLE_SPELL_POWER,	//03
-	POWER_INCREASE_COMMISSION,	//04
-	POWER_CHEAPER_BOAT_RENTAL,	//05
-	POWER_DOUBLE_MAX_SPELLS,	//06
-	POWER_DOUBLE_DAMAGE,    	//07
+	POWER_INCREASE_COMMISSION,	//03
+	POWER_DOUBLE_SPELL_POWER,	//04
+	POWER_DOUBLE_MAX_SPELLS,	//05
+	POWER_UNKNOWN_XXX1,     	//06
+	POWER_CHEAPER_BOAT_RENTAL,	//07
+};
+
+byte artifact_inversion[MAX_ARTIFACTS] = {
+	0x05, /* continent0,artifact0 (0) */
+	0x03, /* continent0,artifact1 (1) */
+	0x01, /* continent1,artifact0 (2) */
+	0x07, /* continent1,artifact1 (3) */
+	0x02, /* continent2,artifact0 (4) */
+	0x06, /* continent2,artifact1 (5) */
+	0x04, /* continent3,artifact0 (6) */
+	0x00, /* continent3,artifact1 (7) */
 };
 
 char *number_names[6] = {

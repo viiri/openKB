@@ -19,6 +19,8 @@ enum DOS_offset_names {
 	DOS_SIGNS,
 	DOS_VNAMES,
 	DOS_VDESCS,
+	DOS_ANAMES,
+	DOS_ADESCS,
 	TUNE_NOTES,	/* Frequency palette */
 	TUNE_DELAY,	/* Delay palette */
 	TUNE_PTR,	/* Pointers into "tunes" (offsets to "freq,delay,...,0xFF" locations) */
@@ -33,6 +35,8 @@ int DOS_exe_offsets[][4] = {
 	{ 0x19005,	0x64A,	0x191CB,	0x64A	},	//SIGNS  //????, ????
 	{ 0x18EDF,	0x126,	0x190A5,	0x126	},	//VNAMES  //????, ????
 	{ 0x16D19,	0x1548,	0x16EDF,	0x1548	},	//VDESCS  //????, ????
+	{ 0,    	0,  	0,      	0   	},	//ANAMES  //????, ????
+	{ 0x19650,	0x351,	0x19816, 	0x351 	},	//ADESCS  //????, 0x2D1E
 	{ 0x189D1,	0     ,	0x18B97,	0     	},	//TUNE_NOTES  //????, 0x3347
 	{ 0x18A81,	0     ,	0x18C47,	0     	},	//TUNE_DELAY  //????, 0x33F7
 	{ 0x18AA1,	0     ,	0x18C67,	0       },	//TUNE_PTR  //????, 0x3417 | ????, 0x330d
@@ -348,7 +352,7 @@ char* DOS_read_credits(KBmodule *mod, int off, int endoff) {
 char* DOS_read_vdescs(KBmodule *mod, int off, int endoff, int skip_lines) {
 
 	char *buf, *raw, *ptr;
-	int max = endoff - off, 
+	int max = endoff - off,
 		newmax = max + max / 2;
 
 	raw = DOS_read_strings(mod, off, endoff);
@@ -418,6 +422,62 @@ char* DOS_read_vdescs(KBmodule *mod, int off, int endoff, int skip_lines) {
 			used ++;
 			buf[used] = '\0';
 		}
+	}
+
+	free(raw);
+	return buf;
+}
+
+char* DOS_read_adescs(KBmodule *mod, int off, int endoff, int skip_lines) {
+
+	char *buf, *raw, *ptr;
+	int max = endoff - off,
+		newmax = max + max / 2;
+
+	raw = DOS_read_strings(mod, off, endoff);
+	if (raw == NULL) return NULL;
+
+//	DOS_compact_strings(mod, raw, (endoff-off));
+//	printf("READ: %s\n", raw);
+
+	buf = malloc(sizeof(char) * newmax);
+	if (buf == NULL) {
+		free(raw);
+		return NULL; /* Out of memory */
+	}
+
+	ptr = raw;
+	buf[0] = '\0';
+
+	int line = 0;
+	int used = 0;
+	while(ptr - raw < max && line < skip_lines + 5) {
+		int mlen = 0;
+		mlen = strlen(ptr);
+
+		if (line < skip_lines) {
+			ptr += mlen;
+			if (ptr - raw < max) ptr++;
+			line++;
+			continue;
+		}
+
+		/* Apply actual string */
+		strlcat(buf, ptr, newmax);
+		used += mlen;
+
+		/* Advance pointer */
+		ptr += mlen;
+		if (ptr - raw < max) ptr++;
+
+		/* Newline */
+		if (ptr - raw < max && used < newmax) {
+			buf[used] = '\n';
+			used ++;
+			buf[used] = '\0';
+		}
+		
+		line++;
 	}
 
 	free(raw);
@@ -1021,6 +1081,17 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 		{
 			int line = sub_id * 14;
 			return DOS_read_vdescs(mod, KBEXE_POS(exe_type, DOS_VDESCS), line);
+		}
+		break;
+		case STR_ADESC:
+		{
+			return KB_strlist_peek(DOS_Resolve(mod, STRL_ADESCS, 0), sub_id);
+		}
+		break;
+		case STRL_ADESCS:
+		{
+			int line = sub_id * 5;
+			return DOS_read_adescs(mod, KBEXE_POS(exe_type, DOS_ADESCS), line);
 		}
 		break;
 		case STR_CREDIT:

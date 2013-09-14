@@ -2465,8 +2465,44 @@ void take_chest(KBgame *game) {
 	free(snd_chest);
 }
 
-void take_artifact(KBgame *game, byte id) {
+void take_artifact(KBgame *game, byte num) {
 
+	byte ordered_id = game->continent * 2 + num;
+	byte id = artifact_inversion[ordered_id];
+
+	byte power = artifact_powers[id];
+
+	char *text = KB_Resolve(STRL_ADESCS, ordered_id);
+
+	/* Mark as found */
+	game->artifact_found[id] = 1;
+
+	/* Apply instant effects */
+	if (power & POWER_DOUBLE_LEADERSHIP) {
+		game->base_leadership *= 2;
+		game->leadership = game->base_leadership;
+	}
+	if (power & POWER_DOUBLE_SPELL_POWER) {
+		game->spell_power *= 2;
+	}
+	if (power & POWER_INCREASE_COMMISSION) {
+		game->commission += 2000;
+	}
+	if (power & POWER_DOUBLE_MAX_SPELLS) {
+		game->max_spells *= 2;
+	}
+
+	/* Brag */
+	draw_sidebar(game, 1);	/* Note: we use "tick 1", DOS version used "next tick" */
+
+	KB_BottomBox(text,
+		"...and a piece of the map to\n"
+		"the stolen scepter.", MSG_PADDED | MSG_PAUSE);
+
+	/* Remove artifact tile from the map */
+	game->map[game->continent][game->y][game->x] = 0;
+
+	free(text);
 }
 
 void move_unit(KBcombat *war, int side, int id, int ox, int oy) {
