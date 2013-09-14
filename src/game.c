@@ -3943,6 +3943,7 @@ void adventure_loop(KBgame *game) {
 	//int tileset_pitch = local.tileset->w / tile->w;
 
 	KBsound *snd_walk = KB_Resolve(SN_TUNE, TUNE_WALK);
+	KBsound *snd_bump = KB_Resolve(SN_TUNE, TUNE_BUMP);
 
 	int key = 0;
 	int done = 0;
@@ -4049,8 +4050,6 @@ void adventure_loop(KBgame *game) {
 
 		if (key > 0 && key < ARROW_KEYS + 1 && !walk) {
 
-			KB_play(sys, snd_walk);
-
 			int ox = move_offset_x[(key-1)/2];
 			int oy = move_offset_y[(key-1)/2];
 
@@ -4096,6 +4095,8 @@ void adventure_loop(KBgame *game) {
 			}
 
 			if (walk) {
+				KB_play(sys, snd_walk);
+
 				redraw = 1;
 
 				game->last_x = game->x;
@@ -4118,7 +4119,9 @@ void adventure_loop(KBgame *game) {
 					game->boat_x = game->x;
 					game->boat_y = game->y;
 				}
-			} 
+			} else {
+				KB_play(sys, snd_bump);
+			}
 		}
 
 		if (redraw) {
@@ -4198,6 +4201,7 @@ void adventure_loop(KBgame *game) {
 	}
 #undef KEY_ACT
 	free(snd_walk);
+	free(snd_bump);
 }
 
 int run_game(KBconfig *conf) {

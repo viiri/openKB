@@ -130,6 +130,7 @@ extern const char *KBresid_names[];
 
 /* Possible values for SN_TUNE subid: */
 #define TUNE_WALK	0
+#define TUNE_BUMP	1
 #define TUNE_CHEST	5
 
 /* Refrence to EGA pallete, mostly used by DOS module. */
