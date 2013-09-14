@@ -163,6 +163,7 @@ extern const char *KBresid_names[];
 #define CS_TOPMENU	6
 #define CS_CHROME	7
 #define CS_MINIMENU	8
+#define CS_VIEWCHAR	9
 
 /* Color scheme for COL_TEXT: */
 enum {

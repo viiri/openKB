@@ -1011,6 +1011,26 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 				EGA_YELLOW,	// sel_frame1
 				EGA_YELLOW,	// sel_frame2
 			};
+			byte ega_scheme_character_index[] = {
+				EGA_DGREY,	// background
+				EGA_WHITE,	// text1
+				EGA_WHITE,	// text2
+				EGA_WHITE,	// text3
+				EGA_WHITE,	// text4
+				EGA_MAGENTA,// shadow1
+				EGA_MAGENTA,// shadow2
+				EGA_DRED,	// frame1
+				EGA_DRED,	// frame2
+				EGA_DGREY,	// sel_background
+				EGA_WHITE,	// sel_text1
+				EGA_WHITE,	// sel_text2
+				EGA_WHITE,	// sel_text3
+				EGA_WHITE,	// sel_text4
+				EGA_MAGENTA,// sel_shadow1
+				EGA_MAGENTA,// sel_shadow2
+				EGA_DRED,	// sel_frame1
+				EGA_DRED,	// sel_frame2
+			};
 			byte ega_scheme_menu_index[] = {
 				EGA_DBLUE,	// background
 				EGA_WHITE,	// text1
@@ -1087,6 +1107,9 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 					break;
 				case CS_TOPMENU:	/* Menu */
 					ega_index_ptr = ega_scheme_menu_index;
+					break;
+				case CS_VIEWCHAR:	/* Character screen */
+					ega_index_ptr = ega_scheme_character_index;
 					break;
 				case CS_STATUS_1: /* Status bar .. by difficulty */
 				case CS_STATUS_2:
