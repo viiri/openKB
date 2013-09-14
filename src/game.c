@@ -2041,6 +2041,7 @@ void visit_town(KBgame *game) {
 						game->gold -= 500;
 
 						game->boat = game->continent;
+#if 0						
 						game->boat_x = game->x - 1;
 						game->boat_y = game->y;
 	
@@ -2049,7 +2050,11 @@ void visit_town(KBgame *game) {
 						if (!IS_WATER(game->map[game->boat][game->boat_y][game->boat_x]))
 							game->boat_y+=2;
 						if (!IS_WATER(game->map[game->boat][game->boat_y][game->boat_x]))
-							game->boat_x+=2;							
+							game->boat_x+=2;
+#else
+						game->boat_x = boat_coords[id][1];
+						game->boat_y = boat_coords[id][2];
+#endif
 					}
 				} else {
 					if (game->mount == KBMOUNT_SAIL) 

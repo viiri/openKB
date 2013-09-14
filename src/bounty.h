@@ -308,6 +308,7 @@ extern char *continent_names[4];
 
 extern byte castle_coords[MAX_CASTLES][3];	/* [continent][x][y] */
 extern byte town_coords[MAX_CASTLES][3];
+extern byte boat_coords[MAX_CASTLES][3];
 
 extern signed char puzzle_map[PUZZLEMAP_H][PUZZLEMAP_W]; /* each piece is covered by villain face or artifact */
 
