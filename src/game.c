@@ -1278,6 +1278,8 @@ void view_character(KBgame *game) {
 	SDL_Rect *bar_frame  = local.frames[FRAME_MIDDLE];
 	SDL_Rect *right_frame  = local.frames[FRAME_RIGHT];
 
+	Uint32 *colors = KB_Resolve(COL_TEXT, CS_VIEWCHAR);
+
 	SDL_Rect pos = { left_frame->w, top_frame->h + bar_frame->h + fs->h + sys->zoom, sys->screen->w - left_frame->w - right_frame->w, 0 }; 
 
 	SDL_Rect dest = { pos.x, pos.y, portrait->w, portrait->h }; 
@@ -1286,36 +1288,38 @@ void view_character(KBgame *game) {
 
 	SDL_Rect box = { pos.x + portrait->w, pos.y, pos.w - portrait->w, portrait->h };	
 
-	SDL_FillRect(sys->screen, &box, 0x000000);
+	SDL_FillRect(sys->screen, &box, colors[COLOR_BACKGROUND]);
 
-	SDL_Rect stats = { pos.x + portrait->w + fs->w / 8 , pos.y + fs->h / 4 + fs->h / 8, pos.w - portrait->w, 2 };
+	SDL_Rect stats = { pos.x + portrait->w, pos.y + fs->h / 4 + fs->h / 8, pos.w - portrait->w, 2 };
 	
 	SDL_Rect line = { pos.x + portrait->w , pos.y + fs->h / 2, pos.w - portrait->w, fs->h / 8 };
+
+	KB_icolor(colors);
 
 	KB_iloc(stats.x, stats.y);
 	KB_ilh(fs->h + sys->zoom);
 	KB_iprintf("%s the %s\n", game->name, classes[game->class][game->rank].title);
 	KB_iprintf("Leadership         %5d\n", game->leadership);
 	line.y = sys->cursor_y * fs->h + sys->base_y + fs->h / 8;
-	SDL_FillRect(sys->screen, &line, 0xFFFFFF);
+	SDL_FillRect(sys->screen, &line, colors[COLOR_FRAME]);
 
 	KB_iloc(stats.x, stats.y + (fs->h + sys->zoom) * 2 + (fs->h/8));
 	KB_iprintf("Commission/Week    %5d\n", player_commission(game));
 	KB_iprintf("Gold               %5d\n", game->gold);
 	line.y = sys->cursor_y * fs->h + sys->base_y;
-	SDL_FillRect(sys->screen, &line, 0xFFFFFF);
+	SDL_FillRect(sys->screen, &line, colors[COLOR_FRAME]);
 
 	KB_iloc(stats.x, stats.y + (fs->h + sys->zoom) * 4 + (fs->h/8));
 	KB_iprintf("Spell power        %5d\n", game->spell_power);
 	KB_iprintf("Max # of spells    %5d\n", game->max_spells);
 	line.y = sys->cursor_y * fs->h + sys->base_y;
-	SDL_FillRect(sys->screen, &line, 0xFFFFFF);
+	SDL_FillRect(sys->screen, &line, colors[COLOR_FRAME]);
 
 	KB_iloc(stats.x, stats.y + (fs->h + sys->zoom) * 6 + (fs->h/8));
 	KB_iprintf("Villains caught    %5d\n", player_captured(game));
 	KB_iprintf("Artifacts found    %5d\n", player_num_artifacts(game));
 	line.y = sys->cursor_y * fs->h + sys->base_y;
-	SDL_FillRect(sys->screen, &line, 0xFFFFFF);
+	SDL_FillRect(sys->screen, &line, colors[COLOR_FRAME]);
 
 	KB_iloc(stats.x, stats.y + (fs->h + sys->zoom) * 8 + (fs->h/8));
 	KB_iprintf("Castles garrisoned %5d\n", player_castles(game));
@@ -1379,7 +1383,7 @@ void view_character(KBgame *game) {
 	while (KB_event(&press_any_key) != 0xFF) 
 		{	}
 
-
+	free(colors);
 }
 
 void view_army(KBgame *game) {
