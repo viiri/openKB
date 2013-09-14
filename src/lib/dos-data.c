@@ -6,7 +6,49 @@
 
 #include "dos-snd.h"
 
-#define DATA_SEGMENT 0x15850
+#define KBEXE95_FILESIZE 113718 //bytes
+
+#define KBEXETYPE_90	0
+#define KBEXETYPE_95	1
+
+enum DOS_offset_names {
+	DATA_SEGMENT,
+	DOS_CREDITS,
+	DOS_GAME_LOST,
+	DOS_GAME_WON,
+	DOS_SIGNS,
+	DOS_VNAMES,
+	DOS_VDESCS,
+	TUNE_NOTES,	/* Frequency palette */
+	TUNE_DELAY,	/* Delay palette */
+	TUNE_PTR,	/* Pointers into "tunes" (offsets to "freq,delay,...,0xFF" locations) */
+};
+int DOS_exe_offsets[][4] = {
+	/* KB90              KB95
+	   offest  len       offset    len */
+	{ 0x15690,	0,  	0x15850,	0   	},	//DATA SEGMENT
+	{ 0x15E6D,	0xCA,	0x16031,	0xCE	},	//DOS CREDITS //????, 0x10a2
+	{ 0x1AF1D,	0x12F,	0x1B0E3,	0x12F	},	//GAME LOST //????, ????
+	{ 0x1A11F,	0x12E,	0x1AFB4,	0x12E	},	//GAME WON  //????, ????
+	{ 0x19005,	0x64A,	0x191CB,	0x64A	},	//SIGNS  //????, ????
+	{ 0x18EDF,	0x126,	0x190A5,	0x126	},	//VNAMES  //????, ????
+	{ 0x16D19,	0x1548,	0x16EDF,	0x1548	},	//VDESCS  //????, ????
+	{ 0x189D1,	0     ,	0x18B97,	0     	},	//TUNE_NOTES  //????, 0x3347
+	{ 0x18A81,	0     ,	0x18C47,	0     	},	//TUNE_DELAY  //????, 0x33F7
+	{ 0x18AA1,	0     ,	0x18C67,	0       },	//TUNE_PTR  //????, 0x3417 | ????, 0x330d
+};
+
+//TODO: convert all string offsets to relative to DS AND
+// use the string_p function, to read from provided pointer tables
+// and not directly.
+// This will allow reading modded files.
+
+#define KBEXE_OFFSET(ETYP, WH) DOS_exe_offsets[WH][ETYP * 2]
+#define KBEXE_LEN(ETYP, WH) DOS_exe_offsets[WH][ETYP * 2 + 1]
+
+#define KBEXE_POS(ETYP, WH) KBEXE_OFFSET(ETYP, WH), \
+                            KBEXE_OFFSET(ETYP, WH) + \
+                            KBEXE_LEN(ETYP, WH)
 
 #define MCGA_PALETTE_OFFSET	0x032D
 
@@ -19,7 +61,50 @@ typedef struct DOS_Cache {
 
 	struct tunGroup *tunes;
 
+	KB_File *exe_file;
+	byte exe_type;
+
 } DOS_Cache;
+
+KB_File* DOS_UnpackExe(KB_File *f, int freesrc);
+
+KB_File* DOS_fopen_exe(KBmodule *mod) {
+	KB_File *f;
+	DOS_Cache *ch = mod->cache;
+
+	KB_debuglog(0, "[dos] '%s' Cached Pointer to exe: %p\n", mod->name, ch->exe_file);
+
+	/* File already opened */
+	if (ch->exe_file) {
+		KB_fseek(ch->exe_file, 0, 0); /* Rewind */
+		ch->exe_file->ref_count++; /* Inc. ref count */
+		return ch->exe_file;
+	}
+
+	/* Try case-insensitive search in all slots of current module */
+	f = KB_fcaseopen_with("kb.exe", "rb", mod);
+
+	/* Switch to new, unpacked file (if appropriate) */
+	//f = DOS_UnpackExe(f, 1);
+
+	/* Note the exe type (for different offset locations) */
+	if (f && f->len == KBEXE95_FILESIZE)
+		ch->exe_type = KBEXETYPE_95;
+	else
+		ch->exe_type = KBEXETYPE_90;
+
+	/* HACK! -- Keep handler opened */
+	if (f) f->ref_count++;
+
+	/* Store pointer */
+	ch->exe_file = f;
+
+	return f;
+}
+void DOS_fclose_exe(KB_File *f) {
+	/* Do nothing */
+	f->ref_count--;
+}
 
 KBsound* DOS_load_tune(KBmodule *mod, int tune_id) {
 	DOS_Cache *ch = mod->cache;
@@ -40,23 +125,27 @@ KBsound* DOS_load_tune(KBmodule *mod, int tune_id) {
 struct tunGroup * DOS_ReadTunes(KBmodule *mod) {
 	struct tunGroup *tunes;
 	KB_File *f;
+	int exe_type;
+
 	KB_debuglog(0,"? DOS EXE FILE: %s\n", "KB.EXE");
-	f = KB_fopen_with("kb.exe", "rb", mod);
+	f = DOS_fopen_exe(mod);
 	if (f == NULL) { KB_errlog("! DOS EXE FILE\n"); return NULL; }
 
+	exe_type = ((DOS_Cache*)mod->cache)->exe_type;
+
 	/* Load tune offsets */
-	KB_fseek(f, DATA_SEGMENT + TUNE_PTR_OFFSET, 0);
+	KB_fseek(f, KBEXE_OFFSET(exe_type, TUNE_PTR), 0);
 	tunes = tunGroup_load(f);
 	if (tunes == NULL) { return NULL; }
 
 	/* Load palette */
-	KB_fseek(f, DATA_SEGMENT + TUNE_NOTES_OFFSET, 0);
+	KB_fseek(f, KBEXE_OFFSET(exe_type, TUNE_NOTES), 0);
 	tunPalette_load(&tunes->palette, f);
 
 	/* Load all tunes form offsets (palette is memcpy'd into each tune) */
-	tunGroup_loadfiles(tunes, f, DATA_SEGMENT);
+	tunGroup_loadfiles(tunes, f, KBEXE_OFFSET(exe_type, DATA_SEGMENT));
 
-	KB_fclose(f);
+	DOS_fclose_exe(f);
 	return tunes;
 }
 
@@ -133,7 +222,7 @@ char* DOS_read_string_p(KBmodule *mod, int ptroff, int off, int endoff) {
 	KB_File *f;	int n;   
 
 	KB_debuglog(0,"? DOS EXE FILE: %s\n", "KB.EXE");
-	f = KB_fopen_with("kb.exe", "rb", mod);
+	f = DOS_fopen_exe(mod);
 	if (f == NULL) return NULL;
 
 	KB_fseek(f, ptroff, 0);
@@ -141,7 +230,7 @@ char* DOS_read_string_p(KBmodule *mod, int ptroff, int off, int endoff) {
 
 	KB_fseek(f, off, 0);
 	n = KB_fread(&buf[0], sizeof(char), len, f);
-	KB_fclose(f);
+	DOS_fclose_exe(f);
 
 	char *p = &pbuf[0];
 
@@ -169,7 +258,7 @@ char* DOS_read_strings(KBmodule *mod, int off, int endoff) {
 	if (buf == NULL) return NULL;
 
 	KB_debuglog(0,"? DOS EXE FILE: %s\n", "KB.EXE");
-	f = KB_fopen_with("kb.exe", "rb", mod);
+	f = DOS_fopen_exe(mod);
 	if (f == NULL) {
 		free(buf);
 		return NULL;
@@ -177,7 +266,7 @@ char* DOS_read_strings(KBmodule *mod, int off, int endoff) {
 
 	KB_fseek(f, off, 0);
 	n = KB_fread(buf, sizeof(char), len, f);
-	KB_fclose(f);
+	DOS_fclose_exe(f);
 	if (n < len) {
 		free(buf);
 		return NULL;
@@ -384,6 +473,7 @@ void DOS_Init(KBmodule *mod) {
 	if (cache) { 
 		/* Init */
 		cache->vga_palette = NULL;
+		cache->exe_file = NULL;
 		/* Set */
 		mod->cache = cache;
 		/* Pre-cache some things */
@@ -396,9 +486,12 @@ void DOS_Init(KBmodule *mod) {
 }
 
 void DOS_Stop(KBmodule *mod) {
-
 	DOS_Cache *cache = mod->cache;
-	
+
+	if (cache->exe_file) {
+		KB_fclose(cache->exe_file);
+	}
+
 	free(cache->vga_palette);
 	free(cache->tunes);
 	free(mod->cache);
@@ -416,6 +509,8 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 	char *middle_name;
 	char *suffix;
 	char *ident;
+
+	byte exe_type = 0;
 
 	int row_start = 0;
 	int row_frames = 4;
@@ -437,6 +532,8 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 	char subId_str[8];
 
 	middle_name = suffix = ident = NULL;
+
+	exe_type = ((DOS_Cache*)mod->cache)->exe_type;
 
 	switch (id) {
 		case GR_LOGO:
@@ -861,7 +958,7 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 		break;
 		case STRL_SIGNS:
 		{
-			char *buf = DOS_read_strings(mod, 0x191CB, 0x19815);
+			char *buf = DOS_read_strings(mod, KBEXE_POS(exe_type, DOS_SIGNS));
 			//int ptroff = 0x1844D;
 			int len = 0x19815 - 0x191CB;
 			/* HACK -- do not process failed read_strings result */
@@ -885,7 +982,7 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 		break;
 		case STRL_VNAMES:
 		{
-			return DOS_read_strings(mod, 0x190A5, 0x191cb);
+			return DOS_read_strings(mod, KBEXE_POS(exe_type, DOS_VNAMES));
 			//int ptroff = 0x1842C;
 		}
 		break;
@@ -897,8 +994,7 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 		case STRL_VDESCS:
 		{
 			int line = sub_id * 14;
-			return DOS_read_vdescs(mod, 0x16edf, 0x18427, line);
-			//int ptroff = 0x16bf4;//17 * 13
+			return DOS_read_vdescs(mod, KBEXE_POS(exe_type, DOS_VDESCS), line);
 		}
 		break;
 		case STR_CREDIT:
@@ -908,7 +1004,7 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 		break;
 		case STRL_CREDITS:
 		{
-			return DOS_read_credits(mod, 0x16031, 0x160FF);
+			return DOS_read_credits(mod, KBEXE_POS(exe_type, DOS_CREDITS));
 		}
 		break;
 		case STR_ENDING: /* subId - string index (indexes above 100 indicate next group) */
@@ -924,9 +1020,9 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 		{
 			/* Returns large buffer of \0-separated strings, forming an ending text */
 			if (sub_id) /* Game lost */
-				return DOS_read_strings(mod, 0x1B0E3, 0x1B212);
+				return DOS_read_strings(mod, KBEXE_POS(exe_type, DOS_GAME_LOST));
 			else    	/* Game won */
-				return DOS_read_strings(mod, 0x1AFB4, 0x1B0E2);
+				return DOS_read_strings(mod, KBEXE_POS(exe_type, DOS_GAME_WON));
 		}
 		break;
 		case SN_TUNE:

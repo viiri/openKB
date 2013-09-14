@@ -27,12 +27,6 @@
 #define MAX_TUN_FREQS	88	/* Each palette has 88 "notes" and */
 #define MAX_TUN_DELAYS	16	/* 16 "delays". */
 
-/* OFFSETS: */
-#define TUNE_NOTES_OFFSET	0x3347	/* Freq. palette */
-#define TUNE_DELAY_OFFSET	0x33F7	/* Delay palette */
-#define TUNE_PTR_OFFSET 	0x3417	/* Pointers into "tunes" */ 
-#define TUNE_TUNE_OFFSET 	0x330d	/* "Tunes" (freq,delay,...,0x0FF) */
-
 struct tunFile {
 
 	struct tunPalette {

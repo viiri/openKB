@@ -31,6 +31,14 @@
 #define HEADER_SIZE_TUN_OFF	(MAX_TUN_FILES * 2)
 #define HEADER_SIZE_TUN	(MAX_TUN_NOTES * 2)
 
+/* DOS tunes are kept in the exe file, with each tune looking like
+ *	freq, delay, ...., 0xFF
+ *	where freq and delay are indexes into freq and delay palettes,
+ *	and 0xFF is an end marker.
+ * Offsets to tunes are kept in "TUNE_PTR" 'array'. Palettes are
+ * kept separately and are global for all the tunes.
+ */
+
 int tunPalette_load(struct tunPalette* pal, KB_File *f) {
 
 	char buf[HEADER_SIZE_TUN_PAL];
