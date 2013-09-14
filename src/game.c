@@ -2934,7 +2934,7 @@ void lose_game(KBgame *game) {
 }
 
 /* Returns 0 if the game was won, 1 if search was futile, 2 if search was cancelled */
-int ask_search(KBgame *game) {
+int ask_search(KBgame *game, int *weekend) {
 
 	int days = 10;
 
@@ -2967,6 +2967,7 @@ int ask_search(KBgame *game) {
 	} else {
 		KB_BottomBox(NULL, "\n\nYour search of this area has\nrevealed nothing.", MSG_PAUSE);
 		spend_days(game, days);
+		*weekend = 1;
 	}
 
 	return 1;
@@ -3882,6 +3883,7 @@ void adventure_loop(KBgame *game) {
 	int tick = 0;
 
 	int walk = 0;
+	int weekend = 0;
 
 #define KEY_ACT(ACT) (ARROW_KEYS + 1 + KBACT_ ## ACT)
 
@@ -3924,7 +3926,7 @@ void adventure_loop(KBgame *game) {
 		}
 
 		if (key == KEY_ACT(SEARCH)) {
-			if (!ask_search(game)) done = 1;
+			if (!ask_search(game, &weekend)) done = 1;
 		}
 
 		if (key == KEY_ACT(USE_MAGIC)) {
@@ -3938,6 +3940,7 @@ void adventure_loop(KBgame *game) {
 		if (key == KEY_ACT(END_WEEK)) {
 			spend_week(game);
 			end_week(game);
+			weekend = 1;
 		}
 
 		if (key == KEY_ACT(SAVE_QUIT)) {
@@ -4094,11 +4097,16 @@ void adventure_loop(KBgame *game) {
 		if (game->steps_left <= 0) {
 			if (end_day(game)) {
 				end_week(game);
+				weekend = 1;
 			}
 		}
 		if (game->days_left == 0) {
 			lose_game(game);
 			done = 1;
+		}
+		if (weekend == 1) {
+			//show_weekend();
+			weekend = 0;
 		}
 
 		if (redraw) {
