@@ -3368,7 +3368,9 @@ void draw_combat(KBcombat *war) {
 	SDL_Rect *tile = local.map_tile;
 	
 	SDL_Surface *comtiles = SDL_TakeSurface(GR_COMTILES, 0, 0);
-	
+
+	int draw_army_size = ((KBgame*)war->heroes[0])->options[4]; /* Hack -- get player */
+
 	/** Draw combat **/
 	{
 		int i, j;
@@ -3403,6 +3405,16 @@ void draw_combat(KBcombat *war) {
 				SDL_Surface *troop = SDL_TakeSurface(GR_TROOP, u->troop_id, 1);
 
 				SDL_BlitSurface(troop, &src, sys->screen, &dst);
+
+				if (draw_army_size) {
+					char count[8];
+					Uint32 *colors_inner = KB_Resolve(COL_TEXT, CS_CHROME);
+					sprintf(count, "%d", u->count);
+					KB_iloc(dst.x + dst.w - strlen(count) * sys->font_size.w, dst.y + dst.h - sys->font_size.h);
+					KB_icolor(colors_inner);
+					KB_iprint(count);
+					free(colors_inner);
+				}
 			}
 		}
 	}
