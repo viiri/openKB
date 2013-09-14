@@ -255,6 +255,7 @@ int KB_event(KBgamestate *state) {
 					( !sp->hot_mod || (sp->hot_mod & kbd->mod) )))
 					{
 						if (sp->hot_key != kbd->sym && (
+							kbd->sym == SDLK_LSUPER || kbd->sym == SDLK_RSUPER ||
 							kbd->sym == SDLK_LSHIFT || kbd->sym == SDLK_RSHIFT ||
 							kbd->sym == SDLK_LCTRL || kbd->sym == SDLK_RCTRL ||
 							kbd->sym == SDLK_LALT || kbd->sym == SDLK_RALT ))
