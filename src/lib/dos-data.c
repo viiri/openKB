@@ -1001,11 +1001,11 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 				EGA_MAGENTA,// shadow2
 				EGA_YELLOW,	// frame1
 				EGA_YELLOW,	// frame2
-				EGA_DRED,	// sel_background
-				EGA_WHITE,	// sel_text1
-				EGA_WHITE,	// sel_text2
-				EGA_WHITE,	// sel_text3
-				EGA_WHITE,	// sel_text4
+				EGA_YELLOW,	// sel_background
+				EGA_DCYAN,	// sel_text1
+				EGA_DCYAN,	// sel_text2
+				EGA_DCYAN,	// sel_text3
+				EGA_DCYAN,	// sel_text4
 				EGA_MAGENTA,// sel_shadow1
 				EGA_MAGENTA,// sel_shadow2
 				EGA_YELLOW,	// sel_frame1
@@ -1021,11 +1021,11 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 				EGA_MAGENTA,// shadow2
 				EGA_YELLOW,	// frame1
 				EGA_YELLOW,	// frame2
-				EGA_DBLUE,	// sel_background
-				EGA_WHITE,	// sel_text1
-				EGA_WHITE,	// sel_text2
-				EGA_WHITE,	// sel_text3
-				EGA_WHITE,	// sel_text4
+				EGA_WHITE,	// sel_background
+				EGA_DBLUE,	// sel_text1
+				EGA_DBLUE,	// sel_text2
+				EGA_DBLUE,	// sel_text3
+				EGA_DBLUE,	// sel_text4
 				EGA_MAGENTA,// sel_shadow1
 				EGA_MAGENTA,// sel_shadow2
 				EGA_YELLOW,	// sel_frame1
