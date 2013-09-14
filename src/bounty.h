@@ -139,7 +139,7 @@ struct KBgame {
 	word base_leadership; /* That much leadership * 1,3,5 is awarded on each level up */
 	word leadership;
 
-	word commission; /* That much gold + base_commission is awarded each week */
+	word commission; /* That much gold is awarded each week */
 	dword gold;
 	
 	word score;	/* Current score */
@@ -234,17 +234,22 @@ typedef struct KBclass {
 
 typedef struct KBunit {
 	byte troop_id;
-	word count;
-	word max_count;
+	word count; 	/* number of units in stack */
+	word turn_count;/* number of units in stack before damage */
+	word max_count;	/* number of units in stack before combat */
 
+	byte dead;
 	byte frame;
 
-	word health;
+	word injury;	/* damage counter */
 	byte acted;
+	byte retaliated;
 
 	byte moves;
 	byte shots;
 	byte flights;
+
+	byte frozen;
 
 	byte y;
 	byte x;
@@ -255,6 +260,9 @@ typedef struct KBcombat {
 
 	byte omap[CLEVEL_H + 1][CLEVEL_W + 1];
 	byte umap[CLEVEL_H + 1][CLEVEL_W + 1];
+
+	byte powers[MAX_SIDES];
+	KBgame *heroes[MAX_SIDES];
 
 	int your_turn;//TODO: replace with a macro
 

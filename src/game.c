@@ -2505,6 +2505,36 @@ void take_artifact(KBgame *game, byte num) {
 	free(text);
 }
 
+void hit_unit(KBcombat *war, int a_side, int a_id, int t_side, int t_id) {
+	int kills;
+	KBunit *u = &war->units[a_side][t_id];
+	KBunit *t = &war->units[t_side][t_id];
+
+	u->turn_count = u->count;
+	t->turn_count = t->count;
+
+	/* Attack */
+	kills = unit_hit_unit(war, a_side, a_id, t_side, t_id);
+	draw_damage(war, t);
+	combat_log("%s vs %s, %d die", troops[u->troop_id].name, troops[t->troop_id].name, kills);
+
+	if (t->retaliated == 0) {
+		t->retaliated = 1;
+
+		/* Retaliate */
+		kills = unit_hit_unit(war, t_side, t_id, a_side, a_id);
+		draw_combat(war);//refresh screen
+		draw_damage(war, u);
+		combat_log("%s retaliate, killing %d", troops[t->troop_id].name, kills);
+	}
+
+	/* A turn well spent */
+	u->acted = 1;
+
+	/* Remove holes */
+	//compact_units(war);
+}
+
 void move_unit(KBcombat *war, int side, int id, int ox, int oy) {
 	KBunit *u = &war->units[side][id];
 
@@ -2527,15 +2557,15 @@ void move_unit(KBcombat *war, int side, int id, int ox, int oy) {
 			if (war->umap[ny][nx] >= 1 && war->umap[ny][nx] <= MAX_UNITS) return;
 			/* Otherwise -- Hostile troop */
 
-			combat_log("PC Unit attacks!", NULL);
+			hit_unit(war, 0, id, 1, war->umap[ny][nx] - MAX_UNITS - 1);
 		}
 		/* Right side */
 		else {
 			/* Meets right sie! -- Friendly troop */
 			if (war->umap[ny][nx] >= (MAX_UNITS+1) && war->umap[ny][nx] <= (MAX_UNITS*2)) return;
 			/* Otherwise -- Hostile troop */
-			
-			combat_log("NPC Unit attacks!", NULL);
+
+			hit_unit(war, 1, id, 0, war->umap[ny][nx] - 1);
 		}
 
 		return;
@@ -3644,6 +3674,9 @@ void unit_try_shoot(KBcombat *war) {
 
 		/* A turn well spent */
 		u->acted = 1;
+		
+		/* Remove holes */
+		//compact_units(war);
 	}
 
 }

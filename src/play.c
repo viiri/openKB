@@ -345,6 +345,7 @@ void prepare_units_player(KBcombat *war, int side, KBgame *game) {
 		war->units[side][i].y = i;
 		war->units[side][i].x = side * (CLEVEL_W - 1);
 	}
+	war->heroes[side] = game;
 } 
 
 void prepare_units_foe(KBcombat *war, int side, KBgame *game, int continent_id, int foe_id) {
@@ -504,16 +505,211 @@ int unit_surrounded(KBcombat *war, int side, int id) {
 	return 0;
 }
 
+word units_killed(dword damage, byte hp) {
+	return damage / hp;
+}
+
+word damage_remainder(dword damage, byte hp) {
+	return damage % hp;
+}
+
+/* Compact battlefield, after a unit has died */
+int compact_units(KBcombat *war) {
+	KBunit *u;
+	int i, j;
+	for (j = 0; j < MAX_SIDES; j++) {
+		for (i = 0; i < MAX_UNITS; i++) {
+			if (!war->units[j][i].count) {
+				printf("Unit %d is dead!\n", i);
+
+				u = &war->units[j][i];
+				war->umap[u->y][u->x] = 0;
+
+				if (i < MAX_UNITS - 1) {
+					memcpy(&war->units[j][i], &war->units[j][i+1], sizeof(KBunit));
+					printf("Copying %d to %d\n", i+1, i);
+				}
+
+			} else {
+				u = &war->units[j][i];
+				war->umap[u->y][u->x] = j * MAX_UNITS + i + 1;
+				printf("Setting map %dx%d to %d\n", u->x, u->y, war->umap[u->y][u->x]);
+			}
+		}
+		/*for (i = i+1; i < MAX_UNITS; i++) {
+			printf("Wiping unit %d\n", i);
+			war->units[j][i].troop_id = 0xFF;
+			war->units[j][i].count = 0;
+			war->units[j][i].max_count = 0;
+		}*/
+		if (war->heroes[j]) {
+			accept_units_player(war->heroes[j], j, war);
+		}
+	}
+}
+
+/* Deal damage */
+int deal_damage(KBcombat *war, int a_side, int a_id, int t_side, int t_id, int is_ranged, int is_external, int external_damage, int retaliation)
+{
+	/* NOTE:
+		Some, commented, parts of this function are missing functionality.
+		(Player stats update, druid/archmage damage?)
+		
+		Otherwise, this is 100% faithfull damage function.
+	*/
+	KBunit *u = &war->units[a_side][a_id];//attacking unit
+	KBunit *t = &war->units[t_side][t_id];//   target unit
+
+	int demon_kills = 0;	/* Special stack-halving ability */
+
+	int final_damage = 0;
+	int kills = 0;
+	int injury = 0;
+
+	if (!retaliation && !is_external) {
+	//	u->turn_count = u->count;
+	//	t->turn_count = t->count;
+	}
+
+	if (is_external) {
+		//magic-vs-unit
+		u = NULL;
+		final_damage = external_damage;
+	}
+	else {
+		//unit-vs-unit
+		int dmg;
+		int total;
+		int skill_diff;
+
+		if (troops[u->troop_id].abilities & ABIL_SCYTHE) {
+			if (KB_rand(1, 100) > 89) //10% chance
+				demon_kills = t->count / 2 + (t->count % 2 ? 1 : 0); //ceiled /2
+		}
+
+		if (is_ranged) {
+			retaliation = 1;
+			u->shots--;
+
+			if (troops[u->troop_id].abilities & ABIL_MAGIC) {
+				//if (troops[t->troop_id].abilities & ABIL_IMMUNE) //cancel_attack...?
+				//dmg = 10 druid, 25 archmage
+				dmg = 0;
+			}
+			else {
+				dmg = KB_rand(troops[u->troop_id].ranged_min, troops[u->troop_id].ranged_max);
+			}
+		}
+		else {
+			dmg = KB_rand(troops[u->troop_id].melee_min, troops[u->troop_id].melee_max);
+		}
+
+		total = dmg * u->turn_count;
+		skill_diff = troops[u->troop_id].skill_level + 5 - troops[t->troop_id].skill_level;
+		final_damage = (total * skill_diff) / 10;
+
+		if (war->heroes[a_side]) {
+			if (army_leadership(war->heroes[a_side], a_id) > 0) {//unit_under_control(war, a_side, a_id)) {
+				byte morale = troop_morale(war->heroes[a_side], a_id); // 0, 1, 2
+				if (morale == 1) { //low == * 0.5f
+					final_damage /= 2;
+				}
+				if (morale == 2) { //high == * 1.5f
+					final_damage +=
+					final_damage / 2;
+				}
+			}
+		}
+
+		if (war->powers[a_side] & POWER_DOUBLE_DAMAGE) {
+			final_damage +=
+			final_damage / 2;
+			//same as * 1.5f
+		}
+
+		if (war->powers[t_side] & POWER_QUARTER_PROTECTION) {
+			final_damage /= 4;
+			final_damage *= 3;
+			//almost same as multiplying 0.75, but more brutal, as div by 4 can yield 0
+		}
+	}
+
+	final_damage += t->injury; /* Old damage */
+	final_damage += troops[t->troop_id].hit_points * demon_kills; /* Demonic kills */
+
+	kills = units_killed(final_damage, troops[t->troop_id].hit_points);
+	injury = damage_remainder(final_damage, troops[t->troop_id].hit_points);
+
+	t->injury = injury;
+
+	if (kills < t->count) {
+		//stack survives
+
+		t->count -= kills;
+
+	}
+	else {
+		//stack dies
+
+		t->dead = 1;
+		t->count = 0;
+
+		kills = t->turn_count;
+		final_damage = kills * troops[t->troop_id].hit_points;
+
+	}
+
+	if (war->heroes[t_side])
+		war->heroes[t_side]->followers_killed += kills;
+
+	if (!is_external)
+	{
+		//undead powers:
+		if (troops[u->troop_id].abilities & ABIL_ABSORB) { //ghosts
+
+			u->count += kills;
+
+		}
+		if (troops[u->troop_id].abilities & ABIL_LEECH) { //vampires
+
+			u->count += units_killed(final_damage, troops[u->troop_id].hit_points);
+
+			if (u->count > u->max_count) {
+				u->count = u->max_count;
+				u->injury = 0;
+			}
+		}
+
+		if (!retaliation) {
+			if (!t->retaliated) {
+				t->retaliated = 1;
+				deal_damage(war, t_side, t_id, a_side, a_id, 0, 0, 0, 1); //recursive
+			}
+		}
+	}
+
+	//compact_units(war);
+
+	/* Returns number of wholesome kills */
+	return kills;
+}
+
+int unit_hit_unit(KBcombat *war, int side, int id, int other_side, int other_id)
+{
+//	KBunit *u = &war->units[side][id];
+//	KBunit *other = &war->units[other_side][other_id];
+
+	int kills = deal_damage(war, side, id, other_side, other_id, 0, 0, 0, 1);
+
+	return kills;
+}
+
 /* Calculate and deal "ranged" damage, return number of kills */
 int unit_ranged_shot(KBcombat *war, int side, int id, int other_side, int other_id) {
-	int damage = 0, kills = 0;
-	KBunit *u = &war->units[side][id];
-	KBunit *other = &war->units[other_side][other_id];
 
+	int kills = deal_damage(war, side, id, other_side, other_id, 1, 0, 0, 0);
 
-	kills = damage / troops[other->troop_id].hit_points;
-
-	return kills;	
+	return kills;
 }
 
 /* Move unit "side/id" to a new location "nx,ny" */
