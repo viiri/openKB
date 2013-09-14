@@ -54,6 +54,9 @@ int DOS_exe_offsets[][4] = {
                             KBEXE_OFFSET(ETYP, WH) + \
                             KBEXE_LEN(ETYP, WH)
 
+#define KBEXE_PTR(ETYP, WH) KBEXE_OFFSET(ETYP, DATA_SEGMENT), \
+                            KBEXE_OFFSET(ETYP, WH)
+
 #define MCGA_PALETTE_OFFSET	0x032D
 
 #define DOS_TILE_W 48
@@ -247,6 +250,78 @@ char* DOS_read_string_p(KBmodule *mod, int ptroff, int off, int endoff) {
 	}
 
 	return &buf[0];
+}
+char* DOS_read_strings_p(KBmodule *mod, int segment, int ptroff, int num_strings) {
+	char *buf, *pbuf, *p;
+	int i, n, len, plen;
+	KB_File *f;
+
+	plen = 2 * num_strings; /* 2 BYTEs for each pointer */
+
+	pbuf = malloc(plen);
+	if (pbuf == NULL) return NULL;
+
+	KB_debuglog(0,"? DOS EXE FILE: %s\n", "KB.EXE");
+	f = DOS_fopen_exe(mod);
+	if (f == NULL) {
+		free(pbuf);
+		return NULL;
+	}
+	KB_fseek(f, segment + ptroff, 0);
+	n = KB_fread(pbuf, sizeof(char), plen, f);
+	if (n < plen) {
+		DOS_fclose_exe(f);
+		free(pbuf);
+		return NULL;
+	}
+
+	int tsize = 32 * num_strings;
+	char *ret;
+
+	ret = malloc(sizeof(char) * tsize);
+	if (ret == NULL) {
+		DOS_fclose_exe(f);
+		free(pbuf);
+		return NULL;
+	}
+
+	len = 0;
+	for (i = 0; i < num_strings; i++) {
+		char buf[256]; /* arbitary max size of one string */
+		word off;
+		int l;
+		char *p = pbuf + i * 2;
+		off = READ_WORD(p);
+
+		printf("Reading string %d\n", i);
+
+		KB_fseek(f, segment + off, 0);
+		n = KB_fread(&buf[0], sizeof(char), sizeof(buf), f);
+		buf[n] = '\0';
+
+		printf("Read: { %s }\n", buf);
+
+		l = strlen(buf) + 1;
+		if (l < n) n = l;
+
+		if (len + n >= tsize) {
+			tsize *= 2;
+			ret = realloc(ret, sizeof(char) * tsize);
+			if (ret == NULL) {
+				DOS_fclose_exe(f);
+				free(pbuf);
+				return NULL;
+			}
+		}
+
+		memcpy(ret + len, buf, n);
+		len += n;
+		ret[len - 1] = '\n';
+	}
+
+	free(pbuf);
+	DOS_fclose_exe(f);
+	return ret;
 }
 #endif
 
