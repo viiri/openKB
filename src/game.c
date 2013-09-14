@@ -548,7 +548,7 @@ KBgame *select_game(KBconfig *conf) {
 	}
 
 	SDL_FreeSurface(title);
-
+	free(colors);
 	return game;
 }
 
@@ -1162,6 +1162,8 @@ void view_minimap(KBgame *game, int force_orb) {
 		}
 
 	}
+	SDL_FreeSurface(tile);
+	free(map_colors);
 }
 
 void view_contract(KBgame *game) {
