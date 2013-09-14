@@ -14,9 +14,9 @@ datadir=${datarootdir}
 
 
 CFLAGS=-g -O2 -I/usr/include/SDL -D_GNU_SOURCE=1 -D_REENTRANT
-LDFLAGS=-lpng -lSDL_image  -L/usr/lib/x86_64-linux-gnu -lSDL
+LDFLAGS=-lpng -lSDL_image -lSDL
 
-VERSION=0.0.1
+VERSION=$(shell sed -nr 's/AC_INIT\(\w+?,\s*?([^,]+),.+\)/\1/p' configure.ac)
 
 MSYS_TEST=$(shell uname -so | grep -i msys | grep -i mingw32)
 ifneq ("$(MSYS_TEST)","")
