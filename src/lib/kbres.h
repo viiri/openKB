@@ -26,9 +26,11 @@
  *
  * GR_ resources are ready-to-blit SDL_Surfaces.
  * SN_ resources are sounds in KBsound format
+ * RECT_ are single SDL_Rects.
  * PAL_ are arrays of 256 SDL_Colors.
  * COL_ are arrays of Uint32 colors in 0xAARRGGBB format;
  * DAT_ are byte arrays of pre-defined length.
+ * WDAT_ are word arrays of pre-defined length.
  * STR_ are asiiz strings.
  * STRL_ are asiiz-lists (\0 acts as a separator, \0\0 ends the list).
  */
@@ -81,9 +83,35 @@
 	_(PAL_PALETTE)	/* subId - undefined */ \
 	_(COL_TEXT) 	/* textbox colorscheme ; subId - scheme type, see CS_ defines below */ \
 	_(COL_MINIMAP) 	/* minimap colorscheme ; subId - undefined */ \
+	_(COL_DWELLING)	/* dwellings colorscheme ; subId - undefined */ \
 \
 	_(DAT_WORLD)	/* complete world map ; subId - undefined */ \
 	_(DAT_LAND) 	/* map for specific continent ; subId - continent index */ \
+	_(WDAT_SGOLD)	/* [4] starting gold for specific class; subId - undefined */ \
+	_(WDAT_STROOP)	/* [2] starting troop type; subId - class */ \
+	_(WDAT_SNUMBER)	/* [2] starting troop count; subId - class */ \
+	_(WDAT_COMM)	/* [4] commissions for specific rank; subId - class */ \
+	_(WDAT_LDRSHIP)	/* [4] leaderships for specific rank; subId - class */ \
+	_(DAT_VNEED)	/* [4] villains needed for specific rank; subId - class */ \
+	_(DAT_KMAGIC)	/* [4] "knows magic" for specific rank; subId - class */ \
+	_(DAT_SPOWER)	/* [4] "spell power" for specific rank; subId - class */ \
+	_(DAT_MAXSPELL)	/* [4] "max spells" for specific rank; subId - class */ \
+	_(DAT_FAMILIAR)	/* [4] "instant army familiar" for specific rank; subId - class */ \
+	_(DAT_SKILLS)	/* [MAX_TROOPS] skill levels for specific troop; subId - undefined */ \
+	_(DAT_MOVES)	/* [MAX_TROOPS] move rates for specific troop; subId - undefined */ \
+	_(DAT_MELEEMIN)	/* [MAX_TROOPS] melee min for specific troop; subId - undefined */ \
+	_(DAT_MELEEMAX)	/* [MAX_TROOPS] melee max for specific troop; subId - undefined */ \
+	_(DAT_RANGEMIN)	/* [MAX_TROOPS] ranged min for specific troop; subId - undefined */ \
+	_(DAT_RANGEMAX)	/* [MAX_TROOPS] ranged max for specific troop; subId - undefined */ \
+	_(DAT_SHOTAMMO)	/* [MAX_TROOPS] ranged ammo for specific troop; subId - undefined */ \
+	_(DAT_HPS)  	/* [MAX_TROOPS] hit points for specific troop; subId - undefined */ \
+	_(DAT_GCOST)	/* [MAX_TROOPS] gold cost for specific troop; subId - undefined */ \
+	_(DAT_SPOILS)	/* [MAX_TROOPS] spoils factor for specific troop; subId - undefined */ \
+	_(DAT_DWELLS)	/* [MAX_TROOPS] dwelling index for specific troop; subId - undefined */ \
+	_(DAT_MGROUP)	/* [MAX_TROOPS] morale group for specific troop; subId - undefined */ \
+	_(DAT_MAXPOP)	/* [MAX_TROOPS] max population for specific troop; subId - undefined */ \
+	_(DAT_GROWTH)	/* [MAX_TROOPS] growth factor for specific troop; subId - undefined */ \
+	_(DAT_ABILS)	/* [MAX_TROOPS] abilitiy flags for specific troop; subId - undefined */ \
 \
 	_(RECT_MAP) 	/* SDL_Rect describing map area */ \
 	_(RECT_UI)  	/* SDL_Rect describing ui border area; subId - element index */ \
@@ -93,6 +121,7 @@
 	_(STR_SIGN) 	/* signpost text ; subId - signpost index */ \
 	_(STR_TROOP)	/* troop name ; subId - troop index */ \
 	_(STR_MULTI)	/* troops name ; subId - troop index */ \
+	_(STR_RANK) 	/* rank name ; subId - rank + (class index * 4) */ \
 	_(STR_VNAME)	/* villain name ; subId - villain index */ \
 	_(STR_VDESC)	/* villain description line ; subId - line (villain index * 14) */ \
 	_(STR_ANAME)	/* artifact name ; subId - artifact index */ \
@@ -103,6 +132,7 @@
 	_(STRL_SIGNS)	/* signpost texts ; subId - undefined */ \
 	_(STRL_TROOPS)	/* troop names ; subId - undefined */ \
 	_(STRL_MULTIS)	/* troops names ; subId - undefined */ \
+	_(STRL_RANKS)	/* ranks names ; subId - class id */ \
 	_(STRL_VNAMES)	/* villains names ; subId - undefined */ \
 	_(STRL_VDESCS)	/* villains descriptions ; subId - villain id */ \
 	_(STRL_ANAMES)	/* artifact names ; subId - undefined */ \
