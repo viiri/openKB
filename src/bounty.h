@@ -22,6 +22,11 @@
 
 #include "lib/kbsys.h"
 
+#define COST_ALCOVE     	5000
+#define COST_BOAT_CHEAP 	100
+#define COST_BOAT_EXPENSIVE	500
+#define COST_SIEGE_WEAPONS	3000
+
 #define KBMOUNT_SAIL	0
 #define KBMOUNT_FLY 	4
 #define KBMOUNT_RIDE	8
