@@ -144,21 +144,29 @@ KBgamestate savegame_selection = {
 #undef _TIME
 #undef _AREA
 
+static char kbd_state[512] = { 0 };
+
 int KB_reset(KBgamestate *state) {
 
 	SDL_Event event;
 	int i;
 
 	/* Flush all events (Evil) */
-	while (SDL_PollEvent(&event)) 
-		;
+	//while (SDL_PollEvent(&event))
+		//;
 
 	/* Reset all timers */
+	if (state)
 	for (i = 0; i < MAX_HOTSPOTS; i++) {
 		if (state->spots[i].hot_key == 0) break;
 		if (state->spots[i].flag & KFLAG_TIMER) {
 			state->spots[i].coords.w = 0;
 		}
+	}
+
+	/* Unpush all keys */
+	for (i = 0; i < 512; i++) {
+		kbd_state[i] = 0;
 	}
 }
 
@@ -185,8 +193,6 @@ int KB_event(KBgamestate *state) {
 	int mouse_y = -1;
 
 	int i;
-
-	static char kbd_state[512] = { 0 };
 
 	Uint32 passed, now;
 
