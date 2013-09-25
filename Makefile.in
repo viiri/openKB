@@ -110,7 +110,7 @@ config:
 	echo "Making config"
 	autoheader
 	autoconf
-	automake -a -c >/dev/null || echo "Ignoring any errors"
+	automake -a -c 2>/dev/null || echo "Ignoring any errors"
 
 dist: vendor-clean vendor clean config $(MAN_PAGES)
 	echo "Making dist"
