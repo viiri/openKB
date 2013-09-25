@@ -299,6 +299,7 @@ extern KBclass classes[4][4];
 extern char *dwelling_names[MAX_DWELLINGS];
 extern char *town_names[MAX_TOWNS];
 extern char *castle_names[MAX_CASTLES + 1];
+extern byte town_inversion[MAX_CASTLES];
 extern char *spell_names[MAX_SPELLS];
 extern word spell_costs[MAX_SPELLS];
 extern char *artifact_names[MAX_ARTIFACTS];
@@ -320,8 +321,10 @@ extern word base_maxspell[MAX_CONTINENTS];
 extern char *morale_names[3];
 extern char *continent_names[4];
 
+extern byte continent_entry[MAX_CONTINENTS][2];	/* [x][y] */
 extern byte castle_coords[MAX_CASTLES][3];	/* [continent][x][y] */
 extern byte town_coords[MAX_CASTLES][3];
+extern byte towngate_coords[MAX_CASTLES][3];
 extern byte boat_coords[MAX_CASTLES][3];
 
 extern signed char puzzle_map[PUZZLEMAP_H][PUZZLEMAP_W]; /* each piece is covered by villain face or artifact */
