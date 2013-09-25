@@ -1260,16 +1260,18 @@ void view_contract(KBgame *game) {
 
 	RECT_Text((&border), 16, 36);
 	RECT_Center(&border, sys->screen);
-	
+
 	border.y += fs->h/2;
 
 	Uint32 *colors = local.message_colors;
 
 	SDL_Surface *tile = SDL_LoadRESOURCE(GR_PURSE, 0, 0);
 
-	SDL_TextRect(sys->screen, &border, colors[COLOR_BACKGROUND], colors[COLOR_TEXT], 1);
+	SDL_TextRect(sys->screen, &border, colors[COLOR_FRAME], colors[COLOR_BACKGROUND], 1);
 
 	SDL_Rect hdst = { border.x + fs->w, border.y + fs->h, tile->w, tile->h };
+
+	KB_icolor(colors);
 
 	if (game->contract == 0xFF) {
 
@@ -1483,6 +1485,10 @@ void view_army(KBgame *game) {
 
 	SDL_Rect pos;
 
+	Uint32 *colors = KB_Resolve(COL_TEXT, CS_VIEWCHAR);
+	Uint32 *troop_colors = KB_Resolve(COL_DWELLING, 0);
+	Uint32 orig_bg = colors[COLOR_BACKGROUND];
+
 	//RECT_Size(&pos, bg);
 	pos.x = left_frame->w;
 	pos.y = top_frame->h + bar_frame->h + fs->h + sys->zoom;
@@ -1517,12 +1523,11 @@ void view_army(KBgame *game) {
 				SDL_Rect frm =  { frame * tile->w, 0, tile->w, tile->h };
 				SDL_BlitSurface(tile, NULL, sys->screen, &dest);
 				
-				SDL_Rect tbox =  { pos.x + tile->w, pos.y + i * tile->h, pos.w - tile->w, tile->h };
-				SDL_Rect tline =  { pos.x + tile->w, pos.y + (i+1) * tile->h - 2, pos.w - tile->w  - fs->w/2, 2 };
-				
-				SDL_FillRect(sys->screen, &tbox, 0);
-				if (i < 4)
-				SDL_FillRect(sys->screen, &tline, 0xFFFFFF);		
+				SDL_Rect tbox =  { pos.x + tile->w, pos.y + i * tile->h, pos.w - tile->w, tile->h - fs->h / 8};
+				SDL_Rect tline =  { pos.x + tile->w, pos.y + (i+1) * tile->h - fs->h / 8, pos.w - tile->w, fs->h / 8 };
+
+				SDL_FillRect(sys->screen, &tbox, orig_bg);
+				SDL_FillRect(sys->screen, &tline, i < 4 ? colors[COLOR_FRAME] : orig_bg);
 
 				if (game->player_numbers[i] == 0) continue;
 				
@@ -1530,18 +1535,23 @@ void view_army(KBgame *game) {
 				SDL_Surface *troop = SDL_TakeSurface(GR_TROOP, troop_id, 1);
 
 				SDL_BlitSurface(troop, &frm, sys->screen, &dest);
+				
+				colors[COLOR_BACKGROUND] = troop_colors[ troops[troop_id].dwells ];
+				KB_icolor(colors);
 
-				KB_iloc(tbox.x, tbox.y + fs->h / 2);
+				SDL_FillRect(sys->screen, &tbox, troop_colors[ troops[troop_id].dwells ]);
+
+				KB_iloc(tbox.x, tbox.y + fs->h / 2 - fs->h / 8);
 				KB_ilh(fs->h + 4);
 				KB_iprintf(" %-3d %s\n", game->player_numbers[i], troops[ troop_id ].name);
 				KB_iprintf(" SL:%2d MV:%2d\n", troops[ troop_id ].skill_level, troops[ troop_id ].move_rate);
 
 				if (army_leadership(game, troop_id) <= 0)
-					KB_iprint(" Out of control!");
+					KB_iprint(" Out of Control");
 				else
 					KB_iprintf(" Morale:%s\n", morale_names[ troop_morals[i] ]);
 
-				KB_iloc(tbox.x + fs->w * 16, tbox.y + fs->h / 2);
+				KB_iloc(tbox.x + fs->w * 16, tbox.y + fs->h / 2 - fs->h / 8);
 				KB_ilh(fs->h + 4);
 				KB_iprintf("HitPts:%d\n", troops[ troop_id ].hit_points * game->player_numbers[i]);
 				KB_iprintf("Damage:%d-%d\n", troops[ troop_id ].melee_min * game->player_numbers[i], troops[ troop_id ].melee_max * game->player_numbers[i]);
@@ -1554,7 +1564,8 @@ void view_army(KBgame *game) {
 			redraw = 0;
 		}
 	}
-
+	free(troop_colors);
+	free(colors);
 }
 
 KBgamestate numeric_choices = {
