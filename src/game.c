@@ -204,6 +204,89 @@ char *text_input(int max_len, int numbers_only, int x, int y) {
 	return (done == -1 ? NULL : &entered_name[0]);	
 }
 
+/* resolve any possible data from modules, update static tables with it */
+void refill_rules() {
+	int i, j;
+
+	byte *ranged_min = KB_Resolve(DAT_RANGEMIN, 0);
+	byte *ranged_max = KB_Resolve(DAT_RANGEMAX, 0);
+	byte *ranged_ammo = KB_Resolve(DAT_SHOTAMMO, 0);
+	byte *melee_min = KB_Resolve(DAT_MELEEMIN, 0);
+	byte *melee_max = KB_Resolve(DAT_MELEEMAX, 0);
+	byte *skill_level = KB_Resolve(DAT_SKILLS, 0);
+	byte *move_rate = KB_Resolve(DAT_MOVES, 0);
+	byte *hit_points = KB_Resolve(DAT_HPS, 0);
+	byte *gold_cost = KB_Resolve(DAT_GCOST, 0);
+	byte *spoils = KB_Resolve(DAT_SPOILS, 0);
+	byte *dwells = KB_Resolve(DAT_DWELLS, 0);
+	byte *morale_group = KB_Resolve(DAT_MGROUP, 0);
+	byte *maxpop = KB_Resolve(DAT_MAXPOP, 0);
+	byte *growth = KB_Resolve(DAT_GROWTH, 0);
+	byte *abilities = KB_Resolve(DAT_ABILS, 0);
+
+	for (j = 0; j < MAX_CLASSES; j++) {
+		word *commission = KB_Resolve(WDAT_COMM, j);
+		word *leadership = KB_Resolve(WDAT_LDRSHIP, j);
+		byte *villains_needed = KB_Resolve(DAT_VNEED, j);
+		byte *knows_magic = KB_Resolve(DAT_KMAGIC, j);
+		byte *spell_power = KB_Resolve(DAT_SPOWER, j);
+		byte *max_spells = KB_Resolve(DAT_MAXSPELL, j);
+		byte *familiar = KB_Resolve(DAT_FAMILIAR, j);
+
+		for (i = 0; i < MAX_RANKS; i++) {
+			if (commission) classes[j][i].commission = commission[i];
+			if (leadership) classes[j][i].leadership = leadership[i];
+			if (villains_needed) classes[j][i].villains_needed = villains_needed[i];
+			if (knows_magic) classes[j][i].knows_magic = knows_magic[i];
+			if (spell_power) classes[j][i].spell_power = spell_power[i];
+			if (max_spells) classes[j][i].max_spell = max_spells[i];
+			if (familiar) classes[j][i].instant_army = familiar[i];
+		}
+
+		free(familiar);
+		free(max_spells);
+		free(spell_power);
+		free(knows_magic);
+		free(villains_needed);
+		free(leadership);
+		free(commission);
+	}
+
+	for (i = 0; i < MAX_TROOPS; i++) {
+		if (ranged_min)	troops[i].ranged_min = ranged_min[i];
+		if (ranged_max)	troops[i].ranged_max = ranged_max[i];
+		if (ranged_ammo) troops[i].ranged_ammo = ranged_ammo[i];
+		if (melee_min) troops[i].melee_min = melee_min[i];
+		if (melee_max) troops[i].melee_max = melee_max[i];
+		if (skill_level) troops[i].skill_level = skill_level[i];
+		if (move_rate) troops[i].move_rate = move_rate[i];
+		if (hit_points) troops[i].hit_points = hit_points[i];
+		if (gold_cost) troops[i].recruit_cost = gold_cost[i];
+		if (spoils) troops[i].spoils_factor = spoils[i];
+		if (dwells) troops[i].dwells = dwells[i];
+		if (morale_group) troops[i].morale_group = morale_group[i];
+		if (maxpop) troops[i].max_population = maxpop[i];
+		if (growth) troops[i].growth = growth[i];
+		if (abilities) troops[i].abilities = abilities[i];
+	}
+
+	free(abilities);
+	free(growth);
+	free(maxpop);
+	free(morale_group);
+	free(dwells);
+	free(spoils);
+	free(gold_cost);
+	free(hit_points);
+	free(move_rate);
+	free(skill_level);
+	free(melee_max);
+	free(melee_min);
+	free(ranged_ammo);
+	free(ranged_max);
+	free(ranged_min);
+}
+
 /* "create game" screen (pick name and difficulty) */
 KBgame *create_game(int pclass) {
 
@@ -250,6 +333,7 @@ KBgame *create_game(int pclass) {
 		}
 
 		if (key == SDLK_RETURN) {
+			refill_rules();
 			game = spawn_game(name, pclass, sel);
 			done = 1;
 		}
