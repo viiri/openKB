@@ -474,6 +474,14 @@ char *continent_names[4] = {
 	"Saharia",
 };
 
+/* X, Y */
+byte continent_entry[MAX_CONTINENTS][2] = {
+	{ 11,  3 },
+	{  1, 37 },
+	{ 14, 62 },
+	{  9,  1 },
+};
+
 /* continent, X, Y */
 byte castle_coords[MAX_CASTLES][3] = {
 	{ 0, 30,27 },
