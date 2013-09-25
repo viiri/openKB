@@ -350,7 +350,7 @@ char* DOS_read_strings(KBmodule *mod, int off, int endoff) {
 		free(buf);
 		return NULL;
 	}
-	buf[n] = '\0';
+	buf[n - 1] = '\0';
 	return buf;
 }
 
