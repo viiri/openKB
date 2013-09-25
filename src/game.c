@@ -2277,8 +2277,117 @@ void visit_town(KBgame *game) {
 
 }
 
-void visit_alcove(KBgame *game) {
+void nogold_banner(KBgame *game, byte loc_id, byte troop_id) {
 
+	SDL_Rect *fs = &sys->font_size;
+	SDL_Rect *text = KB_BottomFrame();
+
+	KB_iloc(text->x, text->y + fs->h / 8);
+	KB_ilh(fs->h + 2);
+	KB_iprintf(
+		"The sign said %d gold! Why\n"
+		"waste my valuable time when\n"
+		"you know you don't have the\n"
+		"required amount of gold?\n"
+		"Begone until you do!", COST_ALCOVE
+	);
+
+	int key;
+	int redraw = 1;
+	int done = 0;
+	int frame = 0;
+	while (!done) {
+		key	= KB_event(&press_any_key_interactive);
+
+		if (key == 2) {
+			frame++;
+			if (frame > 3) frame = 0;
+			redraw = 1;
+		}
+		else if (key) {
+			done = 1;
+			redraw = 0;
+		}
+
+		if (redraw) {
+			redraw = 0;
+
+			draw_location(loc_id, troop_id, frame);
+
+			draw_sidebar(game, frame);
+
+			KB_flip(sys);
+		}
+	}
+}
+
+int visit_alcove(KBgame *game) {
+
+	SDL_Rect *fs = &sys->font_size;
+	SDL_Rect *text = KB_BottomFrame();
+
+	int i; /* Find archmage troop type */
+	byte creature = 0;
+	for (i = 0; i < MAX_TROOPS; i++) {
+		if (troops[i].abilities & ABIL_MAGIC) {
+			if (troops[i].recruit_cost >
+				troops[creature].recruit_cost) {
+				creature = i;
+			}
+		}
+	}/* And ignore it, use GNOMES :/ */
+	creature = 0x06;
+
+	KB_iloc(text->x, text->y + fs->h / 8);
+	KB_ilh(fs->h + 2);
+	KB_iprint(
+		"The venerable Archmage,\n"
+		"Aurange, will teach you the\n"
+		"secrets of spell casting for\n"
+		"%d gold.\n"
+		"\n"
+		"               Accept (y/n)?", COST_ALCOVE
+	);
+
+	int key;
+	int redraw = 1;
+	int done = 0;
+	int frame = 0;
+	while (!done) {
+		key = KB_event(&yes_no_interactive);
+
+		if (key == 1) {
+			if (game->gold < COST_ALCOVE) {
+				nogold_banner(game, 2 + DWELLING_HILLCAVE, creature);
+				done = 1;
+			} else {
+				game->knows_magic = 1;
+				spend_gold(game, COST_ALCOVE);
+				game->map[game->continent][game->y][game->x] = 0;
+				done = 2;
+			}
+			redraw = 0;
+		}
+		else if (key == 3) {
+			frame++;
+			if (frame > 3) frame = 0;
+			redraw = 1;
+		}
+		else if (key) {
+			done = 1;
+		}
+
+		if (redraw) {
+			redraw = 0;
+
+			draw_location(2 + DWELLING_HILLCAVE, creature, frame);
+
+			draw_sidebar(game, frame);
+
+			KB_flip(sys);
+		}
+	}
+	return done - 1;
 }
 
 int visit_telecave(KBgame *game, int force) {
@@ -2299,7 +2408,7 @@ int visit_telecave(KBgame *game, int force) {
 	return 1;
 }
 
-void visit_dwelling(KBgame *game, byte rtype) {
+int visit_dwelling(KBgame *game, byte rtype) {
 
 	int id = -1;
 	int i;
@@ -2310,8 +2419,7 @@ void visit_dwelling(KBgame *game, byte rtype) {
 		&& ALCOVE_X == game->x
 		&& ALCOVE_Y == game->y
 	) {
-		visit_alcove(game);
-		return;
+		return visit_alcove(game);
 	}
 
 	/* Find which dwelling is it */
@@ -2322,7 +2430,7 @@ void visit_dwelling(KBgame *game, byte rtype) {
 	}
 
 	/* Somehow, there's no dwelling here */
-	if (id == -1) return;
+	if (id == -1) return 0;
 
 	int max = 9999;
 
@@ -2398,6 +2506,7 @@ void visit_dwelling(KBgame *game, byte rtype) {
 
 		redraw = 1;
 	}
+	return 0;
 }
 
 void read_signpost(KBgame *game) {
@@ -5115,7 +5224,7 @@ void adventure_loop(KBgame *game) {
 					case TILE_DWELLING_4:	if (!visit_telecave(game, 0)) break;
 					case TILE_DWELLING_1:
 					case TILE_DWELLING_2:
-					case TILE_DWELLING_3:	visit_dwelling(game, m - TILE_DWELLING_1); walk = 0; break;
+					case TILE_DWELLING_3:	walk = visit_dwelling(game, m - TILE_DWELLING_1); break;
 					case TILE_SIGNPOST: 	read_signpost(game);    	break;
 					case TILE_FOE:      	walk = !attack_foe(game);	break;
 					case TILE_ARTIFACT_1:
