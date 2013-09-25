@@ -603,36 +603,43 @@ word damage_remainder(dword damage, byte hp) {
 /* Compact battlefield, after a unit has died */
 int compact_units(KBcombat *war) {
 	KBunit *u;
-	int i, j;
+	int i, j, k;
+
+	/* a) Wipe unit map */
+	for (j = 0; j < CLEVEL_H; j++) {
+		for (i = 0; i < CLEVEL_W; i++) {
+			war->umap[j][i] = 0;
+		}
+	}
+
+	/* b) Compact! */
 	for (j = 0; j < MAX_SIDES; j++) {
-		for (i = 0; i < MAX_UNITS; i++) {
+		for (i = 0; i < MAX_UNITS - 1; i++) {
 			if (!war->units[j][i].count) {
-				printf("Unit %d is dead!\n", i);
+				//printf("Unit %c, %d is dead!\n", j + 'A', i);
+				for (k = i; k < MAX_UNITS - 1; k++) {
 
-				u = &war->units[j][i];
-				war->umap[u->y][u->x] = 0;
+					u = &war->units[j][k];
 
-				if (i < MAX_UNITS - 1) {
-					memcpy(&war->units[j][i], &war->units[j][i+1], sizeof(KBunit));
-					printf("Copying %d to %d\n", i+1, i);
+					memcpy(&war->units[j][k], &war->units[j][k+1], sizeof(KBunit));
+					//printf("Copying %d to %d\n", k+1, k);
 				}
-
-			} else {
-				u = &war->units[j][i];
-				war->umap[u->y][u->x] = j * MAX_UNITS + i + 1;
-				printf("Setting map %dx%d to %d\n", u->x, u->y, war->umap[u->y][u->x]);
 			}
 		}
-		/*for (i = i+1; i < MAX_UNITS; i++) {
-			printf("Wiping unit %d\n", i);
-			war->units[j][i].troop_id = 0xFF;
-			war->units[j][i].count = 0;
-			war->units[j][i].max_count = 0;
-		}*/
 		if (war->heroes[j]) {
 			accept_units_player(war->heroes[j], j, war);
 		}
 	}
+
+	/* c) Rewrite unit map */
+	for (j = 0; j < MAX_SIDES; j++) {
+		for (i = 0; i < MAX_UNITS; i++) {
+			if (!war->units[j][i].count) break;
+			u = &war->units[j][i];
+			war->umap[u->y][u->x] = j * MAX_UNITS + i + 1;
+		}
+	}
+
 }
 
 /* Deal damage */

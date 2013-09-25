@@ -2608,10 +2608,11 @@ void hit_unit(KBcombat *war, int a_side, int a_id, int t_side, int t_id) {
 	u->acted = 1;
 
 	/* Remove holes */
-	//compact_units(war);
+	compact_units(war);
 }
 
-void move_unit(KBcombat *war, int side, int id, int ox, int oy) {
+/* returns 1 if moved, 0 if not, 2 if attacked instead */
+int move_unit(KBcombat *war, int side, int id, int ox, int oy) {
 	KBunit *u = &war->units[side][id];
 
 	int nx = u->x + ox;
@@ -2619,10 +2620,10 @@ void move_unit(KBcombat *war, int side, int id, int ox, int oy) {
 
 	/* Screen border */
 	if (nx < 0 || nx > CLEVEL_W - 1
-	 || ny < 0 || ny > CLEVEL_H - 1) return;
+	 || ny < 0 || ny > CLEVEL_H - 1) return 0;
 
 	/* Obstacle */
-	if (war->omap[ny][nx]) return;
+	if (war->omap[ny][nx]) return 0;
 
 	/* An other troop ... */
 	if (war->umap[ny][nx]) {
@@ -2630,7 +2631,7 @@ void move_unit(KBcombat *war, int side, int id, int ox, int oy) {
 		/* Left side */
 		if (side == 0) {
 			/* Meets left side! -- Friendly troop */
-			if (war->umap[ny][nx] >= 1 && war->umap[ny][nx] <= MAX_UNITS) return;
+			if (war->umap[ny][nx] >= 1 && war->umap[ny][nx] <= MAX_UNITS) return 0;
 			/* Otherwise -- Hostile troop */
 
 			hit_unit(war, 0, id, 1, war->umap[ny][nx] - MAX_UNITS - 1);
@@ -2638,13 +2639,13 @@ void move_unit(KBcombat *war, int side, int id, int ox, int oy) {
 		/* Right side */
 		else {
 			/* Meets right sie! -- Friendly troop */
-			if (war->umap[ny][nx] >= (MAX_UNITS+1) && war->umap[ny][nx] <= (MAX_UNITS*2)) return;
+			if (war->umap[ny][nx] >= (MAX_UNITS+1) && war->umap[ny][nx] <= (MAX_UNITS*2)) return 0;
 			/* Otherwise -- Hostile troop */
 
 			hit_unit(war, 1, id, 0, war->umap[ny][nx] - 1);
 		}
 
-		return;
+		return 2;
 	}
 
 	/* Actually move */
@@ -2653,6 +2654,8 @@ void move_unit(KBcombat *war, int side, int id, int ox, int oy) {
 	/* Spend 1 move point */
 	u->moves--;
 	if (!u->moves) u->acted = 1;
+
+	return 1;
 }
 
 /* TOH: */ void combat_loop(KBgame *game, KBcombat *combat);
@@ -4020,7 +4023,7 @@ void draw_combat_statusbar(KBcombat *war) {
 	if (war->side) return;
 
 	KB_icolor(colors);
-	KB_iloc(local.status.x, local.status.y + 1);
+	KB_iloc(local.status.x, local.status.y + sys->font_size.h / 8);
 	KB_iprint(" ");
 	KB_iprint("Options");
 	KB_iprint(" / ");
@@ -4071,6 +4074,7 @@ static signed char target_move_offset_y[9] = { -1,-1,-1,  0, 0,  1, 1, 1 };
  *   2 - tile with a unit on it
  *   3 - friendly unit
  *   4 - enemy unit
+ *   5 - enemy UNDEAD unit
  */
 int pick_target(KBcombat *war, int *x, int *y, int filter) {
 
@@ -4223,16 +4227,23 @@ void unit_try_shoot(KBcombat *war) {
 	int other_id, other_side;
 	int ok, kills;
 
+	KBunit *u = &war->units[war->side][war->unit_id];
+
 	// TODO: display "Can't Shoot" message for units that can't shoot
+	if (!u->shots || unit_surrounded(war, war->side, war->unit_id)) {
+		KB_TopBox(MSG_WAIT | MSG_PADDED, "Can't Shoot");
+		return;
+	}
 
-	if (unit_surrounded(war, war->side, war->unit_id)) return;
+	x = u->x;
+	y = u->y;
 
-	x = war->units[war->side][war->unit_id].x;
-	y = war->units[war->side][war->unit_id].y; 
+	u->frame = 0; /* Hack -- force frame 0 */
 
 	ok = pick_target(war, &x, &y, 4);
 
 	if (ok) {
+		KBunit *victim;
 
 		other_id = war->umap[y][x] - 1;
 		other_side = 0;
@@ -4243,20 +4254,17 @@ void unit_try_shoot(KBcombat *war) {
 
 		kills = unit_ranged_shot(war, war->side, war->unit_id, other_side, other_id);
 
-		KBunit *u = &war->units[war->side][war->unit_id];
-		KBunit *victim = &war->units[other_side][other_id];
+		victim = &war->units[other_side][other_id];
 
 		draw_damage(war, victim);
 
 		combat_log("%s shoot %s killing %d", troops[u->troop_id].name, troops[victim->troop_id].name, kills);
 
-		//unit_apply_damage(war, victim);
-
 		/* A turn well spent */
 		u->acted = 1;
-		
+
 		/* Remove holes */
-		//compact_units(war);
+		compact_units(war);
 	}
 
 }
@@ -4291,12 +4299,14 @@ int ai_pick_target(KBcombat *combat, int nearby) {
 	return pick;
 }
 
-void ai_unit_think(KBcombat *combat) {
+int ai_unit_think(KBcombat *combat) {
 
 	KBunit *u = &combat->units[combat->side][combat->unit_id];
 	KBtroop *t = &troops[u->troop_id];
 
 	int close_target = ai_pick_target(combat, 1);
+
+	int acted = 0;
 
 	if (t->abilities & ABIL_FLY) {
 
@@ -4323,6 +4333,23 @@ void ai_unit_think(KBcombat *combat) {
 
 	}
 
+	if (!u->shots) {
+		int ox, oy;
+		//unit_offset(combat->side, combat->unit_id, close_target);//
+		acted = move_unit(combat, combat->side, combat->unit_id, -1, 0);
+
+		if (acted == 1) {
+			draw_combat(combat);//refresh screen
+			combat_log("%s move", t->name);
+		}
+	}
+
+	if (!acted) {
+	
+		return unit_try_wait(combat);
+
+	}
+	return !acted;
 }
 
 static signed char combat_move_offset_x[9] = { -1, 0, 1, -1, 1, -1, 0, 1 };
@@ -4405,8 +4432,10 @@ void combat_loop(KBgame *game, KBcombat *combat) {
 
 		if (key == COMBAT_SYN_EVENT) {
 
-			if (++combat->units[combat->side][combat->unit_id].frame > 3)
+			if (++combat->units[combat->side][combat->unit_id].frame > 3) {
 				combat->units[combat->side][combat->unit_id].frame = 0;
+				if (combat->side == 1) pass = ai_unit_think(combat); /* AI makes his move */
+			}
 
 			frame++;
 			if (frame > max_frame) {
