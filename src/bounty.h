@@ -215,6 +215,9 @@ typedef struct KBtroop {
 	byte	morale_group;	/* Morale group, use special chart to determine final troop morale */
 } KBtroop;
 
+#define MAX_CLASSES 4
+#define MAX_RANKS 4
+
 typedef struct KBclass {
 
 	char title[16];
@@ -227,6 +230,8 @@ typedef struct KBclass {
 
 	word commission;
 	byte knows_magic;
+
+	byte instant_army;
 } KBclass;
 
 #define CLEVEL_H 5
@@ -294,7 +299,11 @@ typedef struct KBcombat {
 extern KBtroop troops[MAX_TROOPS];
 extern byte morale_chart[5][5];
 
-extern KBclass classes[4][4];
+extern KBclass classes[MAX_CLASSES][MAX_RANKS];
+extern word starting_gold[MAX_CLASSES];
+extern byte starting_army_troop[MAX_CLASSES][2];
+extern byte starting_army_numbers[MAX_CLASSES][2];
+extern byte instant_army_multiplier[MAX_RANKS];
 
 extern char *dwelling_names[MAX_DWELLINGS];
 extern char *town_names[MAX_TOWNS];

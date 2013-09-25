@@ -159,37 +159,64 @@ byte morale_chart[5][5] = {
 #undef _L
 #undef _H
 
-	/*		TITLE            LEADERSHIP        COMMISSION       *
-	 *			    VILLAINS_NEEDED	               KNOWS_MAGIC  *
-	 *                               MAX_SPELLS                 *
-	 *                                 SPELL_POWER              */
+	/*      TITLE            LEADERSHIP        COMMISSION             *
+	 *           VILLAINS_NEEDED                   KNOWS_MAGIC        *
+	 *                               MAX_SPELLS                       *
+	 *                                 SPELL_POWER      INSTANT_TROOP */
 KBclass classes[4][4] = {
 	{
-		{	"Knight",   	0, 	100,   	2, 	1, 	1000,	0 },
-		{	"General",  	2, 	+100,  	+3,	+1,	+1000,	0 },
-		{	"Marshal",  	8, 	+300,  	+4,	+1,	+2000,	0 },
-		{	"Lord",     	14,	+500,  	+5,	+2,	+4000,	0 },
+		{	"Knight",   	0, 	100,   	2, 	1, 	1000,	0,	0x00 },
+		{	"General",  	2, 	+100,  	+3,	+1,	+1000,	0,	0x02 },
+		{	"Marshal",  	8, 	+300,  	+4,	+1,	+2000,	0,	0x08 },
+		{	"Lord",     	14,	+500,  	+5,	+2,	+4000,	0,	0x0E },
 	},
 	{
-		{	"Paladin",  	0, 	80, 	3,	1,	1000,	0 },
-		{	"Crusader", 	2, 	+80,	+3,	+1,	+1000,	0 },
-		{	"Avenger",  	7, 	+240,	+6,	+2,	+2000,	0 },
-		{	"Champion", 	13,	+400,	+5,	+2,	+4000,	0 },
+		{	"Paladin",  	0, 	80, 	3,	1,	1000,	0,	0x00 },
+		{	"Crusader", 	2, 	+80,	+3,	+1,	+1000,	0,	0x02 },
+		{	"Avenger",  	7, 	+240,	+6,	+2,	+2000,	0,	0x08 },
+		{	"Champion", 	13,	+400,	+5,	+2,	+4000,	0,	0x12 },
 	},
 	{
-		{	"Sorceress",	0,	60, 	5,	2,	3000,	1 },
-		{	"Magician", 	3,	+60,	+8,	+3,	+1000,	0 },
-		{	"Mage",     	6,	+180,	+10,+5,	+1000,	0 },
-		{	"Archmage", 	12,	+300,	+12,+5,	+1000,	0 },
+		{	"Sorceress",	0,	60, 	5,	2,	3000,	1,	0x01 },
+		{	"Magician", 	3,	+60,	+8,	+3,	+1000,	0,	0x06 },
+		{	"Mage",     	6,	+180,	+10,+5,	+1000,	0,	0x09 },
+		{	"Archmage", 	12,	+300,	+12,+5,	+1000,	0,	0x13 },
 	},
 	{
-		{	"Barbarian",	0,	100, 	2,	0,	2000,	0 },
-		{	"Chieftain",	1,	+100,	+2,	+1,	+2000,	0 },
-		{	"Warlord",  	5,	+300,	+3,	+1,	+2000,	0 },
-		{	"Overlord", 	10,	+500,	+3,	+1,	+2000,	0 },
+		{	"Barbarian",	0,	100, 	2,	0,	2000,	0,	0x00 },
+		{	"Chieftain",	1,	+100,	+2,	+1,	+2000,	0,	0x03 },
+		{	"Warlord",  	5,	+300,	+3,	+1,	+2000,	0,	0x07 },
+		{	"Overlord", 	10,	+500,	+3,	+1,	+2000,	0,	0x0F },
 	},
 };
-  
+
+word starting_gold[MAX_CLASSES] = {
+	7500,	/* 0 - Knight */
+	10000,	/* 1 - Paladin */
+	10000,	/* 2 - Sorceress */
+	7500,	/* 3 - Barbarian */
+};
+
+byte starting_army_troop[MAX_CLASSES][2] = {
+	{ 0x02 /* Militia */,	0x08 /* Archers */},	/* 0 - Knight */
+	{ 0x00 /* Peasants */,	0x02 /* Militia */},	/* 1 - Paladin */
+	{ 0x00 /* Peasants */,	0x01 /* Sprites */},	/* 2 - Sorceress */
+	{ 0x03 /* Wolfs */, 	0xFF /* - */},      	/* 3 - Barbarian */
+};
+byte starting_army_numbers[MAX_CLASSES][2] = {
+	{ 0x14 /* 20 */,    	0x02 /* 2 */},      	/* 0 - Knight */
+	{ 0x14 /* 20 */,    	0x14 /* 20 */},     	/* 1 - Paladin */
+	{ 0x1E /* 30 */,    	0x0A /* 10 */},     	/* 2 - Sorceress */
+	{ 0x14 /* 20 */,    	0x00 /* - */},      	/* 3 - Barbarian */
+};
+
+byte instant_army_multiplier[MAX_RANKS] = {
+	3,
+	2,
+	1,
+	1,
+};
+
 char *dwelling_names[MAX_DWELLINGS] = {
 	"Plains",
 	"Forest",
