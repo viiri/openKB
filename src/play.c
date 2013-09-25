@@ -56,14 +56,11 @@ word week_id(KBgame *game) {
 	return w_id;
 }
 
-void end_week(KBgame *game) {
-	printf("END OF WEEK!\n");
-}
-
 /* End the day; return 1 if week ended, 0 otherwise */
 int end_day(KBgame *game) {
 	game->days_left -= 1;
 	game->steps_left = DAY_STEPS;
+	game->time_stop = 0;
 	if (!(game->days_left % WEEK_DAYS)) return 1;
 	return 0;
 }
@@ -300,20 +297,72 @@ void temp_death(KBgame *game) {
 	game->player_numbers[0] = 20;
 }
 
+byte end_week(KBgame *game) {
+	int i, j, cont;
+	dword credit;
+	byte creature;
 
-/** Spell effects **/
+	/* Reset player */
+	game->time_stop = 0;
+	game->leadership = game->base_leadership;
 
-void raise_control(KBgame *game) {
-	game->leadership += game->spell_power * 100;
-}
+	/* Pick creature */
+	if (week_id(game) % 4 == 0)
+		creature = 0;
+	else
+		creature = KB_rand(1, MAX_TROOPS - 1);
 
-int clone_troop(KBgame *game, KBcombat *war, int unit_id) {
-	/* #Clones = SpellPower * 10 / Troop.HP */
-	int clones = game->spell_power * 10 /
-		troops[war->units[0][unit_id].troop_id].hit_points;
-	war->units[0][unit_id].count += clones;
-	war->units[0][unit_id].max_count += clones;
-	return clones;
+	/** Budget **/
+
+	/* Add commission */
+	game->gold += game->commission;
+
+	/* Count Boat */
+	credit += player_has_boat(game) ? boat_cost(game) : 0;
+
+	/* Count Army */
+	for (i = 0; i < 5; i++) {
+		if (game->player_numbers[i] == 0) break;
+		credit +=
+			game->player_numbers[i] * troops[ game->player_troops[i] ].recruit_cost;
+	}
+
+	/* Spend gold */
+	spend_gold(game, credit);
+
+	/** Turn ghosts into peasants **/
+	if (creature == 0)
+		for (i = 0; i < 5; i++)
+			if (troops[game->player_troops[i]].abilities & ABIL_ABSORB)
+				game->player_troops[i] = creature;
+
+	/** World events **/
+
+	/* Repopulate castles */
+	for (j = 0; j < MAX_CASTLES; j++)
+		if (game->castle_owner[j] == 0xFF) /* Owned by player */
+			if (game->castle_numbers[j][0] == 0) /* and is empty */
+				repopulate_castle(game, j);
+
+	/* Unit growth (dwellings, castles and foes) */
+	for (cont = 0; cont < MAX_CONTINENTS; cont++) 
+	{
+		for (i = 0; i < MAX_DWELLINGS; i++)
+			if (game->dwelling_troop[cont][i] == creature)
+				game->dwelling_population[cont][i] = troops[creature].max_population;
+
+		for (j = 0; j < MAX_FOLLOWERS; j++)
+			for (i = 0; i < 3; i++)
+				if (game->follower_troops[cont][j][i] == creature)
+					game->follower_numbers[cont][j][i] += troops[creature].growth;
+	}
+	for (j = 0; j < MAX_CASTLES; j++)
+		if (game->castle_owner[j] != 0xFF) /* Not owned by player */
+			for (i = 0; i < 5; i++)
+				if (game->castle_troops[j][i] == creature)
+					game->castle_numbers[j][i] += troops[creature].growth;
+
+	return creature;
 }
 
 /** Combat **/

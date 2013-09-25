@@ -3041,8 +3041,7 @@ int ask_search(KBgame *game, int *weekend) {
 
 	} else {
 		KB_BottomBox(NULL, "\n\nYour search of this area has\nrevealed nothing.", MSG_PAUSE);
-		spend_days(game, days);
-		*weekend = 1;
+		*weekend = spend_days(game, days);
 	}
 
 	return 1;
@@ -4038,7 +4037,6 @@ void adventure_loop(KBgame *game) {
 
 		if (key == KEY_ACT(END_WEEK)) {
 			spend_week(game);
-			end_week(game);
 			weekend = 1;
 		}
 
@@ -4181,7 +4179,11 @@ void adventure_loop(KBgame *game) {
 				walk = 1;
 			} else {
 				walk = 0;
-				game->steps_left -= 1;
+				if (game->time_stop) {
+					game->time_stop -= 1;
+				} else {
+					game->steps_left -= 1;
+				}
 				/* Hitting shore */
 				if (!IS_WATER(m)) {
 					/* Leave ship */
@@ -4197,17 +4199,12 @@ void adventure_loop(KBgame *game) {
 
 		if (game->steps_left <= 0) {
 			if (end_day(game)) {
-				end_week(game);
 				weekend = 1;
 			}
 		}
 		if (game->days_left == 0) {
 			lose_game(game);
 			done = 1;
-		}
-		if (weekend == 1) {
-			//show_weekend();
-			weekend = 0;
 		}
 
 		if (redraw) {
@@ -4216,12 +4213,16 @@ void adventure_loop(KBgame *game) {
 
 			draw_sidebar(game, tick);
 
-			/* Status bar */
-			KB_TopBox(0, " Options / Controls / Days Left:%d ", game->days_left);
+			draw_statusbar(game);
 
 	    	KB_flip(sys);
 			redraw = 0;
 		}
+
+		while (weekend-- > 0) {
+			end_of_week(game, weekend);
+		}
+
 	}
 #undef KEY_ACT
 	free(snd_walk);
