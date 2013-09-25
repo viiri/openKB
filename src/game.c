@@ -1473,6 +1473,78 @@ void view_army(KBgame *game) {
 
 }
 
+KBgamestate numeric_choices = {
+	{
+		{	{ 0 }, SDLK_1, 0, 0      	},
+		{	{ 0 }, SDLK_2, 0, 0      	},
+		{	{ 0 }, SDLK_3, 0, 0      	},
+		{	{ 0 }, SDLK_4, 0, 0      	},
+		{	{ 0 }, SDLK_5, 0, 0      	},
+		{	{ 0 }, SDLK_6, 0, 0      	},
+		{	{ 0 }, SDLK_7, 0, 0      	},
+		{	{ 0 }, SDLK_8, 0, 0      	},
+		{	{ 0 }, SDLK_9, 0, 0      	},
+
+		{	{ 60 }, SDLK_SYN, 0, KFLAG_TIMER },
+		0,
+	},
+	0
+};
+
+int navigate_continent(KBgame *game) {
+	int i, max = 0;
+
+	SDL_Rect *fs = &sys->font_size;
+
+	SDL_Rect *text = KB_BottomBox("\n Go to which continent?", "", 0);
+
+	KB_iloc(text->x, text->y + fs->h / 2 + fs->h / 8);
+	//KB_ilh(fs->h + fs->h / 8);
+
+	for (i = 0; i < 4; i++) {
+		if (!game->continent_found[i]) continue;
+		//KB_imenu(&five_choices, i, 16);
+		KB_icurs(4, i + 2);
+		KB_iprintf("%d. %s\n", i + 1, continent_names[i]); 
+	}
+	max = i;
+
+	const char *twirl = "\x1D" "\x05" "\x1F" "\x1C" ; /* stands for: | / - \ */  
+	byte twirl_pos = 0;
+
+	int done = 0;
+	int redraw = 1;
+	while (!done) {
+
+		int key = KB_event(&numeric_choices);
+
+		if (redraw) {
+			KB_iloc(text->x + fs->w * 24, text->y + fs->h / 2 + fs->h / 8);
+			KB_iprintf("%c", twirl[twirl_pos]);
+
+			KB_flip(sys);
+			redraw = 0;
+		}
+
+		if (key && key <= max) {
+			if (game->continent_found[key - 1]) {
+				sail_to(game, key - 1);
+				spend_week(game);
+				done = 1;
+			}
+		}
+
+		if (key == 10) {
+			twirl_pos++;
+			if (twirl_pos > 3) twirl_pos = 0;
+			redraw = 1;
+		}
+
+		if (key == 0xFF) break;
+	}
+	
+	return done;
+}
 
 void dismiss_army(KBgame *game) {
 
@@ -1493,7 +1565,7 @@ void dismiss_army(KBgame *game) {
 	}
 	max = i;
 
-	const char *twirl = "\x1D" "\x05" "\x1F" "\x1C" ; /* stands for: | / - \ */  
+	const char *twirl = "\x1D" "\x05" "\x1F" "\x1C" ; /* stands for: | / - \ */
 	byte twirl_pos = 0;
 
 	int done = 0;
@@ -4487,6 +4559,11 @@ void adventure_loop(KBgame *game) {
 
 		if (key == KEY_ACT(VIEW_CHAR)) {
 			view_character(game);
+		}
+
+		if (key == KEY_ACT(NEW_CONTINENT)) {
+			weekend = navigate_continent(game);
+			redraw = 1;
 		}
 
 		if (key == KEY_ACT(END_WEEK)) {
