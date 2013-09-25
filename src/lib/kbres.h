@@ -228,6 +228,8 @@ enum {
 
 /* Tile indexes from DOS version. */
 #define TILE_GRASS      	0
+#define TILE_BRIDGE_H   	8
+#define TILE_BRIDGE_V   	9
 #define TILE_DEEP_WATER 	32
 #define TILE_CASTLE     	0x85
 #define TILE_TOWN       	0x8A
@@ -245,6 +247,7 @@ enum {
 #define IS_GRASS(M) 	((M) < 2 || (M) == 0x80)
 #define IS_CASTLE(M)	((M) >= 0x02 && (M) <= 0x07)
 #define IS_MAPOBJECT(M)	((M) >= 0x0a && (M) <= 0x13)
+#define IS_BRIDGE(M) 	((M) >= 0x08 && (M) <= 0x09)
 #define IS_WATER(M) 	((M) >= 0x14 && (M) <= 0x20)
 #define IS_TREE(M)  	((M) >= 0x21 && (M) <= 0x2D)
 #define IS_DESERT(M)	((M) >= 0x2e && (M) <= 0x3a)
