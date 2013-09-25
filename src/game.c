@@ -2787,7 +2787,7 @@ void take_artifact(KBgame *game, byte num) {
 
 void hit_unit(KBcombat *war, int a_side, int a_id, int t_side, int t_id) {
 	int kills;
-	KBunit *u = &war->units[a_side][t_id];
+	KBunit *u = &war->units[a_side][a_id];
 	KBunit *t = &war->units[t_side][t_id];
 
 	u->turn_count = u->count;
