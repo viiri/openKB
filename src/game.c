@@ -2863,7 +2863,7 @@ int build_bridge(KBgame *game) {
 	KB_reset(NULL);
 
 	byte tile = TILE_BRIDGE_H;
-	if (dj) tile = TILE_BRIDGE_V; 
+	if (dj) tile = TILE_BRIDGE_V;
 
 	int built = 0;
 	int i;
@@ -4971,6 +4971,10 @@ void adventure_loop(KBgame *game) {
 				else
 				if (IS_DESERT(m)) {
 					game->steps_left = 0;
+				}
+				else
+				if (IS_BRIDGE(m)) {
+					/* Avoid next IF */
 				}
 				else
 				if (!IS_INTERACTIVE(m))	{
