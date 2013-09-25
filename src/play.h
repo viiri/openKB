@@ -51,6 +51,8 @@ extern int player_score(KBgame *game);
 
 /** Player actions **/
 
+extern void sail_to(KBgame *game, byte continent);
+
 extern int buy_troop(KBgame *game, byte troop_id, word number);
 
 extern void dismiss_troop(KBgame *game, byte slot);
@@ -59,11 +61,13 @@ extern void dismiss_troop(KBgame *game, byte slot);
 
 extern int end_day(KBgame *game);
 
-extern void end_week(KBgame *game);
+extern byte end_week(KBgame *game, dword *spent);
 
 extern int spend_days(KBgame *game, word days);
 
 extern void spend_week(KBgame *game);
+
+extern void spend_gold(KBgame *game, word amount);
 
 extern void fullfill_contract(KBgame *game, byte villain_id);
 
@@ -72,6 +76,7 @@ extern void temp_death(KBgame *game);
 /** Spell effects **/
 extern void raise_control(KBgame *game);
 extern int clone_troop(KBgame *game, KBcombat *war, int unit_id);
+extern int instant_troop(KBgame *game, byte *troop_id);
 
 /** Combat **/
 extern int test_defeat(KBgame *game, KBcombat *war);
@@ -88,6 +93,7 @@ extern int next_unit(KBcombat *war);
 extern int unit_touching(KBcombat *war, int side, int id, int other_id);
 extern int unit_surrounded(KBcombat *war, int side, int id);
 extern int unit_ranged_shot(KBcombat *war, int side, int id, int other_side, int other_id);
+extern int unit_hit_unit(KBcombat *war, int side, int id, int other_side, int other_id);
 extern void unit_relocate(KBcombat *war, int side, int id, int nx, int ny);
 
 #endif
