@@ -60,13 +60,13 @@ void SDL_BlitXBPP(const char *src, SDL_Surface *dest, SDL_Rect *dstrect, int bpp
 #endif
 			Uint8 *p = 
 
-			(Uint8*) dest->pixels + (y + dstrect->y) * dest->w + (x + dstrect->x);
+			(Uint8*) dest->pixels + (y + dstrect->y) * dest->pitch + (x + dstrect->x);
 
 			*p = ((test & (base_mask << (j * bpp))) >> (j * bpp));
 
 			if (++x >= dstrect->w) { x = 0; y++; }
 		}
-	}	
+	}
 }
 
 void SDL_BlitMASK(const char *src, SDL_Surface *dest, SDL_Rect *dstrect)
