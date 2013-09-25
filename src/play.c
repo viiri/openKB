@@ -145,6 +145,7 @@ int army_leadership(KBgame *game, byte troop_id) {
 /* Calculate and return morale for troop */
 byte troop_morale(KBgame *game, byte slot) {
 	int j;
+	byte morale_cnv[3] = { MORALE_LOW, MORALE_NORMAL, MORALE_HIGH };
 	byte morale = MORALE_HIGH;
 	//if (game->player_numbers[i] == 0) break;
 	byte troop_id = game->player_troops[slot];
@@ -154,8 +155,8 @@ byte troop_morale(KBgame *game, byte slot) {
 		//if (i == j) continue;
 		byte ctroop_id = game->player_troops[j];
 		byte groupJ = troops[ ctroop_id ].morale_group;
-		byte nm = morale_chart[groupI][groupJ];
-		if (nm < morale) morale = nm;
+		byte nm = morale_chart[groupJ][groupI];
+		if (morale_cnv[nm] < morale_cnv[morale]) morale = nm;
 	}
 	return morale;
 }
