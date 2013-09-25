@@ -950,9 +950,12 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 				EGA_WHITE,
 				EGA_DRED,
 			};
-			static Uint32 colors[256];
-
+			Uint32 *colors;
 			int tile;
+
+			colors = malloc(sizeof(Uint32) * 256);
+			if (colors == NULL) return NULL;
+
 			for (tile = 0; tile < 256; tile++) {
 
 				if ( IS_GRASS(tile) ) tile_type = GRASS;
@@ -966,7 +969,7 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 
 				colors[tile] = ega_pallete_rgb[ega_minimap_index[tile_type]];
 			}
-			return &colors;
+			return colors;
 		}
 		break;
 		case COL_TEXT:
