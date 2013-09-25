@@ -928,6 +928,25 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 			middle_name = DOS_location_names[sub_id];
 		}
 		break;
+		case COL_DWELLING:
+		{
+			byte ega_dwelling_index[5] = {
+				EGA_GREY, // plains
+				EGA_DGREEN,// forest
+				EGA_BLUE, // hill/cave
+				EGA_DRED,  // dungeon
+				EGA_MAGENTA, // castle
+			};
+			Uint32 *colors;
+			int i;
+			colors = malloc(sizeof(Uint32) * COLORS_MAX);
+			if (colors == NULL) return NULL;
+			for (i = 0; i < 5; i++) {
+				colors[i] = ega_pallete_rgb[ega_dwelling_index[i]];
+			}
+			return colors;
+		}
+		break;
 		case COL_MINIMAP:
 		{
 			enum {
