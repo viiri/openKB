@@ -257,6 +257,35 @@ char *castle_names[MAX_CASTLES + 1] = {
 	"of King Maximus",
 };
 
+byte town_inversion[MAX_TOWNS] = {
+	/* Anomaly */       	0x03, //(00)
+	/* Bayside */       	0x0E, //(01)
+	/* Centrapf */      	0x07, //(02)
+	/* Dark Corner */   	0x10, //(03)
+	/* Elan's Landing */	0x0C, //(04)
+	/* Fjord */         	0x16, //(05)
+	/* Grimwold */      	0x12, //(06)
+	/* Hunterville */   	0x15, //(07)
+	/* Isla Vista */    	0x11, //(08)
+	/* Japper */        	0x13, //(09)
+	/* King's Haven */  	0x0D, //(0A)
+	/* Lakeview */      	0x05, //(0B)
+	/* Midland */       	0x09, //(0C)
+	/* Nyre */          	0x0F, //(0D)
+	/* Overthere */     	0x0B, //(0E)
+	/* Path's End */    	0x02, //(0F)
+	/* Quiln Point */   	0x08, //(10)
+	/* Riverton */      	0x00, //(11)
+	/* Simpleton */     	0x06, //(12)
+	/* Topshore */      	0x04, //(13)
+	/* Underfoot */     	0x01, //(14)
+	/* Vengeance */     	0x14, //(15)
+	/* Woods End */     	0x18, //(16)
+	/* Xoctan */        	0x0A, //(17)
+	/* Yakonia */       	0x17, //(18)
+	/* Zaezoizu */      	0x19, //(19)
+};
+
 char *spell_names[MAX_SPELLS] = {
 	"Clone",    	//00
 	"Teleport", 	//01
@@ -475,6 +504,35 @@ byte town_coords[MAX_CASTLES][3] = {
 	{ 2, 49,8   },
 	{ 1, 3,8    },
 	{ 3, 58,48  },
+};
+
+byte towngate_coords[MAX_CASTLES][3] = {
+	{ 0, 0x1d,0x0b },
+	{ 1, 0x39,0x04 },
+	{ 0, 0x26,0x31 },
+	{ 1, 0x23,0x17 },
+	{ 2, 0x05,0x31 },
+	{ 0, 0x10,0x2c },
+	{ 2, 0x0c,0x3c },
+	{ 2, 0x09,0x26 },
+	{ 0, 0x0d,0x3c },
+	{ 1, 0x39,0x21 },
+	{ 0, 0x33,0x1d },
+	{ 2, 0x39,0x38 },
+	{ 1, 0x03,0x24 },
+	{ 0, 0x10,0x15 },
+	{ 0, 0x28,0x3a },
+	{ 0, 0x32,0x0e },
+	{ 1, 0x3a,0x3b },
+	{ 0, 0x38,0x05 },
+	{ 3, 0x09,0x3b },
+	{ 2, 0x0d,0x08 },
+	{ 3, 0x06,0x03 },
+	{ 0, 0x0c,0x04 },
+	{ 0, 0x2f,0x23 },
+	{ 2, 0x32,0x08 },
+	{ 1, 0x03,0x09 },
+	{ 3, 0x3a,0x2f },
 };
 
 byte boat_coords[MAX_CASTLES][3] = {
