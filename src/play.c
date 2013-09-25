@@ -816,3 +816,80 @@ void unit_relocate(KBcombat *war, int side, int id, int nx, int ny) {
 	u->x = nx;
 	u->y = ny;
 }
+
+/** Spell effects **/
+
+void time_stop(KBgame *game) {
+	game->time_stop += game->spell_power * 10;
+}
+
+void raise_control(KBgame *game) {
+	game->leadership += game->spell_power * 100;
+}
+
+int magic_damage(KBgame *game, KBcombat *war, int side, int id, word base_damage, byte filter) {
+
+	KBunit *u = &war->units[side][id];
+	word damage = base_damage * game->spell_power;
+
+	/* Must be an undead, but is not */
+	if (filter && !(troops[u->troop_id].abilities & ABIL_UNDEAD)) {
+		return -1;
+	}
+	/* Immune to magic */
+	if (troops[u->troop_id].abilities & ABIL_IMMUNE) {
+		return -1;
+	}
+
+	int kills = deal_damage(war, side, id, 0, 0, 0, 1, damage, 1);
+
+	return kills;
+}
+
+int clone_troop(KBgame *game, KBcombat *war, int unit_id) {
+	/* #Clones = SpellPower * 10 + Injury) / Troop.HP, with damage remainder */
+	byte hp = troops[war->units[0][unit_id].troop_id].hit_points;
+	dword damage = game->spell_power * 10 + war->units[0][unit_id].injury;
+
+	word clones = units_killed(damage, hp);
+	word injury = damage_remainder(damage, hp);
+
+	war->units[0][unit_id].count += clones;
+	war->units[0][unit_id].max_count += clones;
+	war->units[0][unit_id].injury = injury;
+	return (int)clones;
+}
+
+int instant_troop(KBgame *game, byte *troop_id) {
+	int i, slot = -1;
+	word number;
+	for (i = 0; i < 5; i++) {
+		if (game->player_troops[i] == troop_id
+		|| game->player_numbers[i] == 0) {
+			slot = i;
+			break;
+		}
+	}
+
+	if (slot == -1) return 0;
+
+	number = (game->spell_power + 1) * instant_army_multiplier[game->rank];
+
+	game->player_troops[slot] = troop_id;
+	game->player_numbers[slot] += number;
+
+	return (int)number;
+}
+
+int find_villain(KBgame *game) {
+	int i;
+	for (i = 0; i < MAX_CASTLES; i++) {
+
+		if ((game->castle_owner[i] & 0x3f) == game->last_contract) {
+			game->castle_owner[i] |= 0x40; /* Known */
+			return i;
+		}
+
+	}
+	return -1;
+}

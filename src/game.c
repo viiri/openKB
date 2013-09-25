@@ -2841,29 +2841,83 @@ KBgamestate cross_choice = {
 
 int build_bridge(KBgame *game) {
 
-	KB_TopBox(0, "Build bridge in which direction <>ud");
+	draw_map(game);
+	draw_player(game);
+	draw_sidebar(game);
 
+	KB_TopBox(0, "Build bridge in which direction " "\x1A" "\x18" "\x19" "\x1B");
 	KB_flip(sys);
 
-	int key = KB_event(&cross_choice);
-	
-	if (key == 0xFF) return 1;
+	int done = 0;
+	int dj = 0, di = 0;
+	while (!done) {
+		int key = KB_event(&cross_choice);//left,up,down,right
+		if (key == 0xFF) return 1;
+		if (key == 1) di = -1;
+		if (key == 2) dj = -1;
+		if (key == 3) dj = 1;
+		if (key == 4) di = 1;
+		if (key) done = key;
+	}
 
-	KB_TopBox(0, "Not a suitable location for a bridge");
-	KB_flip(sys);
-	KB_Pause();
+	KB_reset(NULL);
 
-	KB_TopBox(0, "What a waste of a good spell!");
-	KB_flip(sys);
-	KB_Pause();
-	
+	byte tile = TILE_BRIDGE_H;
+	if (dj) tile = TILE_BRIDGE_V; 
+
+	int built = 0;
+	int i;
+	for (i = 1; i < 3; i++) {
+		int x, y;
+		
+		x = game->x + i * di;
+		y = game->y - i * dj;
+		
+		//if (x < 0) break;
+		//if (y < 0) break;
+		//if (x >= 64) break;
+		//if (y >= 64) break;
+
+		byte m = game->map[game->continent][y][x];
+
+		if (!IS_WATER(m)) break;
+
+		game->map[game->continent][y][x] = tile;
+
+		built++;
+	}
+
+	if (!built) {
+		KB_TopBox(0, "Not a suitable location for a bridge");
+		KB_flip(sys);
+		KB_Pause();
+
+		KB_TopBox(0, "What a waste of a good spell!");
+		KB_flip(sys);
+		KB_Pause();
+	}
 	return 1;
 }
 
 int instant_army(KBgame *game) {
+	char msg[128];
+	byte troop_id;
 
-	KB_BottomBox("A few Sprites", "have joined to your army.", MSG_PAUSE);
+	int spawned = instant_troop(game, &troop_id);
 
+	if (!spawned) {
+		KB_BottomBox(
+			"\n\n\n"
+			"   There are no open slots\n"
+			"  or any of this army type!", "", MSG_PAUSE);
+		return 1;
+	}
+
+	sprintf(msg,
+		"%s %s"	/* A few Sprites */
+		"\n\n\n"
+		"have joined to your army.", number_name(spawned), troops[troop_id].name);
+	KB_BottomBox(msg, "", MSG_PAUSE);
 	return 0;
 }
 
@@ -2882,15 +2936,67 @@ int clone_army(KBgame *game, KBcombat *war) {
 
 	if (ok) {
 
-		unit_id = war->umap[y][x];
+		unit_id = war->umap[y][x] - 1;
 
 		clones = clone_troop(game, war, unit_id);
+
+		u = &war->units[war->side][unit_id];
 
 		combat_log("%d %s cloned", clones, troops[u->troop_id].name);
 
 	}
 
 }
+
+int freeze_army(KBgame *game, KBcombat *war) {
+	
+	int ok, x, y, side, unit_id;
+
+	KBunit *u = &war->units[war->side][war->unit_id];
+
+	KB_TopBox(MSG_CENTERED, "Select enemy army to Freeze");
+
+	x = u->x;
+	y = u->y;
+
+	ok = pick_target(war, &x, &y, 3);
+
+}
+
+int resurrect_army(KBgame *game, KBcombat *war) {
+
+	int ok, x, y, side, unit_id;
+
+	KBunit *u = &war->units[war->side][war->unit_id];
+
+	KB_TopBox(MSG_CENTERED, "Select army to Resurrect");
+
+	x = u->x;
+	y = u->y;
+
+	ok = pick_target(war, &x, &y, 3);
+
+}
+
+int damage_army(KBgame *game, KBcombat *war, word base_damage, byte spell_id) {
+
+	char msg[128];
+
+	int ok, x, y, side, unit_id;
+
+	KBunit *u = &war->units[war->side][war->unit_id];
+
+	sprintf(msg, "Select enemy army to %s", spell_names[spell_id]);
+
+	KB_TopBox(MSG_CENTERED, msg);
+
+	x = u->x;
+	y = u->y;
+
+	ok = pick_target(war, &x, &y, 4);
+
+	return ok;
+} 
 
 int teleport_army(KBgame *game, KBcombat *war) {
 
@@ -2925,6 +3031,132 @@ int teleport_army(KBgame *game, KBcombat *war) {
 	return ok;
 }
 
+/* mode 0 for castle, mode 1 for town */
+int select_gate(KBgame *game, int mode) {
+
+	SDL_Rect *fs = &sys->font_size;
+
+	const char *twirl = "\x1D" "\x05" "\x1F" "\x1C" ; /* stands for: | / - \ */
+	byte twirl_pos = 0;
+
+	SDL_Rect *text;
+
+	int i;
+	
+	KB_TopBox(MSG_CENTERED, "Press 'ESC' to exit");
+
+ 	text = KB_BottomBox("Towns you have been to:", "", 0);	
+
+	KB_iloc(text->x, text->y + fs->h * 2  );
+
+	KB_iprint(" ");
+	KB_ilh(fs->h + fs->h/4);
+	for (i = 0; i < MAX_CASTLES; i++) {
+		word x, y;
+		KB_getpos(sys, &x, &y);
+
+		if (x / fs->w >= 15*2) {
+			KB_iprint ("\n ");
+		}
+
+		if (mode == 0) {
+			if (game->castle_visited[i] == 0) {
+				KB_iprint("  ");
+				continue;
+			}
+		}
+		else {
+			if (game->town_visited[town_inversion[i]] == 0) {
+				KB_iprint("  ");
+				continue; 
+			}
+		}
+
+		KB_iprintf("%c", 'A' + i);
+		if (i < MAX_CASTLES - 1)
+			KB_iprint(",");
+	}
+
+	KB_iloc(text->x, text->y + fs->h * 6 - fs->h / 4 - fs->h / 8);
+	KB_iprint("Revisit which town? ");
+
+	word gate_x, gate_y, gate_continent;
+
+	word twirl_x, twirl_y;
+
+	KB_getpos(sys, &twirl_x, &twirl_y);
+
+	int done = 0;
+	int redraw = 1;
+	while (!done) {
+
+		int key = KB_event(&alphabet_letter);
+
+		if (key == 0xFF) done = 1;
+
+		if (key == MAX_CASTLES + 1) {
+			twirl_pos++;
+			if (twirl_pos > 3) twirl_pos = 0;
+			redraw = 1;
+		}
+		/* Selected a destination */
+		else if (key && key <= MAX_CASTLES) {
+			byte index;
+			if (mode == 0) {
+				/* Castle mode */
+				index = key - 1;
+				printf("Going to castle: %d, %s\n", index, castle_names[index]);
+				if (game->castle_visited[index]) {
+
+					gate_continent = castle_coords[index][0];
+					gate_x = castle_coords[index][1];
+					gate_y = castle_coords[index][2] - 1;
+
+					done = 2;
+				}
+			} else { 
+				/* Town mode */
+				index = town_inversion[key - 1];
+				printf("Going to town: %d, %s\n", index, town_names[index]);
+				if (game->town_visited[index]) {
+
+					gate_continent = towngate_coords[index][0];
+					gate_x = towngate_coords[index][1];
+					gate_y = towngate_coords[index][2];
+
+					done = 2;
+				}
+			}
+		}
+
+		if (redraw) {
+			redraw = 0;
+
+			KB_iloc(twirl_x, twirl_y);
+			KB_iprintf("%c", twirl[twirl_pos]);
+
+			KB_flip(sys);
+		}
+	}
+	/* Perform actual teleport */
+	if (done == 2) {
+
+		if (game->mount == KBMOUNT_SAIL) { /* On boat */
+			/* Vacate boat */
+			game->mount = KBMOUNT_RIDE;
+			game->boat_x = game->x;
+			game->boat_y = game->y;
+		}
+		
+		game->continent = gate_continent;
+
+		game->x = gate_x;
+		game->y = gate_y;
+
+		game->last_x = gate_x;
+		game->last_y = gate_y;
+	}
+}
 
 /* Pass "combat" pointer for combat spells, NULL for adventure spells */
 int choose_spell(KBgame *game, KBcombat *combat) {
@@ -3028,32 +3260,35 @@ int choose_spell(KBgame *game, KBcombat *combat) {
 					case 1: teleport_army(game, combat);break;
 					case 2:
 						//fireball
-					break;		
+						damage_army(game, combat, 25, spell_id);
+					break;
 					case 3:
 						//lightning
+						damage_army(game, combat, 10, spell_id);
 					break;
 					case 4:
 						//freeze
+						freeze_army(game, combat);
 					break;
 					case 5:
 						//resurrect
+						resurrect_army(game, combat);
 					break;
 					case 6:
 						//turn undead
+						damage_army(game, combat, 50, spell_id);
 					break;
 					case 7:	build_bridge(game);	break;
-					case 8:
-						//time_stop(game)
-					break;
+					case 8: time_stop(game);	break;
 					case 9:
-						//find vilain
+						/* Find vilain */
+						find_villain(game);
+						draw_map(game, 0);
+						draw_sidebar(game, 0);
+						view_contract(game);
 					break;
-					case 10:
-						//castle gate
-					break;
-					case 11:
-						//town gate
-					break;
+					case 10: select_gate(game, 0);	break; /* Castle gate */
+					case 11: select_gate(game, 1);	break; /* Town gate */
 					case 12: instant_army(game);	break;
 					case 13: raise_control(game);	break;
 				}
@@ -4652,6 +4887,7 @@ void adventure_loop(KBgame *game) {
 
 		if (key == KEY_ACT(USE_MAGIC)) {
 			choose_spell(game, NULL);
+			redraw = 1;
 		}
 
 		if (key == KEY_ACT(VIEW_CHAR)) {
@@ -4813,7 +5049,7 @@ void adventure_loop(KBgame *game) {
 					game->steps_left -= 1;
 				}
 				/* Hitting shore */
-				if (!IS_WATER(m)) {
+				if (!IS_WATER(m) && !IS_BRIDGE(m)) {
 					/* Leave ship */
 					if (game->mount == KBMOUNT_SAIL) {
 						game->mount = KBMOUNT_RIDE;
