@@ -20,6 +20,10 @@
 #include "bounty.h"
 #include "lib/kbstd.h"
 
+void repopulate_castle(KBgame *game, int castle_id) {
+
+}
+
 /* Actual KBgame* allocator */
 KBgame *spawn_game(char *name, int pclass, int difficulty) {
 
@@ -84,6 +88,14 @@ void spend_week(KBgame *game) {
 	word end_week_days = WEEK_DAYS - week_days;
 
 	spend_days(game, end_week_days);
+}
+
+/* Spend some ammount of gold (and watch for overflows) */
+void spend_gold(KBgame *game, word amount) {
+	if (amount <= game->gold)
+		game->gold -= amount;
+	else
+		game->gold = 0;
 }
 
 /* Close contract on villain */
@@ -168,6 +180,18 @@ int has_power(KBgame *game, byte power) {
 	return 0;
 }
 
+/* Return cost of boat rental, in gold */
+word boat_cost(KBgame *game) {
+	if (has_power(game, POWER_CHEAPER_BOAT_RENTAL)) return 100;
+	return 500;
+}
+
+/* Return 1 if player has boat, 0 if not */
+int player_has_boat(KBgame *game) {
+	if (game->boat == 0xFF) return 0;
+	return 1;
+}
+
 /* Return total number of troops in player army */
 int player_army(KBgame *game) {
 	int followers = 0;
@@ -229,6 +253,19 @@ int player_score(KBgame *game) {
 	else
 		score *= difficulty_modifier[game->difficulty];
 	return score;
+}
+
+void sail_to(KBgame *game, byte continent) {
+	game->continent = continent;
+	game->x = continent_entry[game->continent][0];
+	game->y = continent_entry[game->continent][1];
+
+	game->last_x = game->x;
+	game->last_y = game->y;
+
+	game->boat = game->continent;
+	game->boat_x = game->x;
+	game->boat_y = game->y;
 }
 
 int buy_troop(KBgame *game, byte troop_id, word number) {
