@@ -577,7 +577,7 @@ int unit_touching(KBcombat *war, int side, int id, int other_id) {
 	if (diff_x < 0) diff_x = -diff_x;
 	if (diff_y < 0) diff_y = -diff_y;
 	/* Too far */
-	if (diff_y > 2 || diff_x > 2) return 0; 
+	if (diff_y > 1 || diff_x > 1) return 0;
 
 	return 1;
 }
