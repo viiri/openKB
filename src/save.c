@@ -18,7 +18,7 @@
  *  along with openkb.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "bounty.h"
-#include "malloc.h"
+#include "lib/kbstd.h" /* for malloc */
 
 #define DAT_SIZE 20421
 

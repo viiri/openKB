@@ -24,7 +24,7 @@
 
 #include "kbres.h"
 
-#include "malloc.h"
+#include "kbstd.h" /* for malloc */
 
 #define MAX_IMG_FILES	36
 #define HEADER_SIZE_IMG (MAX_IMG_FILES * 4 + 2)
