@@ -153,7 +153,7 @@ byte imgGroup_detect_bpp(struct imgGroup* grp) {
 		next_offset = grp->head.files[1].offset - 4;
 	else {
 		KB_fseek(file, 0, SEEK_END);
-		next_offset = KB_ftell(file);
+		next_offset = KB_ftell(file) - sizeof(struct imgHeader);
 	}
 
 	if (mask_pos &&	(next_offset - pixel_area / 8 == mask_pos)) 
@@ -197,7 +197,7 @@ void* KB_loaddirIMG(const char *filename, KB_DIR *dirs, int *max)
 	int n;
 
 	KB_File *f = KB_fopen_in( filename, "rb", dirs );
-
+	//f->type = KBDTYPE_GRPIMG;
 	if (!f) { KB_errlog("Can't open %s\n", filename); return NULL; }
 
 	grp = imgGroup_load(f);
@@ -523,6 +523,7 @@ SDL_Surface* DOS_LoadIMGROW_RW(SDL_RWops *file, word first, word frames)
 		/* Number of files */
 		head->num_files = READ_WORD(p);
 		if (head->num_files > MAX_IMG_FILES) return NULL;
+		if (head->num_files == 0) return NULL;
 
 		/* Files entries */
 		for (i = 0; i < head->num_files; i++ ) {
@@ -556,7 +557,7 @@ SDL_Surface* DOS_LoadIMGROW_RW(SDL_RWops *file, word first, word frames)
 
 		/* Max width / Max height */
 		width += grp->cache.files[i].w;
-		if (height < grp->cache.files[i].w) 
+		if (height < grp->cache.files[i].h)
 			height = grp->cache.files[i].h;
 	}
 
@@ -571,6 +572,7 @@ SDL_Surface* DOS_LoadIMGROW_RW(SDL_RWops *file, word first, word frames)
 		else {
 			SDL_RWseek(file, 0, SEEK_END);
 			next_offset = SDL_RWtell(file);
+			next_offset -= sizeof(struct imgHeader);
 		}
 
 		if (mask_pos &&	(next_offset - pixel_area / 8 == mask_pos)) 
