@@ -140,6 +140,62 @@ KBgamestate savegame_selection = {
 	0
 };
 
+KBgamestate settings_selection = {
+	{
+		{	_AREA(0, 0, 1024, 768), 0xFF, 0, KFLAG_ANYKEY },
+		{	_NON, SDLK_UP, 0, 0 	},
+		{	_NON, SDLK_DOWN, 0, 0 	},
+		{	_NON, SDLK_LEFT, 0, 0	},
+		{	_NON, SDLK_RIGHT, 0, 0 	},
+		{	_NON, SDLK_RETURN, 0, 0	},
+		{	_AREA(0, 0, 0, 0), SDLK_1, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_2, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_3, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_4, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_5, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_6, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_7, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_8, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_9, 0, 0		},
+		0,
+	},
+	0
+};
+
+KBgamestate alphabet_letter = {
+	{
+		{	_AREA(0, 0, 0, 0), SDLK_a, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_b, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_c, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_d, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_e, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_f, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_g, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_h, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_i, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_j, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_k, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_l, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_m, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_n, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_o, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_p, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_q, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_r, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_s, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_t, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_u, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_v, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_w, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_x, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_y, 0, 0		},
+		{	_AREA(0, 0, 0, 0), SDLK_z, 0, 0		},
+		{	_TIME(SHORT_WAIT), SDLK_SYN, 0, KFLAG_TIMER },
+		0,
+	},
+	0
+};
+
 #undef _NON
 #undef _TIME
 #undef _AREA
@@ -322,6 +378,50 @@ int KB_event(KBgamestate *state) {
 	}
 
 	return eve;
+}
+
+char KB_KeyLabelChar(int key) {
+	if (key >= SDLK_0 && key <= SDLK_9) {
+		key = '0' + (key - SDLK_0);
+	}
+	else if (key >= SDLK_a && key <= SDLK_z) {
+		key = 'A' + (key - SDLK_a);
+	}
+	return key;
+}
+
+char* KB_KeyLabel(int key1, int key2) {
+	static char buf[32];
+
+	char val1[8];
+	char val2[8];
+
+	if (key2 != -1) {
+		int tmp = key2;
+		key2 = key1;
+		key1 = tmp;
+	}
+
+	sprintf(val1, "  %c", KB_KeyLabelChar(key1));
+	sprintf(val2, "%c", KB_KeyLabelChar(key2));
+
+	if (key1 == SDLK_SPACE) sprintf(val1, "  SPC");
+	if (key1 == SDLK_HOME) sprintf(val1, "HOME");
+	if (key1 == SDLK_END) sprintf(val1, "END ");
+	if (key1 == SDLK_PAGEDOWN) sprintf(val1, "PGDN");
+	if (key1 == SDLK_PAGEUP) sprintf(val1, "PGUP");
+	if (key1 == SDLK_UP) sprintf(val1, "  \x18 ");
+	if (key1 == SDLK_DOWN) sprintf(val1, "  \x19 ");
+	if (key1 == SDLK_LEFT) sprintf(val1, "  \x1A ");
+	if (key1 == SDLK_RIGHT) sprintf(val1, "  \x1B ");
+
+	if (key2 != -1) {
+		sprintf(buf, "%s or %s", val1, val2);
+	} else {
+		sprintf(buf, "%s", val1);
+	}
+
+	return &buf[0];
 }
 
 void SDL_TextRect(SDL_Surface *dest, SDL_Rect *r, Uint32 fore, Uint32 back, int top) {

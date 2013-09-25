@@ -158,12 +158,15 @@ extern KBgamestate enter_string;
 extern KBgamestate character_selection;
 extern KBgamestate module_selection;
 extern KBgamestate savegame_selection;
+extern KBgamestate settings_selection;
+extern KBgamestate alphabet_letter;
 
 /* Gamestate handling */
 extern void KB_imenu(KBgamestate *state, int id, int cols);
 extern int KB_reset(KBgamestate *state);
 extern int KB_event(KBgamestate *state);
 /* Utilities */
+extern char* KB_KeyLabel(int key1, int key2);
 extern void SDL_TextRect(SDL_Surface *dest, SDL_Rect *r, Uint32 fore, Uint32 back, int top);
 inline void KB_Wait();
 inline void KB_Pause();

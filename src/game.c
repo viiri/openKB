@@ -3081,7 +3081,7 @@ KBgamestate target_state = {
 
 
 #define COMBAT_ARROW_KEYS 16
-#define COMBAT_ACTION_KEYS 9
+#define COMBAT_ACTION_KEYS 10
 
 #define COMBAT_SYN_EVENT (COMBAT_ACTION_KEYS + COMBAT_ARROW_KEYS + 1)
 
@@ -3094,6 +3094,7 @@ KBgamestate target_state = {
 #define COMBAT_VIEW_CHAR    	6
 #define COMBAT_WAIT         	7
 #define COMBAT_PASS         	8
+#define COMBAT_VIEW_OPTIONS 	9
 
 KBgamestate combat_state = {
 	{
@@ -3122,7 +3123,8 @@ KBgamestate combat_state = {
 		{	{ 0 }, SDLK_u, 0, 0      	},
 		{	{ 0 }, SDLK_v, 0, 0      	},
 		{	{ 0 }, SDLK_w, 0, 0      	},
-		{	{ 0 }, SDLK_SPACE, 0, 0      	},
+		{	{ 0 }, SDLK_SPACE, 0, 0 	},
+		{	{ 0 }, SDLK_o, 0, 0      	},
 
 		{	{ SOFT_WAIT }, SDLK_SYN, 0, KFLAG_TIMER },
 		0,
@@ -3196,6 +3198,421 @@ KBgamestate adventure_state = {
 	},
 	0
 };
+
+void reset_adventure_hotspots() {
+
+}
+void reset_adventure_menu_hotspots() {
+
+}
+void reset_combat_hotspots() {
+
+}
+void reset_combat_menu_hotspots() {
+
+}
+
+int combat_options_menu(KBgame *game) {
+
+	char* item_names[] = {
+		"Move Down",
+		"Move Left",
+		"Move Right",
+		"Move Up",
+		"Down Left",
+		"Down Right",
+		"Up Left",
+		"Up Right",
+		
+		"View Army",
+		"Controls",
+		"Fly",
+		"Give Up",
+		"Shoot",
+		"Use Magic",
+		"View Char",
+		"Wait",
+		"Pass",
+		"\0",
+	};
+
+	int key = 0;
+	int done = 0;
+	int redraw = 1;
+
+	KBgamestate *st = &combat_state;
+
+	KB_icolor(local.status_colors + COLOR_SELECTION);
+	KB_iloc(local.status.x, local.status.y + sys->font_size.h / 8);
+	KB_iprintf(" Options ");
+
+	KB_reset(&combat_state);
+
+	while (!done) {
+		if (redraw == 1) {
+			redraw = 0;
+
+			SDL_Rect border;
+			SDL_Rect *fs = &sys->font_size;
+			SDL_Rect *bar_frame = local.frames[FRAME_MIDDLE];
+			SDL_Rect *left_frame = local.frames[FRAME_LEFT];
+			Uint32 *colors = local.topmenu_colors;
+
+			RECT_Text((&border), 17, 22);
+
+			border.h += fs->h / 2 + fs->h / 8;
+			border.y = bar_frame->y + bar_frame->h;
+			border.x = left_frame->w;
+
+			SDL_TextRect(sys->screen, &border, colors[COLOR_FRAME1], colors[COLOR_BACKGROUND], 0);
+
+			KB_icolor(colors);
+
+			int store = -1;
+			int i, j = 0;
+
+			for (i = 0; i < st->max_spots; i++) {
+
+				if (item_names[j][0] == '\0') break;
+
+				if (i < COMBAT_ARROW_KEYS && (i % 2 == 0)) {
+					store = st->spots[i].hot_key;
+					continue;
+				}
+
+				KB_iloc(border.x + fs->w, border.y + fs->h / 8 + j * fs->h);
+				KB_iprintf("%s %s", KB_KeyLabel(st->spots[i].hot_key, store), item_names[j]);
+				j++;
+				store = -1;
+			}
+
+			KB_flip(sys);
+		}
+
+		key = KB_event(&combat_state);
+
+#define KEY_ACT(ACT) (COMBAT_ARROW_KEYS + 1 + KBACT_ ## ACT)
+
+		if (key == 0xFF) {
+			key = 0;
+			break;
+		}
+
+		if (key == COMBAT_SYN_EVENT) {
+			continue;
+		}
+
+		if (key == 9) { /* Hack -- Arrow key right */
+			key = KEY_ACT(VIEW_CONTROLS);
+			break;
+		}
+
+		if (key) {
+			done = 1;
+			key = 0;
+		}
+
+#undef KEY_ACT
+	}
+
+	return key;
+}
+int options_menu(KBgame *game) {
+
+	char* item_names[] = {
+		"Move Down",
+		"Move Left",
+		"Move Right",
+		"Move Up",
+		/* "Rest", */
+		"Down Left",
+		"Down Right",
+		"Up Left",
+		"Up Right",
+		
+		"View Army",
+		"Controls",
+		"Fly",
+		"Land",
+		"Contract Info",
+		"Auto-mapping",
+		"Puzzle Solve",
+		"Search Area",
+		"Use Magic",
+		"View Character",
+		"Wait End Week",
+		"Quit and Save",
+		"\0",
+	};
+
+	int key = 0;
+	int done = 0;
+	int redraw = 1;
+
+	KBgamestate *st = &adventure_state;
+
+	KB_icolor(local.status_colors + COLOR_SELECTION);
+	KB_iloc(local.status.x, local.status.y + sys->font_size.h / 8);
+	KB_iprintf(" Options ");
+
+	KB_reset(&adventure_state);
+
+	while (!done) {
+		if (redraw == 1) {
+			redraw = 0;
+
+			SDL_Rect border;
+			SDL_Rect *fs = &sys->font_size;
+			SDL_Rect *bar_frame = local.frames[FRAME_MIDDLE];
+			SDL_Rect *left_frame = local.frames[FRAME_LEFT];
+			Uint32 *colors = local.topmenu_colors;
+
+			RECT_Text((&border), 19, 22);
+
+			border.h += fs->h / 2 + fs->h / 8;
+			border.y = bar_frame->y + bar_frame->h;
+			border.x = left_frame->w;
+
+			SDL_TextRect(sys->screen, &border, colors[COLOR_FRAME1], colors[COLOR_BACKGROUND], 0);
+
+			KB_icolor(colors);
+
+			int store = -1;
+			int i, j = 0, k = 0;
+#define KEY_ACT(ACT) (ARROW_KEYS + 0 + KBACT_ ## ACT)
+			for (i = 0; i < st->max_spots; i++) {
+
+				if (item_names[j][0] == '\0') break;
+
+				if (i < ARROW_KEYS && (i % 2 == 0)) {
+					store = st->spots[i].hot_key;
+					continue;
+				}
+
+				/* Hack -- do not show the "rest" command */
+				if (st->spots[i].hot_key == SDLK_5) { continue; }
+
+				/* Hack -- Fly/Land/Navigate */
+				if (i == KEY_ACT(FLY)) {
+					/* Must be riding */
+					if (game->mount != KBMOUNT_RIDE) { j++; continue; }
+				}
+				if (i == KEY_ACT(NEW_CONTINENT)) {
+					/* Must be sailing */
+					if (game->mount != KBMOUNT_SAIL) { j++; continue; }
+				}
+				if (i == KEY_ACT(LAND)) {
+					/* Must be flying */
+					if (game->mount != KBMOUNT_FLY) { j++; continue; }
+				}
+
+				KB_iloc(border.x + fs->w, border.y + fs->h / 8 + k * fs->h);
+				KB_iprintf("%s %s", KB_KeyLabel(st->spots[i].hot_key, store), item_names[j]);
+				//KB_iprintf("%s %s", buf, item_names[j]);
+				j++;
+				k++;
+				store = -1;
+			}
+#undef KEY_ACT
+			KB_flip(sys);
+		}
+
+		key = KB_event(&adventure_state);
+
+#define KEY_ACT(ACT) (ARROW_KEYS + 1 + KBACT_ ## ACT)
+
+		if (key == 0xFF) {
+			key = 0;
+			break;
+		}
+
+		if (key == SYN_EVENT) {
+			continue;
+		}
+
+		if (key == 11) { /* Hack -- Arrow key right */
+			key = KEY_ACT(VIEW_CONTROLS);
+			break;
+		}
+
+		if (key) {
+			done = 1;
+			key = 0;
+		}
+
+#undef KEY_ACT
+	}
+
+	return key;
+}
+int controls_menu(KBgame *game, int combat) {
+
+	enum {
+		CTRL_NUMERIC,
+		CTRL_BOOL,
+	};
+	int item_types[] = {
+		CTRL_NUMERIC,	/* Delay */
+		CTRL_BOOL,  	/* Sounds */
+		CTRL_BOOL,  	/* Walk Beep */
+		CTRL_BOOL,  	/* Animation */
+		CTRL_BOOL,  	/* Army Size */
+		CTRL_NUMERIC,	/* ??? */
+	};
+	char* item_names[] = {
+		"Delay",
+		"Sounds",
+		"Walk Beep",
+		"Animation",
+		"Army Size",
+		"CGA Palette",//?
+		"\0",
+	};
+
+	int max_items = 6;
+
+	int key = 0;
+	int done = 0;
+	int redraw = 1;
+
+	KB_iloc(local.status.x, local.status.y + sys->font_size.h / 8);
+
+	if (combat) { /* wipe status bar */
+		KB_icolor(local.status_colors);
+		KB_icurs(9, 0);
+		KB_iprint("/                 ");
+	}
+
+	KB_icolor(local.status_colors + COLOR_SELECTION);
+	KB_icurs(10, 0);
+	KB_iprint(" Controls ");
+
+	while (!done) {
+		if (redraw == 1) {
+			redraw = 0;
+
+			SDL_Rect border;
+			SDL_Rect *fs = &sys->font_size;
+			SDL_Rect *bar_frame = local.frames[FRAME_MIDDLE];
+			SDL_Rect *left_frame = local.frames[FRAME_LEFT];
+			Uint32 *colors = local.topmenu_colors;
+
+			RECT_Text((&border), 6, 20);
+
+			border.h += fs->h / 8;
+			border.y = bar_frame->y + bar_frame->h;
+			border.x = left_frame->w + fs->w * 10;
+
+			SDL_TextRect(sys->screen, &border, colors[COLOR_FRAME1], colors[COLOR_BACKGROUND], 0);
+
+			//Uint32 colors
+
+			int store = 0;
+			int i, j = 0, k = 0;
+			for (i = 0; i < max_items; i++) {
+
+				if (item_names[j][0] == '\0') break;
+
+				/* Hack -- do not show the "CGA palette" command */
+				if (i == 5) { continue; }
+
+				KB_iloc(border.x + fs->w, border.y + fs->h / 8 + k * (fs->h + fs->h/8));
+				KB_icolor(colors);
+				KB_iprintf("%c %s", '1' + k, item_names[j]);
+				
+				if (item_types[j] == CTRL_NUMERIC) {
+					int n;
+					KB_icurs(8, 0);
+					for (n = 0; n < 10; n++) {
+						if (n == game->options[i])
+							KB_icolor(colors + COLOR_SELECTION);
+						else
+							KB_icolor(colors);
+						KB_iprintf("%c", '0' + n);
+					}
+				}
+				if (item_types[j] == CTRL_BOOL) {
+
+					KB_icurs(12, 0);
+
+					if (1 == game->options[i])
+						KB_icolor(colors + COLOR_SELECTION);
+					else
+						KB_icolor(colors);
+					KB_iprint("On");
+
+					KB_icolor(colors);
+					KB_iprint("/");
+
+					if (0 == game->options[i])
+						KB_icolor(colors + COLOR_SELECTION);
+					else
+						KB_icolor(colors);
+					KB_iprint("Off");
+
+				}
+
+				j++;
+				k++;
+			}
+
+			KB_flip(sys);
+		}
+
+		key = KB_event(&settings_selection);
+
+		if (key == 0xFF) {
+			key = 0;
+			break;
+		}
+
+		if (key >= 7 && key < 7 + max_items) {
+			int n = key - 7;
+			if (item_types[n] == CTRL_BOOL) {
+
+				game->options[n] = 1 - game->options[n];
+
+			} else if (item_types[n] == CTRL_NUMERIC) {
+
+				game->options[n]++;
+				if (game->options[n] > 9) game->options[n] = 0;
+
+			}
+			redraw = 1;
+			continue;
+		}
+
+		if (key == 4) { /* Hack -- Arrow key left */
+#define KEY_ACT(ACT) (ARROW_KEYS + 1 + KBACT_ ## ACT)
+#define COMBAT_ACT(ACT) (COMBAT_ARROW_KEYS + 1 + COMBAT_ ## ACT)
+			if (combat)
+				key = COMBAT_ACT(VIEW_OPTIONS);
+			else
+				key = KEY_ACT(VIEW_OPTIONS);
+			done = 1;
+			break;
+#undef KEY_ACT
+#undef COMBAT_ACT
+		}
+
+		if (key) {
+			key = 0;
+			break;
+		}
+
+	}
+
+	KB_reset(&adventure_state);
+
+	return key;
+}
+
+void draw_statusbar(KBgame *game) {
+	if (game->time_stop)
+		KB_TopBox(0, " Options / Controls / Time Stop:%d ", game->time_stop);
+	else
+		KB_TopBox(0, " Options / Controls / Days Left:%d ", game->days_left);
+}
 
 void draw_sidebar(KBgame *game, int tick) {
 	SDL_Surface *screen = sys->screen;
@@ -3797,6 +4214,27 @@ void combat_loop(KBgame *game, KBcombat *combat) {
 
 		if (key == 0xFF) done = 1;
 
+		if (combat->side != 0 && key != COMBAT_SYN_EVENT)
+		{
+			/* Discard input during CPU turn */
+			key = 0;
+		}
+
+		if (key == KEY_ACT(VIEW_OPTIONS) || key == KEY_ACT(VIEW_CONTROLS)) {
+			int redraw_under = 0;
+			do {
+				if (redraw_under) {
+					draw_combat_statusbar(combat);
+					draw_combat(combat);
+				}
+				if (key == KEY_ACT(VIEW_OPTIONS))
+					key = combat_options_menu(game);
+				else if (key == KEY_ACT(VIEW_CONTROLS))
+					key = controls_menu(game, 1);
+				redraw_under = 1;
+			} while (key == KEY_ACT(VIEW_OPTIONS) || key == KEY_ACT(VIEW_CONTROLS));
+		}
+
 		switch (key) {
 			case KEY_ACT(VIEW_ARMY):	view_army(game);    	break;
 			case KEY_ACT(VIEW_CONTROLS):
@@ -3990,6 +4428,22 @@ void adventure_loop(KBgame *game) {
 		key = KB_event(&adventure_state);
 
 		if (key == 0xFF) done = 1;
+
+		if (key == KEY_ACT(VIEW_OPTIONS) || key == KEY_ACT(VIEW_CONTROLS)) {
+			int redraw_under = 0;
+			do {
+				if (redraw_under) {
+					draw_statusbar(game);
+					draw_map(game, tick);
+					draw_player(game, frame);
+				}
+				if (key == KEY_ACT(VIEW_OPTIONS))
+					key = options_menu(game);
+				else if (key == KEY_ACT(VIEW_CONTROLS))
+					key = controls_menu(game, 0);
+				redraw_under = 1;
+			} while (key == KEY_ACT(VIEW_OPTIONS) || key == KEY_ACT(VIEW_CONTROLS));
+		}
 
 		if (key == KEY_ACT(VIEW_ARMY)) {
 			view_army(game);
