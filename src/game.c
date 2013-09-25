@@ -143,7 +143,7 @@ char *text_input(int max_len, int numbers_only, int x, int y) {
 	entered_name[0] = '\0';
 	int curs = 0;
 
-	const char *twirl = "\x1D" "\x05" "\x1F" "\x1C" ; /* stands for: | / - \ */  
+	const char *twirl = "\x1D" "\x05" "\x1F" "\x1C" ; /* stands for: | / - \ */
 	byte twirl_pos = 0;
 
 	while (!done) {
@@ -1593,7 +1593,7 @@ int navigate_continent(KBgame *game) {
 	}
 	max = i;
 
-	const char *twirl = "\x1D" "\x05" "\x1F" "\x1C" ; /* stands for: | / - \ */  
+	const char *twirl = "\x1D" "\x05" "\x1F" "\x1C" ; /* stands for: | / - \ */
 	byte twirl_pos = 0;
 
 	int done = 0;
@@ -3416,7 +3416,7 @@ int choose_spell(KBgame *game, KBcombat *combat) {
 
 	KB_getpos(sys, &twirl_x, &twirl_y);
 
-	const char *twirl = "\x1D" "\x05" "\x1F" "\x1C" ; /* stands for: | / - \ */  
+	const char *twirl = "\x1D" "\x05" "\x1F" "\x1C" ; /* stands for: | / - \ */
 	byte twirl_pos = 0;
 
 	int done = 0;
