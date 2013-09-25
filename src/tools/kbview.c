@@ -189,6 +189,52 @@ void put_8bpp(SDL_Surface *dest, char *src, unsigned long n, int width, int heig
 
 SDL_Surface *show_font(char *filename, unsigned long off)
 {
+	int width = 128 * 8;
+	int height = 8;
+	int i;
+	SDL_Rect dest = { 0 };
+
+	SDL_Surface *surf;
+
+	FILE * f;
+	unsigned long n;
+	int flen;
+
+	char *buf;
+
+	f = fopen(filename, "rb");
+
+	fseek(f, 0, SEEK_END); // seek to end of file
+	flen = ftell(f); // get current file pointer
+	fseek(f, 32, SEEK_SET); // seek back to beginning of file
+
+	printf("Filesize: %d bytes [%04x]\n", flen, flen);
+
+	buf = malloc(sizeof(char) * flen);
+	//char buf[flen];
+	if (buf == NULL) {
+		fprintf(stderr, "Unable to allocate %d bytes\n", sizeof(char) * flen);
+		return 0;
+	}
+
+	n = fread(buf, sizeof(char), flen, f);
+	fclose(f);
+
+	surf = SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, 32, 0, 0, 0, 0);
+
+	for (i = 0; i < 128; i++) {
+
+		put_1bpp(surf, &buf[off], 8, 8, 8, dest.x, dest.y);
+		off += 8;
+
+		dest.x += 8;
+		if (dest.x >= surf->w) {
+			dest.x = 0;
+			dest.y += 8;
+		}
+	}
+
+	return surf;
 }
 
 SDL_Surface *show_tiles(char *filename, unsigned long off)
@@ -422,7 +468,7 @@ int main( int argc, char* args[] )
 			else
 	 			tiles = show_tiles(filename, 0);
 
-			SDL_FillRect(screen, 0, NULL);
+			SDL_FillRect(screen, NULL, 0);
 
 			SDL_BlitSurface( tiles, NULL , screen, NULL  );
 
