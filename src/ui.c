@@ -446,7 +446,9 @@ void SDL_TextRect(SDL_Surface *dest, SDL_Rect *r, Uint32 fore, Uint32 back, int 
 	}
 	/* Corners */
 	if (top) inprint(dest, "\x10", r->x, r->y);/* Top-left */
+	else inprint(dest, "\x14", r->x, r->y);
 	if (top) inprint(dest, "\x11", i, r->y);/* Top-right */
+	else inprint(dest, "\x15", i, r->y);
 	inprint(dest, "\x12", r->x, r->y + r->h - fs->h);/* Bottom-left */
 	inprint(dest, "\x13", i, r->y + r->h - fs->h);/* Bottom-right */
 }
