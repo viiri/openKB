@@ -92,7 +92,7 @@ KB_File* DOS_fopen_exe(KBmodule *mod) {
 	f = KB_fcaseopen_with("kb.exe", "rb", mod);
 
 	/* Switch to new, unpacked file (if appropriate) */
-	//f = DOS_UnpackExe(f, 1);
+	f = DOS_UnpackExe(f, 1);
 
 	/* Note the exe type (for different offset locations) */
 	if (f && f->len == KBEXE95_FILESIZE)
