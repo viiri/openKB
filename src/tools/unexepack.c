@@ -389,6 +389,8 @@ int main(int argc, char **argv) {
 	newexe.blocks_in_file = fullSize / 512 + 1;
 	newexe.bytes_in_last_block = fullSize % 512;
 
+	newexe.overlay_number = 0;
+
 	printf("\n");
 	print_EXE(&newexe, outputFile); /* show some info */
 
