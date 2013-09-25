@@ -2721,6 +2721,74 @@ int attack_foe(KBgame *game) {
 	return key - 1;
 }
 
+void end_of_week(KBgame *game, int num) {
+	dword on_hand;
+	dword army_cost;
+	int i, key;
+
+	word days_passed = num * WEEK_DAYS;
+
+	game->days_left += days_passed;
+
+	on_hand = game->gold;
+
+	byte creature = end_week(game, NULL);
+
+	game->days_left -= days_passed;
+
+	byte week_num = week_id(game) - num; 
+
+	SDL_Rect *fs = &sys->font_size;
+	SDL_Rect *text = KB_BottomFrame();
+
+	/** Astrology **/
+
+	KB_iloc(text->x, text->y - fs->h / 4);
+	KB_iprintf(
+		"Week #%d\n\n"
+		"Astrologers proclaim:\n"
+		"Week of the %s\n\n"
+		"All %s dwellings are\n"
+		"repopulated.         (space)", week_num, troops[creature].name, troops[creature].name);
+
+	KB_flip(sys);
+	key = 0;
+	while (!key) { key = KB_event(&minimap_toggle); } /* Wait for space */
+
+	/** Budget **/
+	KB_BottomFrame(); /* CLS */
+
+	KB_iloc(text->x, text->y - fs->h / 4);
+	KB_iprintf("Week #%-3d             Budget\n\n", week_num);
+
+	army_cost = 0;
+	for (i = 0; i < 5; i++) {
+		if (game->player_numbers[i] == 0) break;
+		byte troop_id = game->player_troops[i];
+		word cost = game->player_numbers[i] * troops[troop_id].recruit_cost;
+		army_cost += cost;
+		KB_icurs(14, 2 + i);
+		KB_iprintf("%-8s% 6d", troops[troop_id].name, cost);
+	}
+
+	KB_icurs(0, 2);
+	KB_iprintf("On Hand% 6d", on_hand);
+	KB_icurs(0, 3);
+	KB_iprintf("Payment% 6d", game->commission);
+	KB_icurs(0, 4);
+	KB_iprintf("Boat   % 6d", boat_cost(game));
+	KB_icurs(0, 5);
+	KB_iprintf("Army   % 6d", army_cost);
+	KB_icurs(0, 6);
+	KB_iprintf("Balance% 6d", game->gold);
+
+	KB_flip(sys);
+	KB_Pause();
+
+
+	KB_stdlog("Week #%d (of %s): balance - %d gold\n", week_num, troops[creature].name, game->gold);
+}
+
 void no_spell_banner() {
 
 	SDL_Rect *fs = &sys->font_size;
