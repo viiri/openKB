@@ -60,7 +60,7 @@ AC_TYPE_SIZE_T
 
 # Checks for library functions.
 AC_FUNC_MALLOC
-AC_CHECK_FUNCS([isascii mkdir strcasecmp strlcpy strlcat getcwd])
+AC_CHECK_FUNCS([isascii mkdir strcasecmp strlcpy strlcat strdup getcwd])
 
 AC_CONFIG_FILES([Makefile                 ])
 #AC_CONFIG_SUBDIRS([vendor/scale2x-2.4])
