@@ -87,7 +87,13 @@ struct KBfileid fingerprints[] = {
 		"Copyright (C) 1990-95 New World Computing, Inc", 46, 0x15EA5,
 		2,
 		KBFAMILY_DOS, KBTYPE_EXE,
-	},	
+	},
+	{
+		"KB", "EXE", 79839 /* bytes */,
+		"\0", 0, 0,
+		2,
+		KBFAMILY_DOS, KBTYPE_EXE,
+	},
 	{
 		"\0", "BIN", 0, 
 		"SEGA", 4, 0x100, 
