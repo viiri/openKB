@@ -363,13 +363,13 @@ void discover_modules(const char *path, KBconfig *conf) {
 				/* Better to have 3 */
 				if (dosGRP1 != -1)	{		
 					add_module_aux(conf, "DOS (VGA)", KBFAMILY_DOS, 8, result[i].path,
-						result[dosGRP1].filename, result[dosGRP2].filename, result[dosEXE].filename);
+						result[dosGRP1].filename, result[dosGRP2].filename, "");
 				}
 
 				/* But 2 are good enougth for a module too */ 
-				add_module_aux(conf, "DOS (Hercules)", KBFAMILY_DOS, 1, result[i].path, result[dosGRP2].filename, NULL, NULL);
-				add_module_aux(conf, "DOS (CGA)", KBFAMILY_DOS, 2, result[i].path, result[dosGRP2].filename, NULL, NULL);
-				add_module_aux(conf, "DOS (EGA)", KBFAMILY_DOS, 4, result[i].path, result[dosGRP2].filename, NULL, NULL);
+				add_module_aux(conf, "DOS (Hercules)", KBFAMILY_DOS, 1, result[i].path, result[dosGRP2].filename, "", NULL);
+				add_module_aux(conf, "DOS (CGA)", KBFAMILY_DOS, 2, result[i].path, result[dosGRP2].filename, "", NULL);
+				add_module_aux(conf, "DOS (EGA)", KBFAMILY_DOS, 4, result[i].path, result[dosGRP2].filename, "", NULL);
 				
 				if (dosGRP1 != -1) {
 					/* Reset groups */
