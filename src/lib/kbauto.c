@@ -59,6 +59,8 @@ struct KBfileid {
 
 	int kb_family;
 	int kb_type;
+
+	char *path;
 };
 
 struct KBfileid fingerprints[] = {
@@ -247,28 +249,20 @@ void add_module_aux(KBconfig *conf, const char *name, int family, int bpp, const
  * This function takes a look at the files presented in the directory
  *  and makes intelligent guesses about available modules.
  */ 
-void discover_modules(const char *path, KBconfig *conf) {
+int fill_fingerprints(const char *path, KBconfig *conf, struct KBfileid *result, int n_result, int max_results, int *num_files) {
+	KB_DIR *dir;
+	KB_Entry *entry;
 
-	#define MAX_RFILES 255
+	int i = 0;
 
-	struct KBfileid result[MAX_RFILES]; 
-	int	n_result = 0;
+	if ((dir = KB_opendir(path)) == NULL) {
+		KB_errlog("[auto] Can't access path '%s'\n", path);
+		return;
+	}
 
-    KB_DIR *dir;
-    KB_Entry *entry;
-
-    int i = 0;
-
-	KB_stdlog("Performing module auto-discovery on path: %s\n", path);
-
-    if ((dir = KB_opendir(path)) == NULL) {
-    	KB_errlog("[auto] Can't access path '%s'\n", path);
-    	return;
-    }
-
-    while ((entry = KB_readdir(dir)) != NULL) {
+	while ((entry = KB_readdir(dir)) != NULL) {
 		int ok;
-        char full_path[PATH_LEN];    
+		char full_path[PATH_LEN];
 
 		i++;
 
@@ -286,22 +280,52 @@ void discover_modules(const char *path, KBconfig *conf) {
 			result[n_result].kb_family = fingerprints[ok].kb_family;
 			result[n_result].kb_type = fingerprints[ok].kb_type;
 			result[n_result].companion = fingerprints[ok].companion;
+			result[n_result].path = KB_strdup(path);
 			n_result++;
-			if (n_result >= MAX_RFILES) {
+			if (n_result >= max_results) {
 				KB_stdlog("Found over %d files, ignoring the rest :(\n", n_result);
 				break;
 			}
 		}
-    }
+		/* However, what if it's a subdirectory with more cool files? */
+		else {
+			if (entry->d_type == KBETYPE_DIR) {
+				n_result = fill_fingerprints(full_path, conf, result, n_result, max_results, num_files);
+			}
+			continue;
+		}
+
+	}
 	KB_closedir(dir);
+	*num_files += i;
+	return n_result;
+}
+
+void discover_modules(const char *path, KBconfig *conf) {
+
+	#define MAX_RFILES 255
+
+	struct KBfileid result[MAX_RFILES]; 
+	int	n_result = 0;
+	int	num_files = 0;
+	int i;
+
+	KB_stdlog("Performing module auto-discovery on path: %s\n", path);
+
+	// KBfileid *result, int n_results, int max_results)
+
+	n_result = fill_fingerprints(path, conf, &result[0], 0, MAX_RFILES, &num_files);
+
+	#undef MAX_RFILES
 
 	if (!n_result) {
-		KB_stdlog("Found NO interesting files (out of %d), are you sure that is the correct directory?\n", i);
+		KB_stdlog("Found NO interesting files (out of %d), are you sure that is the correct directory?\n", num_files);
 		return;
 	}
 
-    if (n_result)
+	if (n_result) {
 		KB_stdlog("Found %d interesting file(s), going to analyze them in more detail.\n", n_result);
+	}
 
 	int had_modules = conf->num_modules;
 
@@ -310,7 +334,7 @@ void discover_modules(const char *path, KBconfig *conf) {
 		struct KBfileid *id = &result[i];
 		/* 'i'll take it' */
 		if (id->kb_family == KBFAMILY_GNU) {
-			add_module_aux(conf, "Free", KBFAMILY_GNU, 0, path, result[i].filename, NULL, NULL);
+			add_module_aux(conf, "Free", KBFAMILY_GNU, 0, result[i].path, result[i].filename, NULL, NULL);
 		}
 	}
 
@@ -332,14 +356,14 @@ void discover_modules(const char *path, KBconfig *conf) {
 
 				/* Better to have 3 */
 				if (dosGRP1 != -1)	{		
-					add_module_aux(conf, "DOS (VGA)", KBFAMILY_DOS, 8, path, 
+					add_module_aux(conf, "DOS (VGA)", KBFAMILY_DOS, 8, result[i].path,
 						result[dosGRP1].filename, result[dosGRP2].filename, result[dosEXE].filename);
 				}
 
 				/* But 2 are good enougth for a module too */ 
-				add_module_aux(conf, "DOS (Hercules)", KBFAMILY_DOS, 1, path, result[dosGRP2].filename, NULL, NULL);
-				add_module_aux(conf, "DOS (CGA)", KBFAMILY_DOS, 2, path, result[dosGRP2].filename, NULL, NULL);
-				add_module_aux(conf, "DOS (EGA)", KBFAMILY_DOS, 4, path, result[dosGRP2].filename, NULL, NULL);
+				add_module_aux(conf, "DOS (Hercules)", KBFAMILY_DOS, 1, result[i].path, result[dosGRP2].filename, NULL, NULL);
+				add_module_aux(conf, "DOS (CGA)", KBFAMILY_DOS, 2, result[i].path, result[dosGRP2].filename, NULL, NULL);
+				add_module_aux(conf, "DOS (EGA)", KBFAMILY_DOS, 4, result[i].path, result[dosGRP2].filename, NULL, NULL);
 				
 				if (dosGRP1 != -1) {
 					/* Reset groups */
@@ -356,10 +380,14 @@ void discover_modules(const char *path, KBconfig *conf) {
 		struct KBfileid *id = &result[i];
 		/* 'i'll take it' */
 		if (id->kb_family == KBFAMILY_MD) {
-			add_module_aux(conf, "MegaDrive", KBFAMILY_MD, 0, path, result[i].filename, NULL, NULL);
+			add_module_aux(conf, "MegaDrive", KBFAMILY_MD, 0, result[i].path, result[i].filename, NULL, NULL);
 		}
 	}
 
+	/* Free results */
+	for (i = 0; i < n_result; i++) {
+		free(result[i].path);
+	}
 
 	/* Say something after all this. */
 	if (conf->num_modules - had_modules > 0) {
