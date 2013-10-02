@@ -266,6 +266,14 @@ void KB_dirncpy(char *dst, const char *src, unsigned int n) {
 	if (l && src[l - 1] == PATH_SEP_SYM) dst[k - 1] = '\0';
 }
 
+char* KB_strdup(const char *src) {
+	int l = strlen(src) + 1;
+	char *d = malloc(sizeof(char) * l);
+	if (d == NULL) return NULL;
+	KB_strncpy(d, src, l);
+	return d;
+}
+
 int file_size(const char *filename) { 
 	struct stat status; 
 	if (stat(filename, &status)) return 0; 
