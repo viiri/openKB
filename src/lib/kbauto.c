@@ -96,7 +96,7 @@ struct KBfileid fingerprints[] = {
 
 int fingerprints_num = sizeof(fingerprints) / sizeof(struct KBfileid);
 
-
+/* Returns fingerprint id or -1 */
 int verify_file(const char *name, const char *path) {
 
 	int id = -1;
@@ -120,7 +120,7 @@ int verify_file(const char *name, const char *path) {
 			if (test_directory(path,0)) continue;
 		}
 		if (fp->filesize != 0) { /* exact size test */
-			if (file_size(name) != fp->filesize) continue;
+			if (file_size(path) != fp->filesize) continue;
 		}
 		if (fp->sign_len != 0) { /* signature test */
 			char buf[1024];
