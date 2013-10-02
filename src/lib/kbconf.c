@@ -102,7 +102,7 @@ int read_file_config(struct KBconfig *conf, const char *path) {
 		if (buf[0] == ';') continue;
 		if (buf[0] == '[') continue;
 	
-		if (sscanf(buf, "%s = %s", buf1, buf2) == 2) {
+		if (sscanf(buf, "%s = %[^\r\n;]", buf1, buf2) == 2) {
 			if (!KB_strcasecmp(buf1, "fullscreen")) {
 				conf->fullscreen = atoi(buf2);
 				conf->set[C_fullscreen] = 1;
