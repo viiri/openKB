@@ -1001,6 +1001,257 @@ void draw_location(int loc_id, int troop_id, int frame) {
 	free(top_frame);
 	free(bar_frame);
 }
+
+void draw_sidebar(KBgame *game, int tick) {
+	SDL_Surface *screen = sys->screen;
+
+	SDL_Rect *right_frame  = local.frames[FRAME_RIGHT];	
+
+	SDL_Surface *purse = SDL_TakeSurface(GR_PURSE, 0, 0);
+	SDL_Surface *sidebar = SDL_TakeSurface(GR_UI, 0, 0);
+
+	SDL_Surface *coins = SDL_TakeSurface(GR_COINS, 0, 0);
+	SDL_Surface *piece = SDL_TakeSurface(GR_PIECE, 0, 0);
+
+	SDL_Rect *map = &local.map;
+
+	/** Draw siderbar UI **/
+	SDL_Rect hsrc = { 0, 0, purse->w, purse->h };
+	SDL_Rect hdst = { screen->w - right_frame->w - purse->w, map->y, hsrc.w, hsrc.h };
+
+	/* Contract */
+	hsrc.x = 8 * hsrc.w;
+	SDL_BlitSurface( sidebar, &hsrc, screen, &hdst);
+
+	/* ..Face */
+	if (game->contract != 0xFF) {
+		SDL_Surface *face = SDL_LoadRESOURCE(GR_VILLAIN, game->contract, 0);
+		SDL_Rect vsrc = { tick * hsrc.w, 0, hsrc.w, hsrc.h };
+		SDL_BlitSurface( face, &vsrc, screen, &hdst);
+		SDL_FreeSurface(face);
+	}
+
+	/* Siege weapons */
+	hdst.y += hsrc.h;
+	hsrc.x = (game->siege_weapons ? tick * hsrc.w : 9 * hsrc.w);
+	SDL_BlitSurface( sidebar, &hsrc, screen, &hdst);
+	
+	/* Magic star */
+	hdst.y += hsrc.h;
+	hsrc.x = (game->knows_magic ? (tick + 4) * hsrc.w : 10 * hsrc.w);
+	SDL_BlitSurface( sidebar, &hsrc, screen, &hdst);
+
+	/* Puzzle map */
+	hdst.y += hsrc.h;
+	hsrc.x = 11 * hsrc.w;
+	SDL_BlitSurface( sidebar, &hsrc, screen, &hdst);
+
+	int i, j; /* puzzle pieces */
+	for (j = 0; j < 5; j++)
+	for (i = 0; i < 5; i++)
+	{
+		/* Refrence table with negative artifact and positive villain indexes */
+		int id = puzzle_map[j][i]; 
+		if ((id < 0 && game->artifact_found[-id - 1])
+		|| (id >= 0 && game->villain_caught[id])) continue;
+
+		/* Draw puzzle piece */
+		SDL_Rect srect = { 0, 0, piece->w, piece->h };
+		SDL_Rect mrect = { 
+			hdst.x + i * piece->w + (2 * sys->zoom),
+			hdst.y + j * piece->h + (2 * sys->zoom),
+			piece->w,
+			piece->h };
+		SDL_BlitSurface(piece, &srect, screen, &mrect);
+	}
+
+	/* Gold purse */
+	hdst.y += purse->h;
+	hsrc.x = 12 * hsrc.w;
+	SDL_BlitSurface( sidebar, &hsrc, screen, &hdst);
+	
+	int cval[3]; /* gold coins */
+	cval[0] = game->gold / 10000;
+	cval[1] = (game->gold - cval[0] * 10000) / 1000;
+	cval[2] = (game->gold - cval[0] * 10000 - cval[1] * 1000) / 100;
+	for (j = 0; j < 3; j++)
+	{
+		SDL_Rect sr = { (coins->w / 3) * j, 0, coins->w / 3, coins->h };
+		SDL_Rect dr = { hdst.x + sr.w * j, hdst.y + hdst.h - sr.h, sr.w, sr.h };
+		for (i = 0; i < cval[j]; i++) {
+			dr.y -= (2 * sys->zoom);
+			SDL_BlitSurface(coins, &sr, screen, &dr);
+		}
+	}
+}
+
+void draw_map(KBgame *game, int tick) {
+
+	SDL_Rect pos;
+	SDL_Rect src;
+
+	int i, j;
+
+	SDL_Surface *screen = sys->screen;
+
+	SDL_Surface *tileset = SDL_TakeSurface(GR_TILESET, game->continent, 0);
+	SDL_Surface *hero = SDL_TakeSurface(GR_HERO, 0, 1);
+
+	SDL_Rect *tile = local.map_tile;
+
+	word perim_h = local.map.w / tile->w;
+	word perim_w = local.map.h / tile->h;
+	word radii_w = (perim_w - 1) / 2;
+	word radii_h = (perim_h - 1) / 2;
+
+	int border_y = game->y - radii_h;
+	int border_x = game->x - radii_w;
+
+	src.w = tile->w;
+	src.h = tile->h;
+
+	/** Draw map **/
+	pos.w = tile->w;
+	pos.h = tile->h;
+
+	SDL_FillRect( screen , &local.map, 0xFF0000);
+
+	for (j = 0; j < perim_h; j++)
+	for (i = 0; i < perim_w; i++) {
+
+		byte tile = KB_GetMapTile(game, game->continent, border_y + j, border_x + i); 
+
+		pos.x = i * (pos.w) + local.map.x;
+		pos.y = (perim_h - 1 - j) * (pos.h) + local.map.y;
+
+		KB_DrawMapTile(screen, &pos, tileset, tile);
+	}
+
+	/** Draw boat **/
+	if (game->mount != KBMOUNT_SAIL && game->boat == game->continent)
+	{
+		int boat_lx = game->boat_x - game->x + radii_w;
+		int boat_ly = game->y - game->boat_y + (perim_w - 1 - radii_h);
+
+		if (boat_lx >= 0 && boat_ly >= 0 && boat_lx < perim_w && boat_ly < perim_h)
+		{
+			SDL_Rect hsrc = { 0, 0, src.w, src.h };
+			SDL_Rect hdst = { local.map.x + boat_lx * src.w, local.map.y + boat_ly * src.h, src.w, src.h };
+
+			hsrc.x += src.w * (0);
+			hsrc.y += src.h * (local.boat_flip);
+
+			SDL_BlitSurface( hero, &hsrc , screen, &hdst );
+		}
+	}
+}
+
+void draw_player(KBgame *game, int frame) {
+	SDL_Rect *tile = local.map_tile;
+
+	SDL_Surface *hero = SDL_TakeSurface(GR_HERO, 0, 0);
+
+	word perim_h = local.map.w / tile->w;
+	word perim_w = local.map.h / tile->h;
+	word radii_w = (perim_w - 1) / 2;
+	word radii_h = (perim_h - 1) / 2;
+
+	int border_y = game->y - radii_h;
+	int border_x = game->x - radii_w;
+
+	/** Draw player **/
+	{
+		SDL_Rect hsrc = { 0, 0, tile->w, tile->h };
+		SDL_Rect hdst = { 
+			local.map.x + radii_w * tile->w, 
+			local.map.y + (perim_h - 1 - radii_h) * tile->h, 
+			tile->w, 
+			tile->h 
+		};
+		
+		hsrc.x += tile->w * (game->mount + frame);
+		hsrc.y += tile->h * (local.hero_flip);
+
+		SDL_BlitSurface( hero, &hsrc , sys->screen, &hdst );
+	}
+}
+
+void draw_combat(KBcombat *war) {
+	SDL_Rect *tile = local.map_tile;
+
+	SDL_Surface *comtiles = SDL_TakeSurface(GR_COMTILES, 0, 0);
+
+	int draw_army_size = ((KBgame*)war->heroes[0])->options[4]; /* Hack -- get player */
+
+	/** Draw combat **/
+	{
+		int i, j;
+
+		/* Draw obstacles */
+		for (j = 0; j < CLEVEL_H; j++)
+		for (i = 0; i < CLEVEL_W; i++) {
+
+			SDL_Rect src = { war->omap[j][i] * tile->w, 0, tile->w, tile->h };
+			SDL_Rect dst = { i * tile->w, j * tile->h, tile->w, tile->h };
+			
+			dst.x += local.map.x;
+			dst.y += local.map.y;
+
+			SDL_BlitSurface(comtiles, &src, sys->screen, &dst);
+		}
+
+		/* Draw units */
+		for (j = 0; j < MAX_SIDES; j++) {
+			for (i = 0; i < MAX_UNITS; i++) {
+
+				KBunit *u = &war->units[j][i];
+
+				if (u->count == 0) continue;
+
+				SDL_Rect src = { u->frame * tile->w, j * tile->h, tile->w, tile->h };
+				SDL_Rect dst = { 0, 0, tile->w, tile->h };
+
+				dst.x = u->x * tile->w + local.map.x;
+				dst.y = u->y * tile->h + local.map.y;
+
+				SDL_Surface *troop = SDL_TakeSurface(GR_TROOP, u->troop_id, 1);
+
+				SDL_BlitSurface(troop, &src, sys->screen, &dst);
+
+				if (draw_army_size) {
+					char count[8];
+					Uint32 *colors_inner = KB_Resolve(COL_TEXT, CS_CHROME);
+					sprintf(count, "%d", u->count);
+					KB_iloc(dst.x + dst.w - strlen(count) * sys->font_size.w, dst.y + dst.h - sys->font_size.h);
+					KB_icolor(colors_inner);
+					KB_iprint(count);
+					free(colors_inner);
+				}
+			}
+		}
+
+	}
+}
+
+void draw_damage(KBcombat *war, KBunit *u) {
+	SDL_Rect *tile = local.map_tile;
+	SDL_Surface *comtiles = SDL_TakeSurface(GR_COMTILES, 0, 0);
+
+	int frame = 0;
+	int _x, _y;
+
+	/** Draw "damage" **/
+	{
+		SDL_Rect src = { (frame+4) * tile->w, 0, tile->w, tile->h };
+		SDL_Rect dst = { u->x * tile->w, u->y * tile->h, tile->w, tile->h };
+
+		dst.x += local.map.x;
+		dst.y += local.map.y;
+
+		SDL_BlitSurface(comtiles, &src, sys->screen, &dst);
+	}
+}
+
 /*
  * Puzzle map screen.
  *
@@ -3045,9 +3296,9 @@ KBgamestate cross_choice = {
 
 int build_bridge(KBgame *game) {
 
-	draw_map(game);
-	draw_player(game);
-	draw_sidebar(game);
+	draw_map(game, 0);
+	draw_player(game, 0);
+	draw_sidebar(game, 0);
 
 	KB_TopBox(0, "Build bridge in which direction " "\x1A" "\x18" "\x19" "\x1B");
 	KB_flip(sys);
@@ -4195,262 +4446,6 @@ void draw_statusbar(KBgame *game) {
 	else
 		KB_TopBox(0, " Options / Controls / Days Left:%d ", game->days_left);
 }
-
-void draw_sidebar(KBgame *game, int tick) {
-	SDL_Surface *screen = sys->screen;
-
-	SDL_Rect *right_frame  = local.frames[FRAME_RIGHT];	
-
-	SDL_Surface *purse = SDL_TakeSurface(GR_PURSE, 0, 0);
-	SDL_Surface *sidebar = SDL_TakeSurface(GR_UI, 0, 0);
-
-	SDL_Surface *coins = SDL_TakeSurface(GR_COINS, 0, 0);
-	SDL_Surface *piece = SDL_TakeSurface(GR_PIECE, 0, 0);
-
-	SDL_Rect *map = &local.map;
-
-	/** Draw siderbar UI **/
-	SDL_Rect hsrc = { 0, 0, purse->w, purse->h };
-	SDL_Rect hdst = { screen->w - right_frame->w - purse->w, map->y, hsrc.w, hsrc.h };
-
-	/* Contract */
-	hsrc.x = 8 * hsrc.w;
-	SDL_BlitSurface( sidebar, &hsrc, screen, &hdst);
-
-	/* ..Face */
-	if (game->contract != 0xFF) {
-		SDL_Surface *face = SDL_LoadRESOURCE(GR_VILLAIN, game->contract, 0);
-		SDL_Rect vsrc = { tick * hsrc.w, 0, hsrc.w, hsrc.h };
-		SDL_BlitSurface( face, &vsrc, screen, &hdst);
-		SDL_FreeSurface(face);
-	}
-
-	/* Siege weapons */
-	hdst.y += hsrc.h;
-	hsrc.x = (game->siege_weapons ? tick * hsrc.w : 9 * hsrc.w);
-	SDL_BlitSurface( sidebar, &hsrc, screen, &hdst);
-	
-	/* Magic star */
-	hdst.y += hsrc.h;
-	hsrc.x = (game->knows_magic ? (tick + 4) * hsrc.w : 10 * hsrc.w);
-	SDL_BlitSurface( sidebar, &hsrc, screen, &hdst);
-
-	/* Puzzle map */
-	hdst.y += hsrc.h;
-	hsrc.x = 11 * hsrc.w;
-	SDL_BlitSurface( sidebar, &hsrc, screen, &hdst);
-
-	int i, j; /* puzzle pieces */
-	for (j = 0; j < 5; j++)
-	for (i = 0; i < 5; i++)
-	{
-		/* Refrence table with negative artifact and positive villain indexes */
-		int id = puzzle_map[j][i]; 
-		if ((id < 0 && game->artifact_found[-id - 1])
-		|| (id >= 0 && game->villain_caught[id])) continue;
-
-		/* Draw puzzle piece */
-		SDL_Rect srect = { 0, 0, piece->w, piece->h };
-		SDL_Rect mrect = { 
-			hdst.x + i * piece->w + (2 * sys->zoom),
-			hdst.y + j * piece->h + (2 * sys->zoom),
-			piece->w,
-			piece->h };
-		SDL_BlitSurface(piece, &srect, screen, &mrect);
-	}
-
-	/* Gold purse */
-	hdst.y += purse->h;
-	hsrc.x = 12 * hsrc.w;
-	SDL_BlitSurface( sidebar, &hsrc, screen, &hdst);
-	
-	int cval[3]; /* gold coins */
-	cval[0] = game->gold / 10000;
-	cval[1] = (game->gold - cval[0] * 10000) / 1000;
-	cval[2] = (game->gold - cval[0] * 10000 - cval[1] * 1000) / 100;
-	for (j = 0; j < 3; j++)
-	{
-		SDL_Rect sr = { (coins->w / 3) * j, 0, coins->w / 3, coins->h };
-		SDL_Rect dr = { hdst.x + sr.w * j, hdst.y + hdst.h - sr.h, sr.w, sr.h };
-		for (i = 0; i < cval[j]; i++) {
-			dr.y -= (2 * sys->zoom);
-			SDL_BlitSurface(coins, &sr, screen, &dr);
-		}
-	}
-}
-
-void draw_map(KBgame *game, int tick) {
-
-	SDL_Rect pos;
-	SDL_Rect src;
-
-	int i, j;
-
-	SDL_Surface *screen = sys->screen;
-
-	SDL_Surface *tileset = SDL_TakeSurface(GR_TILESET, game->continent, 0);
-	SDL_Surface *hero = SDL_TakeSurface(GR_HERO, 0, 1);
-
-	SDL_Rect *tile = local.map_tile;
-
-	word perim_h = local.map.w / tile->w;
-	word perim_w = local.map.h / tile->h;
-	word radii_w = (perim_w - 1) / 2;
-	word radii_h = (perim_h - 1) / 2;
-
-	int border_y = game->y - radii_h;
-	int border_x = game->x - radii_w;
-
-	src.w = tile->w;
-	src.h = tile->h;
-
-	/** Draw map **/
-	pos.w = tile->w;
-	pos.h = tile->h;
-
-	SDL_FillRect( screen , &local.map, 0xFF0000);
-
-	for (j = 0; j < perim_h; j++)
-	for (i = 0; i < perim_w; i++) {
-
-		byte tile = KB_GetMapTile(game, game->continent, border_y + j, border_x + i); 
-
-		pos.x = i * (pos.w) + local.map.x;
-		pos.y = (perim_h - 1 - j) * (pos.h) + local.map.y;
-
-		KB_DrawMapTile(screen, &pos, tileset, tile);
-	}
-
-	/** Draw boat **/
-	if (game->mount != KBMOUNT_SAIL && game->boat == game->continent)
-	{
-		int boat_lx = game->boat_x - game->x + radii_w;
-		int boat_ly = game->y - game->boat_y + (perim_w - 1 - radii_h);
-
-		if (boat_lx >= 0 && boat_ly >= 0 && boat_lx < perim_w && boat_ly < perim_h)
-		{
-			SDL_Rect hsrc = { 0, 0, src.w, src.h };
-			SDL_Rect hdst = { local.map.x + boat_lx * src.w, local.map.y + boat_ly * src.h, src.w, src.h };
-
-			hsrc.x += src.w * (0);
-			hsrc.y += src.h * (local.boat_flip);
-
-			SDL_BlitSurface( hero, &hsrc , screen, &hdst );
-		}
-	}
-
-}
-
-void draw_player(KBgame *game, int frame) {
-
-	SDL_Rect *tile = local.map_tile;
-
-	SDL_Surface *hero = SDL_TakeSurface(GR_HERO, 0, 0);
-
-	word perim_h = local.map.w / tile->w;
-	word perim_w = local.map.h / tile->h;
-	word radii_w = (perim_w - 1) / 2;
-	word radii_h = (perim_h - 1) / 2;
-
-	int border_y = game->y - radii_h;
-	int border_x = game->x - radii_w;
-
-	/** Draw player **/
-	{
-		SDL_Rect hsrc = { 0, 0, tile->w, tile->h };
-		SDL_Rect hdst = { 
-			local.map.x + radii_w * tile->w, 
-			local.map.y + (perim_h - 1 - radii_h) * tile->h, 
-			tile->w, 
-			tile->h 
-		};
-		
-		hsrc.x += tile->w * (game->mount + frame);
-		hsrc.y += tile->h * (local.hero_flip);
-
-		SDL_BlitSurface( hero, &hsrc , sys->screen, &hdst );
-	}
-
-}
-
-void draw_combat(KBcombat *war) {
-
-	SDL_Rect *tile = local.map_tile;
-	
-	SDL_Surface *comtiles = SDL_TakeSurface(GR_COMTILES, 0, 0);
-
-	int draw_army_size = ((KBgame*)war->heroes[0])->options[4]; /* Hack -- get player */
-
-	/** Draw combat **/
-	{
-		int i, j;
-
-		/* Draw obstacles */
-		for (j = 0; j < CLEVEL_H; j++)
-		for (i = 0; i < CLEVEL_W; i++) {
-
-			SDL_Rect src = { war->omap[j][i] * tile->w, 0, tile->w, tile->h };
-			SDL_Rect dst = { i * tile->w, j * tile->h, tile->w, tile->h };
-			
-			dst.x += local.map.x;
-			dst.y += local.map.y;
-
-			SDL_BlitSurface(comtiles, &src, sys->screen, &dst);
-		}
-
-		/* Draw units */
-		for (j = 0; j < MAX_SIDES; j++) {
-			for (i = 0; i < MAX_UNITS; i++) {
-
-				KBunit *u = &war->units[j][i];
-
-				if (u->count == 0) continue;
-
-				SDL_Rect src = { u->frame * tile->w, j * tile->h, tile->w, tile->h };
-				SDL_Rect dst = { 0, 0, tile->w, tile->h };
-
-				dst.x = u->x * tile->w + local.map.x;
-				dst.y = u->y * tile->h + local.map.y;
-
-				SDL_Surface *troop = SDL_TakeSurface(GR_TROOP, u->troop_id, 1);
-
-				SDL_BlitSurface(troop, &src, sys->screen, &dst);
-
-				if (draw_army_size) {
-					char count[8];
-					Uint32 *colors_inner = KB_Resolve(COL_TEXT, CS_CHROME);
-					sprintf(count, "%d", u->count);
-					KB_iloc(dst.x + dst.w - strlen(count) * sys->font_size.w, dst.y + dst.h - sys->font_size.h);
-					KB_icolor(colors_inner);
-					KB_iprint(count);
-					free(colors_inner);
-				}
-			}
-		}
-	}
-
-}
-
-void draw_damage(KBcombat *war, KBunit *u) {
-
-	SDL_Rect *tile = local.map_tile;
-	SDL_Surface *comtiles = SDL_TakeSurface(GR_COMTILES, 0, 0);
-
-	int frame = 0;
-	int _x, _y;
-
-	/** Draw "damage" **/
-	{
-		SDL_Rect src = { (frame+4) * tile->w, 0, tile->w, tile->h };
-		SDL_Rect dst = { u->x * tile->w, u->y * tile->h, tile->w, tile->h };
-
-		dst.x += local.map.x;
-		dst.y += local.map.y;
-
-		SDL_BlitSurface(comtiles, &src, sys->screen, &dst);
-	}
-}
-
 
 void draw_combat_statusbar(KBcombat *war) {
 
