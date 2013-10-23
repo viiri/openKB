@@ -120,6 +120,7 @@ extern SDL_Surface* KB_LoadIMG8(int id, int sub_id);
 extern SDL_Surface *SDL_LoadRESOURCE(int id, int sub_id, int flip);
 
 extern SDL_Rect* RECT_LoadRESOURCE(int id, int sub_id);
+extern char *STR_LoadRESOURCE(int id, int sub_id, int line);
 
 extern SDL_Surface* SDL_TakeSurface(int id, int sub_id, int flip);
 
