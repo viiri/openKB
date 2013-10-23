@@ -32,11 +32,15 @@ KBgame *spawn_game(char *name, int pclass, int difficulty) {
 	game = malloc(sizeof(KBgame));
 	if (game == NULL) return NULL;
 
+	memset(game, 0, sizeof(KBgame));
+
 	KB_strcpy(game->name, name);
 
 	game->class = pclass;
 	game->rank = 0;
 	game->difficulty = difficulty;
+	
+	game->contract = 0xFF;
 
 	return game;
 }
