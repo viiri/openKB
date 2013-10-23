@@ -30,6 +30,73 @@
 
 #define STRL_MAX 1024
 
+
+dword* GNU_extract_ini(KBmodule *mod, const char *inifile, const char *module, const char *name, int first, int num, dword *dst) {
+	KB_File *fd;
+	char *filename;
+	char line[256];
+	char module_fmt[256];
+	char module_test[256];
+	int module_test_len, name_test_len;
+	int i, section;
+
+	filename = KB_fastpath(mod->slotA_name, "/", inifile);
+	if (filename == NULL) return NULL; /* Out of memory */
+
+	if (dst == NULL) {
+		dst = malloc(sizeof(dword) * num);
+		if (dst == NULL) {
+			free(filename);
+			return NULL; /* Out of memory */
+		}
+		memset(dst, 0, sizeof(dword) * num);
+	}
+
+	KB_debuglog(0, "? FREE INI FILE: %s\n", filename);
+
+	fd = KB_fopen(filename, "r");
+	if (fd == NULL) {
+		KB_debuglog(0, "> FAILED TO OPEN, %s\n", filename);
+		free(filename);
+		return NULL;
+	}
+
+	sprintf(module_fmt, "[%s]", module);
+	section = -1;
+	module_test_len = sprintf(module_test, module_fmt, section + 1);
+	name_test_len = strlen(name);
+
+	//int iter;
+	while (KB_fgets(line, sizeof(line), fd)) {
+
+		if (!strncasecmp(line, module_test, module_test_len)) {
+			module_test_len = sprintf(module_test, module_fmt, (++section)+1);
+			continue;
+		}
+		if (section < first) {
+			continue;
+		}
+		if (section > num) {
+			break;
+		}
+
+		if (!strncasecmp(line, name, name_test_len)) {
+			char test[1024];
+			int test_len;
+			dword val;
+			test_len = sprintf(test, "%s = %%d", name);
+			if (sscanf(line, test, &val) == 1) {
+				dst[section - first] = val;
+			}
+		}
+		//if (iter++ > 21) break;
+	}
+
+	KB_fclose(fd);
+	free(filename);
+	return dst;
+}
+
 char* GNU_read_textfile(KBmodule *mod, const char *textfile) {
 
 	KB_File *fd;
@@ -222,6 +289,13 @@ void* GNU_Resolve(KBmodule *mod, int id, int sub_id) {
 			KB_strcpy(tmp, DOS_villain_names[sub_id]);
 			KB_strcat(tmp, ".txt");
 			return GNU_read_textfile(mod, tmp);
+		}
+		break;
+		case DAT_HPS:  	/* [MAX_TROOPS] hit points for specific troop; subId - undefined */ \
+		{
+			dword *hit_points =
+				GNU_extract_ini(mod, "troops.ini", "troop%d", "hp", 0, 128, NULL);
+			return hit_points;
 		}
 		break;
 		default: break;
