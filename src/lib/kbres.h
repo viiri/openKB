@@ -257,6 +257,10 @@ enum {
 
 #define IS_INTERACTIVE(M) ((M) & 0x80)
 
+/* Troop and villain names provided by DOS module */
+extern char* DOS_villain_names[];
+extern char* DOS_troop_names[];
+
 
 #ifdef HAVE_LIBSDL
 /* SDL flavor. */
@@ -289,9 +293,6 @@ SDL_Surface* KB_LoadTilesetSalted(byte continent, KBresolve_cb resolve, KBmodule
  */
 extern void DOS_BlitRAWIMG(SDL_Surface *surf, SDL_Rect *destrect, const char *buf, byte bpp, word mask_pos);
 extern void DOS_SetColors(SDL_Surface *surf, byte bpp);
-
-extern char* DOS_villain_names[];
-extern char* DOS_troop_names[];
 
 extern SDL_Surface* DOS_LoadRAWCH_BUF(char *buf, int len);
 extern SDL_Surface* DOS_LoadRAWIMG_BUF(char *buf, int len, byte bpp);
