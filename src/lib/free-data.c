@@ -18,12 +18,17 @@
  *  along with openkb.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <SDL.h> 
-#include <SDL_image.h>	/* PNG support */
-
 #include "kbconf.h"	/* KBmodule type */
 #include "kbres.h"	/* GR_? defines */
 #include "kbfile.h"	/* KB_File operations */
+
+#include <SDL.h>  	/* SDL data types */
+#ifdef HAVE_LIBSDL_IMAGE
+#include <SDL_image.h>	/* PNG support */
+#else
+#warning "SDL_Image is not used, PNG support disabled!"
+#endif
+
 
 #define TILE_W 48
 #define TILE_H 34
@@ -141,19 +146,23 @@ void* GNU_Resolve(KBmodule *mod, int id, int sub_id) {
 	char *image_suffix = NULL;
 	char *image_subid = "";
 	int is_transparent = 1;
-
+#ifdef HAVE_LIBSDL_IMAGE
+#define _EXTN ".png"
+#else
+#define _EXTN ".bmp"
+#endif
 	switch (id) {
 		case GR_LOGO:
 		{
 			image_name = "nwcp";
-			image_suffix = ".png";
+			image_suffix = _EXTN;
 			is_transparent = 0;
 		}
 		break;
 		case GR_TITLE:
 		{
 			image_name = "title";
-			image_suffix = ".png";
+			image_suffix = _EXTN;
 			is_transparent = 0;
 		}
 		break;		
@@ -163,7 +172,7 @@ void* GNU_Resolve(KBmodule *mod, int id, int sub_id) {
 			image_subid = "-0";
 			if (sub_id == 1) image_subid="-1";
 			if (sub_id == 2) image_subid="-2";
-			image_suffix = ".png";
+			image_suffix = _EXTN;
 			is_transparent = 0;
 		}
 		break;
@@ -177,26 +186,26 @@ void* GNU_Resolve(KBmodule *mod, int id, int sub_id) {
 		case GR_VILLAIN:
 		{
 			image_name = DOS_villain_names[sub_id];
-			image_suffix = ".png";
+			image_suffix = _EXTN;
 			is_transparent = 0;
 		}
 		break;
 		case GR_TROOP:
 		{
 			image_name = DOS_troop_names[sub_id];
-			image_suffix = ".png";
+			image_suffix = _EXTN;
 		}
 		break;
 		case GR_CURSOR:
 		{
 			image_name = "cursor";
-			image_suffix = ".png";
+			image_suffix = _EXTN;
 		}
 		break;
 		case GR_UI:
 		{
 			image_name = "sidebar";
-			image_suffix = ".png";
+			image_suffix = _EXTN;
 			is_transparent = 0;
 		}
 		break;
@@ -209,26 +218,26 @@ void* GNU_Resolve(KBmodule *mod, int id, int sub_id) {
 		case GR_VIEW:
 		{
 			image_name = "view";
-			image_suffix = ".png";
+			image_suffix = _EXTN;
 			is_transparent = 0;
 		}
 		break;
 		case GR_COINS:
 		{
 			image_name = "coins";
-			image_suffix = ".png";
+			image_suffix = _EXTN;
 		}
 		break;
 		case GR_PIECE:
 		{
 			image_name = "piece";
-			image_suffix = ".png";
+			image_suffix = _EXTN;
 		}
 		break;
 		case GR_COMTILES:
 		{
 			image_name = "comtiles";
-			image_suffix = ".png";
+			image_suffix = _EXTN;
 			is_transparent = 1;
 		}
 		break;
@@ -241,7 +250,7 @@ void* GNU_Resolve(KBmodule *mod, int id, int sub_id) {
 			} else {
 				image_name = "tileseta";
 			}
-			image_suffix = ".png";
+			image_suffix = _EXTN;
 			is_transparent = 0;
 		}
 		break;
@@ -256,7 +265,7 @@ void* GNU_Resolve(KBmodule *mod, int id, int sub_id) {
 		{
 			/* A row of replacement tiles. */
 			image_name = "tilesalt";
-			image_suffix = ".png";
+			image_suffix = _EXTN;
 		}
 		break;
 		case STR_SIGN:
@@ -309,9 +318,13 @@ void* GNU_Resolve(KBmodule *mod, int id, int sub_id) {
 
 		KB_debuglog(0, "? FREE IMG FILE: %s\n", realname);
 
+#ifdef HAVE_LIBSDL_IMAGE
 		SDL_Surface *surf = IMG_Load(realname);
-
 		if (surf == NULL) KB_debuglog(0, "> FAILED TO OPEN, %s\n", IMG_GetError());
+#else
+		SDL_Surface *surf = SDL_LoadBMP(realname);
+		if (surf == NULL) KB_debuglog(0, "> FAILED TO OPEN, %s\n", SDL_GetError());
+#endif
 
 		if (surf && is_transparent)
 			SDL_SetColorKey(surf, SDL_SRCCOLORKEY, 0xFF);

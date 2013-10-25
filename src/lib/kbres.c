@@ -23,7 +23,9 @@
 #include "kbfile.h"
 
 #include <SDL.h>
+#ifdef HAVE_LIBSDL_IMAGE
 #include <SDL_image.h>
+#endif
 
 /* Expand resource macros */
 #define _(R) # R ,
@@ -214,8 +216,12 @@ SDL_Surface* KB_LoadIMG(const char *filename) {
 		surf = DOS_LoadRAWIMG_RW(rw, imgGroup_filename_to_bpp(filename));
 	if (surf == NULL)
 		surf = DOS_LoadIMGROW_RW(rw, 0, 255);
+#ifdef HAVE_LIBSDL_IMAGE
 	if (surf == NULL)
 		surf = IMG_Load_RW(rw, 0);
+#endif
+	if (surf == NULL)
+		surf = SDL_LoadBMP_RW(rw, 0);
 	SDL_RWclose(rw);
 	return surf;
 }

@@ -24,8 +24,6 @@
 
 #include <sys/stat.h> 
 
-#include <SDL_image.h>
-
 #include "kbstd.h"
 #include "kbres.h"
 #include "kbfile.h" //:/
