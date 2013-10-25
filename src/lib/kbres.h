@@ -159,27 +159,27 @@ extern const char *KBresid_names[];
 #define FRAME_MIDDLE	4
 
 /* Possible values for SN_TUNE subid: */
-#define TUNE_WALK	0
-#define TUNE_BUMP	1
+#define TUNE_WALK 	0
+#define TUNE_BUMP 	1
 #define TUNE_CHEST	5
 
 /* Refrence to EGA pallete, mostly used by DOS module. */
-#define EGA_BLACK	0
-#define EGA_DBLUE	1
+#define EGA_BLACK 	0
+#define EGA_DBLUE 	1
 #define EGA_DGREEN	2
-#define EGA_DCYAN	3
-#define EGA_DRED	4
+#define EGA_DCYAN 	3
+#define EGA_DRED  	4
 #define EGA_MAGENTA	5
-#define EGA_BROWN	6
-#define EGA_GREY	7
-#define EGA_DGREY	8
-#define EGA_BLUE	9
-#define EGA_GREEN	10
-#define EGA_CYAN	11
-#define EGA_RED 	12
+#define EGA_BROWN 	6
+#define EGA_GREY  	7
+#define EGA_DGREY 	8
+#define EGA_BLUE  	9
+#define EGA_GREEN 	10
+#define EGA_CYAN  	11
+#define EGA_RED   	12
 #define EGA_VIOLET	13
 #define EGA_YELLOW	14
-#define EGA_WHITE	15
+#define EGA_WHITE 	15
 #define EGA_DVIOLET EGA_MAGENTA
 #define EGA_DYELLOW EGA_BROWN
 
@@ -191,7 +191,7 @@ extern const char *KBresid_names[];
 #define CS_STATUS_4	4
 #define CS_STATUS_5	5
 #define CS_TOPMENU	6
-#define CS_CHROME	7
+#define CS_CHROME 	7
 #define CS_MINIMENU	8
 #define CS_VIEWCHAR	9
 
