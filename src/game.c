@@ -1998,16 +1998,17 @@ int lay_siege(KBgame *game, int castle_id) {
 	KB_iprint("            Lay Siege (y/n)?");	
 	
 	//KB_BottomBox("Castle %s", "A) Recruit Soldiers\nB) Audience with the King\nC) \nD)\nE)",0);
-
 	SDL_Flip(sys->screen);
 
-	int done = 0;
-	while (!done) {
-		int key = KB_event(&yes_no_question);	
-		if (key) done = key;
+	int key = 0;
+	while (!key) key = KB_event(&yes_no_question);
+
+	/* "Yes" */
+	if (key == 1) {
+		run_combat(game, 1, id);
 	}
 
-	return done - 1;
+	return key - 1;
 }
 
 
@@ -2869,6 +2870,13 @@ int run_combat(KBgame *game, int mode, int id) {
 
 	switch (mode) {
 
+		case 1: /* Player VS Castle (id) */
+
+			prepare_units_player(&combat, 0, game);
+			prepare_units_castle(&combat, 1, game, id);
+
+		break;
+
 		case 0: /* Player VS Foe (id) */
 		default:
 
@@ -2878,6 +2886,8 @@ int run_combat(KBgame *game, int mode, int id) {
 		break;
 
 	}
+
+	reset_match(&combat, mode);
 
 	combat_loop(game, &combat);
 
@@ -4799,8 +4809,6 @@ static signed char move_offset_y[9] = {  1, 1, 1,  0, 0, 0, -1, -1, -1 };
 
 /* Main combat loop (combat screen) */
 void combat_loop(KBgame *game, KBcombat *combat) {
-	
-	reset_match(combat);
 
 	int key = 0;
 	int done = 0;

@@ -90,7 +90,7 @@ extern void prepare_units_castle(KBcombat *war, int side, KBgame *game, int cast
 extern void accept_units_player(KBgame *game, int side, KBcombat *war);
 extern void reset_turn(KBcombat *war);
 extern void wipe_battlefield(KBcombat *war);
-extern void reset_match(KBcombat *war);
+extern void reset_match(KBcombat *war, int castle);
 extern int next_turn(KBcombat *war);
 extern int next_unit(KBcombat *war);
 extern int unit_touching(KBcombat *war, int side, int id, int other_id);

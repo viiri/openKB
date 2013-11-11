@@ -491,9 +491,43 @@ void wipe_battlefield(KBcombat *war) {
 		
 }
 
-void reset_match(KBcombat *war) {
+int castle_umap[5][6] = {
+	{ 0, 8, 6, 7, 9, 0 },
+	{ 0, 0,10, 0, 0, 0 },
+	{ 0, 0, 0, 0, 0, 0 },
+	{ 0, 0, 0, 0, 0, 0 },
+	{ 0, 0, 1, 2, 0, 0 },
+};
+
+int castle_omap[5][6] = {
+	{ 8, 0, 0, 0, 0, 9 },
+	{ 8, 0, 0, 0, 0, 9 },
+	{ 8, 0, 0, 0, 0, 9 },
+	{ 8, 0, 0, 0, 0, 9 },
+	{ 5, 7, 0, 0,10, 6 },
+};
+
+void reset_match(KBcombat *war, int castle) {
 
 	int i, j;
+
+	/* Move units to their castle positions? */
+	if (castle) {
+		for (j = 0; j < CLEVEL_H; j++)
+		for (i = 0; i < CLEVEL_W; i++) {
+			int id, side;
+			id = castle_umap[j][i] - 1;
+			side = 0;
+			if (id < 0) continue;
+			if (id >= MAX_UNITS) {
+				id -= MAX_UNITS;
+				side = 1;
+			}
+			KBunit *u = &war->units[side][id];
+			u->x = i;
+			u->y = j;
+		}
+	}
 
 	/* Place units */
 	for (j = 0; j < MAX_SIDES; j++) 
@@ -501,13 +535,22 @@ void reset_match(KBcombat *war) {
 	{
 		KBunit *u = &war->units[j][i];
 		if (!u->count) continue;
-		war->units[j][i].shots = troops[war->units[j][i].troop_id].ranged_ammo;
+		u->shots = troops[u->troop_id].ranged_ammo;
 		KB_debuglog(0, "Unit: %d, %d, ID: %d\n", u->x, u->y, (j * MAX_UNITS) + i + 1);
 		war->umap[u->y][u->x] = (j * MAX_UNITS) + i + 1;
 	}
 
 	wipe_battlefield(war);
 
+	/* Use predefined layout */
+	if (castle)
+	{
+		for (j = 0; j < CLEVEL_H; j++)
+		for (i = 0; i < CLEVEL_W; i++) {
+			war->omap[j][i] = castle_omap[j][i];
+		}	
+	}
+	else
 	/* Generate obstacles */
 	{
 		/* Each tile has a 1 in 20 chance of having an obstacle in it
