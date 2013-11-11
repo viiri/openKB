@@ -27,25 +27,35 @@ AC_CHECK_LIB([SDL], [SDL_Init], [
 	fi
 
 	], [AC_MSG_ERROR([cannot find `SDL' library, a mandatory dependancy])])
-AC_CHECK_LIB([SDL_image], [IMG_Load])
+AC_CHECK_LIB([SDL_image], [IMG_Load], [ ])
 AC_CHECK_LIB([SDL_net], [SDLNet_Init])
-AC_CHECK_LIB([png], [png_create_write_struct])
+AC_CHECK_LIB([png], [png_create_write_struct], [ ])
 
 # Optional libraries.
 AC_ARG_WITH([png], AS_HELP_STRING([--without-png], [Build without png library (default: test)]))
 AC_ARG_WITH([sdl_image], AS_HELP_STRING([--without-sdl_image], [Build without SDL_image library (default: test)]))
 
-# Enables/Disables features based on ARG_WITH variables.
-AS_IF([test "$with_png" != no], [HAVE_LIBPNG=1], [HAVE_LIBPNG=0])
-AS_IF([test "$with_sdl_image" != no], [HAVE_LIBSDL_IMAGE=1], [HAVE_LIBSDL_IMAGE=0])
-
 # Enables/Disables features based on CHECK_LIB tests.
-AS_IF([test "$ac_cv_lib_png_png_create_write_struct" = yes], [], [HAVE_LIBPNG=0])
-AS_IF([test "$ac_cv_lib_SDL_image_IMG_Load" = yes], [], [HAVE_LIBSDL_IMAGE=0])
+AS_IF([test "$ac_cv_lib_png_png_create_write_struct" = yes], [HAVE_LIBPNG=1], [HAVE_LIBPNG=0])
+AS_IF([test "$ac_cv_lib_SDL_image_IMG_Load" = yes], [HAVE_LIBSDL_IMAGE=1], [HAVE_LIBSDL_IMAGE=0])
+
+# Enables/Disables features based on ARG_WITH variables.
+AS_IF([test "$with_png" != no], [], [HAVE_LIBPNG=0])
+AS_IF([test "$with_sdl_image" != no], [], [HAVE_LIBSDL_IMAGE=0])
 
 # Exports defines.
-AC_DEFINE_UNQUOTED(HAVE_LIBPNG, [$HAVE_LIBPNG])
-AC_DEFINE_UNQUOTED(HAVE_LIBSDL_IMAGE, [$HAVE_LIBSDL_IMAGE])
+#AC_DEFINE_UNQUOTED(HAVE_LIBPNG, [$HAVE_LIBPNG])
+#AC_DEFINE_UNQUOTED(HAVE_LIBSDL_IMAGE, [$HAVE_LIBSDL_IMAGE])
+
+# Add compiler flags
+AS_IF([test "$HAVE_LIBPNG" = 1], [
+	AC_DEFINE(HAVE_LIBPNG, [], "libpng is present")
+	LIBS="$LIBS -lpng"
+])
+AS_IF([test "$HAVE_LIBSDL_IMAGE" = 1], [
+	AC_DEFINE(HAVE_LIBSDL_IMAGE, [], "SDL_image is present")
+	LIBS="$LIBS -lSDL_image"
+])
 
 # Checks for header files.
 AC_CHECK_HEADERS([string.h])
@@ -60,7 +70,7 @@ AC_TYPE_SIZE_T
 
 # Checks for library functions.
 AC_FUNC_MALLOC
-AC_CHECK_FUNCS([isascii mkdir strcasecmp strlcpy strlcat getcwd])
+AC_CHECK_FUNCS([isascii mkdir strcasecmp strlcpy strlcat strdup getcwd])
 
 AC_CONFIG_FILES([Makefile                 ])
 #AC_CONFIG_SUBDIRS([vendor/scale2x-2.4])

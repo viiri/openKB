@@ -85,6 +85,12 @@ extern void KB_strncpy(char *dst, const char *src, unsigned int n);
 extern void KB_strncat_dbg(char *dst, const char *src, unsigned int n, const char *dst_name, const char *src_name, const char *filename, unsigned int line);
 extern void KB_strncpy_dbg(char *dst, const char *src, unsigned int n, const char *dst_name, const char *src_name, const char *filename, unsigned int line);
 
+#ifdef HAVE_STRDUP
+#define KB_strdup strdup
+#else
+extern char* KB_strdup(const char *src);
+#endif
+
 #if 0
 
 #define KB_strcpy(DST, SRC) KB_strncpy(DST, SRC, sizeof(DST))

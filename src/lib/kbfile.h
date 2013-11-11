@@ -82,6 +82,9 @@ extern long int KB_ftell ( KB_File * stream );
 extern int KB_fread ( void * ptr, int size, int count, KB_File * stream );
 extern int KB_fclose ( KB_File * stream );
 
+/* Bonus API */
+extern char* KB_fgets(char *buf, int size, KB_File *stream);
+
 /* Interfaces */
 #define KB_FILE_IF_NAME_ADD(SUFFIX) \
 extern KB_File * KB_fopen ## SUFFIX ## _in(const char * filename, const char * mode, KB_DIR * in); \

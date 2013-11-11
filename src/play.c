@@ -32,11 +32,15 @@ KBgame *spawn_game(char *name, int pclass, int difficulty) {
 	game = malloc(sizeof(KBgame));
 	if (game == NULL) return NULL;
 
+	memset(game, 0, sizeof(KBgame));
+
 	KB_strcpy(game->name, name);
 
 	game->class = pclass;
 	game->rank = 0;
 	game->difficulty = difficulty;
+	
+	game->contract = 0xFF;
 
 	return game;
 }
@@ -903,9 +907,13 @@ int clone_troop(KBgame *game, KBcombat *war, int unit_id) {
 	return (int)clones;
 }
 
-int instant_troop(KBgame *game, byte *troop_id) {
+int instant_troop(KBgame *game, byte *w_troop_id) {
 	int i, slot = -1;
+	byte troop_id;
 	word number;
+
+	troop_id = classes[game->class][game->rank].instant_army;
+
 	for (i = 0; i < 5; i++) {
 		if (game->player_troops[i] == troop_id
 		|| game->player_numbers[i] == 0) {
@@ -920,6 +928,7 @@ int instant_troop(KBgame *game, byte *troop_id) {
 
 	game->player_troops[slot] = troop_id;
 	game->player_numbers[slot] += number;
+	*w_troop_id = troop_id;
 
 	return (int)number;
 }

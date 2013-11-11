@@ -158,6 +158,33 @@ int KB_fclose( KB_File * stream )
 	return ret;
 }
 
+/* Bonus api */
+
+/*       fgets() reads in at most one less than >size< characters from >stream<  and
+       stores  them  into  the buffer pointed to by >s<.  Reading stops after an
+       EOF or a newline.  If a newline is read, it is stored into the  buffer.
+       A '\0' is stored after the last character in the buffer.
+*/
+char* KB_fgets(char *buf, int size, KB_File *stream) {
+	int n, i, parsed;
+
+	n = KB_fread(buf, sizeof(char), size, stream);
+	if (n == 0) return NULL;
+
+	parsed = n;
+	for (i = 0; i < n - 1; i++) {
+		parsed = i + 1;
+		if (buf[i] == '\n') {
+			break;
+		}
+	}
+
+	KB_fseek(stream, -(n - parsed), SEEK_CUR); /* Forward */
+
+	buf[parsed] = '\0';
+	return buf;
+}
+
 /*
  * "Real file" wrapper
  * All functions have "F" suffix.

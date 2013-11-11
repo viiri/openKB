@@ -56,14 +56,24 @@ int write_default_config(const char *path) {
 	fprintf(f, "[main]\n");
 	fprintf(f, ";savedir = \n");
 	fprintf(f, ";datadir = \n");
+	fprintf(f, "autodiscover = 1\n");
 	fprintf(f, "[sdl]\n");
 	fprintf(f, "sound = 0\n");
 	fprintf(f, "fullscreen = 0\n");
-	fprintf(f, "filter = 0\n");
-	fprintf(f, "[module]\n");
-	fprintf(f, "name = Free\n");
-	fprintf(f, "type = free\n");
-	fprintf(f, "path = free/\n");
+	fprintf(f, "filter = normal2x\n");
+	fprintf(f, ";[module]\n");
+	fprintf(f, ";For open modules, specify the path to the INI and PNG files,\n");
+	fprintf(f, ";and set 'free' as type.\n");
+	fprintf(f, ";name = Free\n");
+	fprintf(f, ";type = free\n");
+	fprintf(f, ";path = free/\n");
+	fprintf(f, ";[module]\n");
+	fprintf(f, ";For DOS module, specify the path to the EXE and CC files,\n");
+	fprintf(f, ";and pick from 'dos', 'dos-ega', 'dos-cga' or 'dos-mono'\n");
+	fprintf(f, ";for type.\n");
+	fprintf(f, ";name = DOS\n");
+	fprintf(f, ";type = dos\n");
+	fprintf(f, ";path = dos/\n");
 
 	fclose(f);
 	
@@ -92,7 +102,7 @@ int read_file_config(struct KBconfig *conf, const char *path) {
 		if (buf[0] == ';') continue;
 		if (buf[0] == '[') continue;
 	
-		if (sscanf(buf, "%s = %s", buf1, buf2) == 2) {
+		if (sscanf(buf, "%s = %[^\r\n;]", buf1, buf2) == 2) {
 			if (!KB_strcasecmp(buf1, "fullscreen")) {
 				conf->fullscreen = atoi(buf2);
 				conf->set[C_fullscreen] = 1;

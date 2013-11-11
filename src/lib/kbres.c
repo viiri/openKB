@@ -18,12 +18,6 @@
  *  along with openkb.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "kbres.h"
-#include "kbauto.h"
-
-#include "kbfile.h"
-
-#include <SDL.h>
-#include <SDL_image.h>
 
 /* Expand resource macros */
 #define _(R) # R ,
@@ -31,6 +25,14 @@ const char *KBresid_names[] = {
 RESOURCES
 };
 #undef _ 
+
+#ifdef HAVE_LIBSDL
+/* SDL flavor. */
+#include <SDL.h>
+#ifdef HAVE_LIBSDL_IMAGE
+#include <SDL_image.h>
+#endif
+#include "kbfile.h"
 
 inline SDL_Surface* SDL_CreatePALSurface(Uint32 width, Uint32 height)
 {
@@ -214,8 +216,12 @@ SDL_Surface* KB_LoadIMG(const char *filename) {
 		surf = DOS_LoadRAWIMG_RW(rw, imgGroup_filename_to_bpp(filename));
 	if (surf == NULL)
 		surf = DOS_LoadIMGROW_RW(rw, 0, 255);
+#ifdef HAVE_LIBSDL_IMAGE
 	if (surf == NULL)
 		surf = IMG_Load_RW(rw, 0);
+#endif
+	if (surf == NULL)
+		surf = SDL_LoadBMP_RW(rw, 0);
 	SDL_RWclose(rw);
 	return surf;
 }
@@ -335,3 +341,5 @@ SDL_Surface* KB_LoadTilesetSalted(byte continent, KBresolve_cb resolve, KBmodule
 	SDL_FreeSurface(tilesalt);
 	return tileset;
 }
+
+#endif /* HAVE_LIBSDL */

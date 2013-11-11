@@ -35,12 +35,18 @@
 #define KBDTYPE_GRPCC 	0x02
 #define KBDTYPE_GRPIMG	0x03
 
+#define KBETYPE_UNKNOWN 	0x00
+#define KBETYPE_FILE    	0x01
+#define KBETYPE_DIR     	0x02
+#define KBETYPE_UNIXY   	0x03
+
 //#include "kbfile.h"
 
 typedef struct KB_Entry {
 
 	int  d_ino;
 	char d_name[1024];
+	char d_type;	/* KBETYPE defines */
 
 	union {
 		struct {

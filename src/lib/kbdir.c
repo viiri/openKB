@@ -183,6 +183,23 @@ struct KB_Entry * KB_readdirD(KB_DIR *dirp)
 
 	KB_strcpy(entry->d_name, dit->d_name);
 	entry->d_ino = dit->d_ino;
+	entry->d_type = KBETYPE_UNKNOWN;
+#if defined(_DIRENT_HAVE_D_TYPE) && defined (DT_UNKNOWN)
+	switch (dit->d_type) {
+		case DT_REG:
+			entry->d_type = KBETYPE_FILE;
+			break;
+		case DT_DIR:
+			entry->d_type = KBETYPE_DIR;
+			break;
+		case DT_UNKNOWN:
+			entry->d_type = KBETYPE_UNKNOWN;
+			break;
+		default:
+			entry->d_type = KBETYPE_UNIXY;
+			break;
+	}
+#endif
 
 	return entry;
 }

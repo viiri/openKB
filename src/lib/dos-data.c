@@ -1262,11 +1262,11 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 			if (sub_id < 0 || sub_id > 4) sub_id = 0;
 			return &DOS_frame_ui[sub_id];
 		}
+		break;
 		case RECT_UITILE:
 		{
 			return &DOS_frame_tile;
 		}
-		break;
 		break;
 		default: break;
 	}
