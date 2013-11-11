@@ -58,7 +58,6 @@ void prepare_resources() {
 
 	local.message_colors = KB_Resolve(COL_TEXT, CS_GENERIC);
 	local.status_colors = KB_Resolve(COL_TEXT, CS_STATUS_2);
-	local.topmenu_colors = KB_Resolve(COL_TEXT, CS_TOPMENU);
 
 	update_ui_frames();
 }
@@ -80,7 +79,6 @@ void free_resources() {
 
 	free(local.message_colors);
 	free(local.status_colors);
-	free(local.topmenu_colors);
 
 	SDL_FreeCachedSurfaces();
 
@@ -573,7 +571,7 @@ KBgame *select_game(KBconfig *conf) {
 
 	KBgame *game = NULL;
 
-	Uint32 *colors = KB_Resolve(COL_TEXT, CS_CHROME);
+	Uint32 *colors = KB_Resolve(COL_TEXT, CS_GENERIC);
 
 	SDL_Surface *title = SDL_LoadRESOURCE(GR_SELECT, 0, 0);
 
@@ -1220,7 +1218,7 @@ void draw_combat(KBcombat *war) {
 
 				if (draw_army_size) {
 					char count[8];
-					Uint32 *colors_inner = KB_Resolve(COL_TEXT, CS_CHROME);
+					Uint32 *colors_inner = KB_Resolve(COL_TEXT, CS_GENERIC);
 					sprintf(count, "%d", u->count);
 					KB_iloc(dst.x + dst.w - strlen(count) * sys->font_size.w, dst.y + dst.h - sys->font_size.h);
 					KB_icolor(colors_inner);
@@ -4099,7 +4097,7 @@ int combat_options_menu(KBgame *game) {
 			SDL_Rect *fs = &sys->font_size;
 			SDL_Rect *bar_frame = local.frames[FRAME_MIDDLE];
 			SDL_Rect *left_frame = local.frames[FRAME_LEFT];
-			Uint32 *colors = local.topmenu_colors;
+			Uint32 *colors = local.message_colors;
 
 			RECT_Text((&border), 17, 22);
 
@@ -4208,7 +4206,7 @@ int options_menu(KBgame *game) {
 			SDL_Rect *fs = &sys->font_size;
 			SDL_Rect *bar_frame = local.frames[FRAME_MIDDLE];
 			SDL_Rect *left_frame = local.frames[FRAME_LEFT];
-			Uint32 *colors = local.topmenu_colors;
+			Uint32 *colors = local.message_colors;
 
 			RECT_Text((&border), 19, 22);
 
@@ -4338,7 +4336,7 @@ int controls_menu(KBgame *game, int combat) {
 			SDL_Rect *fs = &sys->font_size;
 			SDL_Rect *bar_frame = local.frames[FRAME_MIDDLE];
 			SDL_Rect *left_frame = local.frames[FRAME_LEFT];
-			Uint32 *colors = local.topmenu_colors;
+			Uint32 *colors = local.message_colors;
 
 			RECT_Text((&border), 6, 20);
 

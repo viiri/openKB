@@ -993,26 +993,6 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 		break;
 		case COL_TEXT:
 		{
-			byte ega_scheme_chrome_index[] = {
-				EGA_BLACK,	// background
-				EGA_WHITE,	// text1
-				EGA_WHITE,	// text2
-				EGA_WHITE,	// text3
-				EGA_WHITE,	// text4
-				EGA_MAGENTA,// shadow1
-				EGA_MAGENTA,// shadow2
-				EGA_WHITE,	// frame1
-				EGA_WHITE,	// frame2
-				EGA_WHITE,	// sel_background
-				EGA_BLACK,	// sel_text1
-				EGA_BLACK,	// sel_text2
-				EGA_BLACK,	// sel_text3
-				EGA_BLACK,	// sel_text4
-				EGA_MAGENTA,// sel_shadow1
-				EGA_MAGENTA,// sel_shadow2
-				EGA_WHITE,	// sel_frame1
-				EGA_WHITE,	// sel_frame2
-			};
 			byte ega_scheme_status_index[] = {
 				EGA_DRED,	// background
 				EGA_WHITE,	// text1
@@ -1032,6 +1012,13 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 				EGA_MAGENTA,// sel_shadow2
 				EGA_YELLOW,	// sel_frame1
 				EGA_YELLOW,	// sel_frame2
+			};
+			byte ega_scheme_status_replacers[] = {
+				EGA_GREY,    /* Background for status 0 */
+				EGA_DRED,    /* Background for status 1 */
+				EGA_BLUE,    /* Background for status 2 */
+				EGA_DVIOLET, /* Background for status 3 */
+				EGA_DVIOLET, /* Background for status 4 (same as 3) */
 			};
 			byte ega_scheme_character_index[] = {
 				EGA_DGREY,	// background
@@ -1084,10 +1071,10 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 				EGA_YELLOW,	// frame1
 				EGA_YELLOW,	// frame2
 				EGA_WHITE,	// sel_background
-				EGA_BLUE,	// sel_text1
-				EGA_BLUE,	// sel_text2
-				EGA_BLUE,	// sel_text3
-				EGA_BLUE,	// sel_text4
+				EGA_DBLUE,	// sel_text1
+				EGA_DBLUE,	// sel_text2
+				EGA_DBLUE,	// sel_text3
+				EGA_DBLUE,	// sel_text4
 				EGA_MAGENTA,// sel_shadow1
 				EGA_MAGENTA,// sel_shadow2
 				EGA_MAGENTA,// sel_frame1
@@ -1124,12 +1111,7 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 				case CS_MINIMENU:	/* Savefile selection */
 					ega_index_ptr = ega_scheme_savefile_index;
 					break;
-				case CS_CHROME: 	/* Bare UI */
-					ega_index_ptr = ega_scheme_chrome_index;
-					break;
-				case CS_TOPMENU:	/* Menu */
-					ega_index_ptr = ega_scheme_menu_index;
-					break;
+				case CS_VIEWARMY:	/* Army screen */
 				case CS_VIEWCHAR:	/* Character screen */
 					ega_index_ptr = ega_scheme_character_index;
 					break;
@@ -1139,6 +1121,9 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 				case CS_STATUS_4:
 				case CS_STATUS_5:
 					ega_index_ptr = ega_scheme_status_index;
+					/* Replace BackgroundColor based on difficulty */
+					ega_scheme_status_index[COLOR_BACKGROUND] =
+						ega_scheme_status_replacers[sub_id - 1];
 					break;
 				case CS_GENERIC:
 				default: /* Default Message Box */

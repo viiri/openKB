@@ -190,10 +190,9 @@ extern const char *KBresid_names[];
 #define CS_STATUS_3	3
 #define CS_STATUS_4	4
 #define CS_STATUS_5	5
-#define CS_TOPMENU	6
-#define CS_CHROME 	7
-#define CS_MINIMENU	8
-#define CS_VIEWCHAR	9
+#define CS_MINIMENU	6
+#define CS_VIEWCHAR	7
+#define CS_VIEWARMY	8
 
 /* Color scheme for COL_TEXT: */
 enum {
