@@ -46,14 +46,14 @@ AS_IF([test "$with_sdl_image" != no], [], [HAVE_LIBSDL_IMAGE=0])
 # Exports defines.
 #AC_DEFINE_UNQUOTED(HAVE_LIBPNG, [$HAVE_LIBPNG])
 #AC_DEFINE_UNQUOTED(HAVE_LIBSDL_IMAGE, [$HAVE_LIBSDL_IMAGE])
-	
+
 # Add compiler flags
 AS_IF([test "$HAVE_LIBPNG" = 1], [
-	AC_DEFINE(HAVE_LIBPNG)
-	LIBS="$LIBS -lpng"	
+	AC_DEFINE(HAVE_LIBPNG, [], "libpng is present")
+	LIBS="$LIBS -lpng"
 ])
 AS_IF([test "$HAVE_LIBSDL_IMAGE" = 1], [
-	AC_DEFINE(HAVE_LIBSDL_IMAGE)
+	AC_DEFINE(HAVE_LIBSDL_IMAGE, [], "SDL_image is present")
 	LIBS="$LIBS -lSDL_image"
 ])
 
