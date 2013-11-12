@@ -68,10 +68,15 @@ dword* GNU_extract_ini(KBmodule *mod, const char *inifile, const char *module, c
 
 	sprintf(module_fmt, "[%s]", module);
 	section = -1;
-	module_test_len = sprintf(module_test, module_fmt, section + 1);
+	if (strpbrk(module, "%") != NULL) {
+		module_test_len = sprintf(module_test, module_fmt, section + 1);
+	} else {
+		strcpy(module_test, module_fmt);
+		module_test_len = strlen(module_test);
+	}
 	name_test_len = strlen(name);
 
-	//int iter;
+	int filled;
 	while (KB_fgets(line, sizeof(line), fd)) {
 
 		if (!strncasecmp(line, module_test, module_test_len)) {
@@ -92,14 +97,125 @@ dword* GNU_extract_ini(KBmodule *mod, const char *inifile, const char *module, c
 			test_len = sprintf(test, "%s = %%d", name);
 			if (sscanf(line, test, &val) == 1) {
 				dst[section - first] = val;
+				filled++;
+			} else {
+				char buf[16];
+				test_len = sprintf(test, "%s = #%%s", name);
+				if (sscanf(line, test, &buf[0]) == 1) {
+					val = hex2dec(buf);
+					dst[section - first] = val;
+					filled++;
+				}
 			}
+			if (filled >= num - first) break;
 		}
-		//if (iter++ > 21) break;
+
 	}
 
 	KB_fclose(fd);
 	free(filename);
 	return dst;
+}
+
+Uint32* GNU_ReadTextColors(KBmodule *mod, const char *inifile, const char *section) {
+	dword values[1] = { 0 };
+
+	const char *names[] = { /* Should map to color scheme for COL_TEXT enum from kbres.h */
+		"background",   	/* 0 */
+		"text1",        	/* 1 */
+		"text2",        	/* 2 */
+		"text3",        	/* 3 */
+		"text4",        	/* 4 */
+		"shadow1",      	/* 5 */
+		"shadow2",      	/* 6 */
+		"frame1",       	/* 7 */
+		"frame2",       	/* 8 */
+		"sel_background",	/* 9 */
+		"sel_text1",    	/* 10 */
+		"sel_text2",    	/* 11 */
+		"sel_text3",    	/* 12 */
+		"sel_text4",    	/* 13 */
+		"sel_shadow1",  	/* 14 */
+		"sel_shadow2",  	/* 15 */
+		"sel_frame1",   	/* 16 */
+		"sel_frame2",   	/* 17 */
+		/* maintaining this index is hell, we should DRY it out */
+	};
+	int i;
+
+	Uint32 *colors = malloc(sizeof(Uint32) * COLORS_MAX);
+	if (colors == NULL) return NULL;
+
+	for (i = 0; i < COLORS_MAX; i++) {
+		colors[i] = 0;
+		if (GNU_extract_ini(mod, inifile, section, names[i], 0, 1, &values[0])) {
+			colors[i] = values[0];
+		}
+	}
+	return colors;
+}
+
+Uint32* GNU_ReadMinimapColors(KBmodule *mod, const char *inifile) {
+	dword values[1] = { 0 };
+
+	const char *names[] = { /* Should map to COL_MINIMAP special enum */
+		"shallow_water",	/* 0 */
+		"deep_water",   	/* 1 */
+		"grass",        	/* 2 */
+		"desert",       	/* 3 */
+		"rock",         	/* 4 */
+		"tree",         	/* 5 */
+		"castle",       	/* 6 */
+		"object",       	/* 7 */
+	};
+
+	int i;
+
+	Uint32 *colors = malloc(sizeof(Uint32) * COLORS_MAX);
+	if (colors == NULL) return NULL;
+
+	for (i = 0; i < 8; i++) {
+		GNU_extract_ini(mod, inifile, "minimap", names[i], 0, 1, &values[0]);
+		colors[i] = values[0];
+	}
+
+	return colors;
+}
+
+SDL_Rect* GNU_ReadRect(KBmodule *mod, const char *inifile, int which) {
+	dword values[4] = { 0 };
+
+	const char *names[] = { /* This doesn't map directly into any of the RECT_* defines :/ */
+		"top",  	/* 0 */
+		"left", 	/* 1 */
+		"right",	/* 2 */
+		"bottom",	/* 3 */
+		"bar",  	/* 4 */
+		"map",  	/* 5 */
+		"tile", 	/* 6 */
+		"uitile",	/* 7 */
+		/* Another horrible index to maintain and watch out for :/ */
+	};
+
+	/* Just to make it clear: the "which" argument is magic number :( */
+	const char *section = names[which];
+
+	SDL_Rect *rect = malloc(sizeof(SDL_Rect));
+	if (rect == NULL) return NULL;
+
+	GNU_extract_ini(mod, "ui.ini", section, "x", 0, 1, &values[0]);
+	GNU_extract_ini(mod, "ui.ini", section, "y", 0, 1, &values[1]);
+	GNU_extract_ini(mod, "ui.ini", section, "w", 0, 1, &values[2]);
+	GNU_extract_ini(mod, "ui.ini", section, "h", 0, 1, &values[3]);
+
+	rect->x = values[0];
+	rect->y = values[1];
+	rect->w = values[2];
+	rect->h = values[3];
+
+/*	KB_debuglog(0, "Read RECT '%s' [%d,%d] - [%d,%d]\n"); */
+
+	return rect;
 }
 
 char* GNU_read_textfile(KBmodule *mod, const char *textfile) {
@@ -305,6 +421,48 @@ void* GNU_Resolve(KBmodule *mod, int id, int sub_id) {
 			dword *hit_points =
 				GNU_extract_ini(mod, "troops.ini", "troop%d", "hp", 0, 128, NULL);
 			return hit_points;
+		}
+		break;
+		case RECT_UI:
+		{
+			if (sub_id < 0 || sub_id > 4) return NULL;
+			return GNU_ReadRect(mod, "ui.ini", sub_id);
+		}
+		case RECT_MAP:
+		{
+			return GNU_ReadRect(mod, "ui.ini", 5);
+		}
+		break;
+		case RECT_TILE:
+		{
+			return GNU_ReadRect(mod, "ui.ini", 6);
+		}
+		break;
+		case RECT_UITILE:
+		{
+			return GNU_ReadRect(mod, "ui.ini", 7);
+		}
+		break;
+		case COL_TEXT:
+		{
+			const char *CS_names[] = { /* Index is one of CS_ defines from kbres.h */
+				"generic", /* CS_GENERIC  == 0 */
+				"status1", /* CS_STATUS_1 == 1 */
+				"status2", /* CS_STATUS_2 == 2 */
+				"status3", /* CS_STATUS_3 == 3 */
+				"status4", /* CS_STATUS_4 == 4 */
+				"status5", /* CS_STATUS_5 == 5 */
+				"minimenu",/* CS_MINIMENU == 6 */
+				"viewchar",/* CS_VIEWCHAR == 7 */
+				"viewarmy",/* CS_VIEWARMY == 8 */
+			};
+			if (sub_id < 0 || sub_id > 9) return NULL;
+			return GNU_ReadTextColors(mod, "colors.ini", CS_names[sub_id]);
+		}
+		break;
+		case COL_MINIMAP:
+		{
+			return GNU_ReadMinimapColors(mod, "colors.ini");
 		}
 		break;
 		default: break;
