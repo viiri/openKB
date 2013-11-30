@@ -66,6 +66,19 @@ install_scale2x()
 }
 download_wget()
 {
+	HAS_WGET=`which wget`
+
+	if [ ! ${HAS_WGET} ]; then
+		echo "This environment seems to lack wget."
+		echo "Get it from your package manager or "
+		echo "http://ftp.gnu.org/gnu/wget/"
+		echo "-- it will build and INSTALL *fine* on cygwin/msys/MacOSX"
+		echo "Alternatively, you can download this file manually:"
+		echo "${FILE_URL}"
+		echo "Just save it as ${WORKDIR}${FILE_NAME}"
+		exit 2
+	fi
+
 	wget --quiet ${FILE_URL} -O "${WORKDIR}${FILE_NAME}" \
 		|| (echo "[$DROP_NAME] Unable to download $FILE_NAME from $FILE_URL" && rm ${WORKDIR}${FILE_NAME}) 
 
@@ -92,6 +105,16 @@ install_inprint()
 
 download_git()
 {
+	HAS_GIT=`which git`
+
+	if [ ! ${HAS_GIT} ]; then
+		echo "This environment seems to lack git."
+		echo "If you can't have it, you might attempt to fetch the files"
+		echo "from ${FILE_URL}"
+		echo "and save them into ${WORKDIR}${DROP_NAME}"
+		exit 2
+	fi
+
 	git clone ${FILE_URL} ${WORKDIR}${DROP_NAME}
 }
 
