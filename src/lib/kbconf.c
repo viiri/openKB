@@ -29,10 +29,14 @@
 #define DEFAULT_SAVE_DIR "/var/games/openkb-saves/"
 #define DEFAULT_CONF_DIR "/usr/local/etc/"
 
-#define SAVE_BASE_DIR "saves/"
+#define SAVE_BASE_DIR "saves" PATH_SEP
 #define DATA_BASE_DIR ""
 
+#ifdef USE_WINAPI
+#define CONFIG_BASE_DIR "\\OpenKB\\"
+#else
 #define CONFIG_BASE_DIR "/.openkb/"
+#endif
 #define CONFIG_INI_NAME "openkb.ini"
 
 extern void register_module(KBconfig *conf, KBmodule *mod);
@@ -329,7 +333,10 @@ int read_env_config(struct KBconfig *conf) {
 
 	char *pPath;
 #ifdef USE_WINAPI
-	pPath = (char*)getenv("USERPROFILE");
+	/* Altho WIN32 equivavelnt of /home/username is %USERPROFILE%,
+	 * nobody writes there, and "Application Data" is considered good
+	 * tone. Thus, we use %APPDATA%: */
+	pPath = (char*)getenv("APPDATA");
 #else
 	pPath = (char*)getenv("HOME");
 #endif
@@ -396,7 +403,11 @@ int find_config(struct KBconfig *conf) {
 	}
 
 	/* Try HOME directory */
+#ifdef USE_WINAPI
+	pPath = (char*)getenv("APPDATA");
+#else
 	pPath = (char*)getenv("HOME");//NULL?
+#endif
 	KB_strcpy(config_dir, pPath);
 	KB_strcat(config_dir, CONFIG_BASE_DIR);
 	KB_strcpy(config_file, config_dir);
