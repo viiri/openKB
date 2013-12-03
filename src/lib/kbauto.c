@@ -245,7 +245,7 @@ void add_module_aux(KBconfig *conf, const char *name, int family, int bpp, const
 		KB_debuglog(1, "SlotA: %s\n", conf->modules[i].slotA_name);
 		KB_debuglog(0, "SlotB: %s\n", conf->modules[i].slotB_name);
 		KB_debuglog(0, "SlotC: %s\n", conf->modules[i].slotC_name);
-		KB_debuglog(-2, NULL, NULL);
+		KB_debuglog(-2, "", NULL);
 
 }
 
