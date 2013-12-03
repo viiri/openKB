@@ -130,6 +130,8 @@ KBenv *KB_startENV(KBconfig *conf) {
 	prepare_inline_font();	// <-- inline font
 	nsys->font_size.w = 8;
 	nsys->font_size.h = 8;
+	KB_setfont(nsys, get_inline_font());
+
 
 	//TODO: default font color
 

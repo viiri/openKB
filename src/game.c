@@ -196,7 +196,8 @@ char *text_input(int max_len, int numbers_only, int x, int y) {
 		}
 	}
 
-	inprint(screen, " ", x + curs * 8, y);
+	KB_iloc(x + curs * 8, y);
+	KB_iprint(" ");
 	entered_name[curs] = '\0';
 
 	return (done == -1 ? NULL : &entered_name[0]);	
@@ -348,12 +349,12 @@ KBgame *create_game(int pclass) {
 			if (has_name) KB_iprint(name);
 
 			KB_iloc(menu.x + fs->w, menu.y + fs->h * 3);
-			KB_iprint("   Difficulty   Days  Score\n");
-			KB_iprint("\n");
-			KB_iprint("   Easy         900    x.5 \n");
-			KB_iprint("   Normal       600     x1 \n");
-			KB_iprint("   Hard         400     x2 \n");
-			KB_iprint("   Impossible?  200     x4 \n");
+			KB_iprint ("   Difficulty   Days  Score\n");
+			KB_iprint ("\n");
+			KB_iprintf("   Easy         %3d    x.5 \n", days_per_difficulty[0]);
+			KB_iprintf("   Normal       %3d     x1 \n", days_per_difficulty[1]);
+			KB_iprintf("   Hard         %3d     x2 \n", days_per_difficulty[2]);
+			KB_iprintf("   Impossible?  %3d     x4 \n", days_per_difficulty[3]);
 
 			if (has_name) {
 				KB_iloc(menu.x + fs->w, menu.y + fs->h * 10);
@@ -504,24 +505,29 @@ KBgame *load_game() {
 
 			SDL_TextRect(screen, &menu, colors[COLOR_FRAME], colors[COLOR_BACKGROUND], 1);
 
-			incolor(colors[COLOR_TEXT], colors[COLOR_BACKGROUND]);
-			inprint(screen, " Select game:", menu.x + fs->w, menu.y + fs->w - fs->w/2);
-			inprint(screen, "   Overlord  ", menu.x + fs->w, menu.y + fs->w*2);
-			inprint(screen, "             ", menu.x + fs->w, menu.y + fs->w*4 - fs->w/2);
-			
+			KB_icolor(colors);
+			KB_iloc(menu.x + fs->w, menu.y + fs->h - fs->h/2);
+			KB_iprint(" Select game:"); 
+			KB_iloc(menu.x + fs->w, menu.y + fs->h*2);
+			KB_iprint("   Overlord  "); 
+			KB_iloc(menu.x + fs->w, menu.y + fs->h*4 - fs->h/2);
+			KB_iprint("             ");
+
 			SDL_FillRect(screen, &menu_inner, colors_inner[COLOR_BACKGROUND]);
 
 			for (i = 0; i < num_files; i++) {
 				incolor(colors[COLOR_TEXT], colors[COLOR_BACKGROUND]);
-				char buf[4];sprintf(buf, "%d.", i + 1);
-				inprint(screen, buf, menu.x + fs->w*2, fs->h * i + menu.y + fs->h*4);
-				incolor(colors_inner[COLOR_TEXT], colors_inner[COLOR_BACKGROUND]);
-				if (i == sel) incolor(colors_inner[COLOR_SEL_TEXT], colors_inner[COLOR_SEL_BACKGROUND]);
-				inprint(screen, filename[i], menu.x + fs->w * 5, fs->h * i + menu.y + fs->h*4);
+				KB_iloc(menu.x + fs->w * 2, fs->h * i + menu.y + fs->h*4);
+				KB_iprintf("%d.", i + 1); 
+				KB_icolor(colors_inner);
+				if (i == sel) KB_icolor(colors_inner + COLOR_SELECTION);
+				KB_iloc(menu.x + fs->w * 5, fs->h * i + menu.y + fs->h*4);
+				KB_iprint(filename[i]);
 			}
 
-	incolor(local.status_colors[COLOR_TEXT], local.status_colors[COLOR_BACKGROUND]);
-	inprint(screen, " 'ESC' to exit \x18\x19 Return to Select  ", local.status.x, local.status.y);
+			KB_icolor(local.status_colors);
+			KB_iloc(local.status.x, local.status.y);
+			KB_iprint(" 'ESC' to exit \x18\x19 Return to Select  ");
 
 	    	SDL_Flip( screen );
 
@@ -704,17 +710,30 @@ int select_module() {
 
 		if (redraw) {
 
+			Uint32 colors[] = {
+				0xFFFFFF,
+				0x000000,
+				0x000000,
+				0x000000
+			};
+			Uint32 invcolors[] = {
+				0x000000,
+				0xFFFFFF,
+				0xFFFFFF,
+				0xFFFFFF
+			};
+			Uint32 bgcolor = 0x333333;
+
 			int i;
 
-			SDL_FillRect( screen, NULL, 0x333333 );
+			SDL_FillRect(screen, NULL, bgcolor);
 
-			SDL_TextRect(screen, &menu, 0, 0xFFFFFF, 1);
+			SDL_TextRect(screen, &menu, colors[COLOR_TEXT], colors[COLOR_BACKGROUND], 1);
 
 			for (i = 0; i < conf->num_modules; i++) {
-				if (i == sel)	incolor(0xFFFFFF, 0x000000);
-				else			incolor(0x000000, 0xFFFFFF);
-
-				inprint(screen, conf->modules[i].name, menu.x + 8, 8 * i + menu.y + 8);
+				KB_icolor(i == sel ? colors : invcolors); /* Note: because inline font is color-inverted */
+				KB_iloc(menu.x + 8, 8 * i + menu.y + 8);
+				KB_iprint(conf->modules[i].name);
 			}
 
 	    	SDL_Flip( screen );
