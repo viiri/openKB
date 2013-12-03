@@ -24,7 +24,7 @@
 
 #ifdef HAVE_LIBSDL
 
-#include "SDL/SDL.h"
+#include <SDL.h>
 
 #define KB_BYTE_ORDER SDL_BYTEORDER
 #define KB_LIL_ENDIAN SDL_LIL_ENDIAN

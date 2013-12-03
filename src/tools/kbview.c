@@ -6,8 +6,8 @@
  * 
  * THIS CODE IS DIRT
  */
-#include "SDL/SDL.h" 
-#include "SDL/SDL_image.h"
+#include <SDL.h>
+#include <SDL_image.h>
 
 #include "math.h"
 
