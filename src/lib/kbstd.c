@@ -284,6 +284,15 @@ int file_size(const char *filename) {
 
 int test_directory(const char *path, int make) {
 	struct stat status;
+
+#ifdef USE_WINAPI
+	DWORD dwAttrib = GetFileAttributes(path);
+	if (dwAttrib != INVALID_FILE_ATTRIBUTES)
+	{
+		if (dwAttrib & FILE_ATTRIBUTE_DIRECTORY) return 0;
+	}
+#endif
+
 	if (!stat(path, &status))
 	{
 		if (status.st_mode & S_IFDIR) return 0;
