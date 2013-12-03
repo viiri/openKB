@@ -217,6 +217,13 @@ byte instant_army_multiplier[MAX_RANKS] = {
 	1,
 };
 
+word days_per_difficulty[4] = {
+	900, /* Easy */
+	600, /* Normal */
+	400, /* Hard */
+	200, /* Impossible? */
+};
+
 char *dwelling_names[MAX_DWELLINGS] = {
 	"Plains",
 	"Forest",

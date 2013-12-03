@@ -45,11 +45,10 @@ KBgame *spawn_game(char *name, int pclass, int difficulty) {
 	return game;
 }
 
-/* Calculate how many days has passed by inverting the "days left" variable */
+/* Calculate how many days have passed by inverting the "days left" variable */
 word passed_days(KBgame *game) {
-	word max_days_diff[] = { 900, 600, 400, 200 };
 
-	word max_days = max_days_diff[game->difficulty];
+	word max_days = days_per_difficulty[game->difficulty];
 
 	word pass_days = max_days - game->days_left; 
 

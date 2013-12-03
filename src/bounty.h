@@ -305,6 +305,7 @@ extern byte starting_army_troop[MAX_CLASSES][2];
 extern byte starting_army_numbers[MAX_CLASSES][2];
 extern byte instant_army_multiplier[MAX_RANKS];
 
+extern word days_per_difficulty[4];
 extern char *dwelling_names[MAX_DWELLINGS];
 extern char *town_names[MAX_TOWNS];
 extern char *castle_names[MAX_CASTLES + 1];
