@@ -190,7 +190,7 @@ char *text_input(int max_len, int numbers_only, int x, int y) {
 			KB_iloc(x + curs * fs->w, y);
 			KB_iprintf("%c", twirl[twirl_pos]);
 
-	    	SDL_Flip( screen );
+			KB_flip(sys);
 
 			redraw = 0;
 		}
@@ -366,7 +366,7 @@ KBgame *create_game(int pclass) {
 					KB_iprint((sel == i ? ">\n" : " \n"));
 			}
 
-	    	SDL_Flip( screen );
+			KB_flip(sys);
 
 			redraw = 0;
 		}
@@ -529,7 +529,7 @@ KBgame *load_game() {
 			KB_iloc(local.status.x, local.status.y);
 			KB_iprint(" 'ESC' to exit \x18\x19 Return to Select  ");
 
-	    	SDL_Flip( screen );
+			KB_flip(sys);
 
 			redraw = 0;
 		}
@@ -604,7 +604,7 @@ KBgame *select_game(KBconfig *conf) {
 				KB_iprint("Select Char A-D or L-Load saved game");
 			}
 
-	    	SDL_Flip( screen );
+			KB_flip(sys);
 
 			redraw = 0;
 		}
@@ -736,7 +736,7 @@ int select_module() {
 				KB_iprint(conf->modules[i].name);
 			}
 
-	    	SDL_Flip( screen );
+			KB_flip(sys);
 
 			redraw = 0;
 		}
@@ -1833,7 +1833,7 @@ void view_army(KBgame *game) {
 
 			KB_TopBox(MSG_CENTERED, "Press 'ESC' to exit");
 
-			SDL_Flip(sys->screen);
+			KB_flip(sys);
 			redraw = 0;
 		}
 	}
@@ -1946,7 +1946,7 @@ void dismiss_army(KBgame *game) {
 			KB_iloc(text->x + fs->w * 19, text->y - fs->h / 4);
 			KB_iprintf("%c", twirl[twirl_pos]);
 
-			SDL_Flip(sys->screen);
+			KB_flip(sys);
 			redraw = 0;
 		}
 
@@ -2115,7 +2115,7 @@ void recruit_soldiers(KBgame *game) {
 				KB_iprint("        ");
 			}
 
-			SDL_Flip(sys->screen);
+			KB_flip(sys);
 			redraw = 0;
 		}
 
@@ -2230,7 +2230,7 @@ void visit_home_castle(KBgame *game) {
 				draw_location(0, random_troop, frame);
 			}
 
-			SDL_Flip(sys->screen);
+			KB_flip(sys);
 			redraw = 0;
 			redraw_menu = 0;
 		}
@@ -2271,7 +2271,7 @@ int lay_siege(KBgame *game, int castle_id) {
 	KB_iprint("            Lay Siege (y/n)?");	
 	
 	//KB_BottomBox("Castle %s", "A) Recruit Soldiers\nB) Audience with the King\nC) \nD)\nE)",0);
-	SDL_Flip(sys->screen);
+	KB_flip(sys);
 
 	int key = 0;
 	while (!key) key = KB_event(&yes_no_question);
@@ -2366,7 +2366,7 @@ void gather_information(KBgame *game, int id) {
 		KB_iprintf("  %s %s\n", number_name(game->castle_numbers[id][i]), troops[ game->castle_troops[id][i] ].name);
 	}
 
-	SDL_Flip(sys->screen);
+	KB_flip(sys);
 }
 
 void visit_town(KBgame *game) {
@@ -2437,7 +2437,7 @@ void visit_town(KBgame *game) {
 		}
 
 		if (redraw || redraw_menu) {
-			SDL_Flip(sys->screen);
+			KB_flip(sys);
 			redraw = 0;
 			redraw_menu = 0;		
 		}
@@ -2762,7 +2762,7 @@ int visit_dwelling(KBgame *game, byte rtype) {
 			KB_iprintf("You may recruit up to %d\n", max);
 			KB_iprint ("Recruit how many        ");
 
-			SDL_Flip(sys->screen);
+			KB_flip(sys);
 			redraw = 0;
 		}
 
@@ -3198,7 +3198,7 @@ int attack_foe(KBgame *game) {
 	KB_iloc(rect->x, rect->y + fs->h * 6 - fs->h / 4);
 	KB_iprint("               Attack (y/n)?\n");
 
-	SDL_Flip(sys->screen);
+	KB_flip(sys);
 
 	int key = 0;
 	while (!key) key = KB_event(&yes_no_question);
