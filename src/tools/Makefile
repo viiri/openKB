@@ -26,7 +26,8 @@ kbplay:
 	$(CC) $(SDL_CFLAGS) kb_play.c -o kbplay $(SDL_LDFLAGS)
 
 kbrowse: kbrowse.c
-	$(CC) $(SDL_CFLAGS) kbrowse.c ../../vendor/inprint.c $(LIB_SOURCES) -o kbrowse $(SDL_LDFLAGS)
+	$(CC) $(SDL_CFLAGS) -DHAVE_LIBPNG -c ../../vendor/savepng.c $(SDL_LDFLAGS)
+	$(CC) $(SDL_CFLAGS) kbrowse.c ../../vendor/inprint.c -DHAVE_LIBPNG ../../vendor/savepng.c -UHAVE_LIBPNG $(LIB_SOURCES) -o kbrowse $(SDL_LDFLAGS) savepng.o
 
 kbmaped: kbmaped.c
 	$(CC) $(SDL_CFLAGS) kbmaped.c ../save.c ../env-sdl.c ../../vendor/inprint.c ../../vendor/scale2x.c $(LIB_SOURCES) -o kbmaped $(SDL_LDFLAGS)
