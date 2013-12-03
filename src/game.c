@@ -530,7 +530,6 @@ KBgame *load_game() {
 			KB_iprint(" 'ESC' to exit \x18\x19 Return to Select  ");
 
 			KB_flip(sys);
-
 			redraw = 0;
 		}
 
@@ -605,7 +604,6 @@ KBgame *select_game(KBconfig *conf) {
 			}
 
 			KB_flip(sys);
-
 			redraw = 0;
 		}
 
@@ -737,7 +735,6 @@ int select_module() {
 			}
 
 			KB_flip(sys);
-
 			redraw = 0;
 		}
 
