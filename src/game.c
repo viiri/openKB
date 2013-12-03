@@ -129,13 +129,10 @@ void render_game(KBenv *env, KBgame *game, KBgamestate *state, KBconfig *conf) {
 char *text_input(int max_len, int numbers_only, int x, int y) {
 	static char entered_name[11];
 
-	SDL_Surface *screen = sys->screen;
-
 	int key = 0;
 	int done = 0;
 	int redraw = 1;
 
-	SDL_Rect menu;
 	SDL_Rect *fs = &sys->font_size;
 
 	entered_name[0] = '\0';
@@ -311,7 +308,7 @@ KBgame *create_game(int pclass) {
 
 
 	int has_name = 0;
-	char *name;
+	char *name = NULL;
 
 	int sel = 1;
 
@@ -1174,9 +1171,6 @@ void draw_player(KBgame *game, int frame) {
 	word radii_w = (perim_w - 1) / 2;
 	word radii_h = (perim_h - 1) / 2;
 
-	int border_y = game->y - radii_h;
-	int border_x = game->x - radii_w;
-
 	/** Draw player **/
 	{
 		SDL_Rect hsrc = { 0, 0, tile->w, tile->h };
@@ -1257,7 +1251,6 @@ void draw_damage(KBcombat *war, KBunit *u) {
 	SDL_Surface *comtiles = SDL_TakeSurface(GR_COMTILES, 0, 0);
 
 	int frame = 0;
-	int _x, _y;
 
 	/** Draw "damage" **/
 	{
@@ -1292,7 +1285,7 @@ void view_puzzle(KBgame *game) {
 	SDL_Surface *faces[MAX_VILLAINS]; /* Initialized below */
 
 	/* Local variables to handle "opening" animation */ 
-	int opened[PUZZLEMAP_W][PUZZLEMAP_H] = { 0 };
+	int opened[PUZZLEMAP_W][PUZZLEMAP_H] = { { 0 } };
 	int open_x = 0;
 	int open_y = 0;
 	enum {
@@ -2288,7 +2281,7 @@ void visit_castle(KBgame *game) {
 		not_found,
 		home,
 		your,
-		enemy,
+		enemy
 	} ctype = not_found;
 
 	int id = 0;
@@ -2622,7 +2615,7 @@ int visit_alcove(KBgame *game) {
 
 	KB_iloc(text->x, text->y + fs->h / 8);
 	KB_ilh(fs->h + 2);
-	KB_iprint(
+	KB_iprintf(
 		"The venerable Archmage,\n"
 		"Aurange, will teach you the\n"
 		"secrets of spell casting for\n"
@@ -3430,6 +3423,7 @@ int clone_army(KBgame *game, KBcombat *war) {
 
 	}
 
+	return ok;
 }
 
 int freeze_army(KBgame *game, KBcombat *war) {
@@ -3640,23 +3634,22 @@ int select_gate(KBgame *game, int mode) {
 		game->last_x = gate_x;
 		game->last_y = gate_y;
 	}
+	return done - 1;
 }
 
 /* Pass "combat" pointer for combat spells, NULL for adventure spells */
 int choose_spell(KBgame *game, KBcombat *combat) {
 
+	int mode = (combat == NULL ? 1 : 0);
 	byte spell_id = 0xFF;
 
 	SDL_Rect border;
-
-	SDL_Surface *screen = sys->screen;
-
 	SDL_Rect *fs = &sys->font_size;
 
 	if (!game->knows_magic)
 	{
 		no_spell_banner();
-		return;	
+		return -1;
 	}
 
 	if (combat && combat->spells)
@@ -3664,10 +3657,8 @@ int choose_spell(KBgame *game, KBcombat *combat) {
 		KB_TopBox(MSG_CENTERED, "Only 1 spell per round!");
 		KB_flip(sys);
 		KB_Wait();
-		return;
+		return -2;
 	}
-
-	int mode = (combat == NULL ? 1 : 0);
 
 	RECT_Text((&border), 15, 36);
 	RECT_Center(&border, sys->screen);
@@ -4959,6 +4950,8 @@ int save_game(KBgame *game) {
 	err = KB_saveDAT(buffer, game);
 	if (err) KB_errlog("Unable to save game '%s'\n", buffer);
 	else KB_stdlog("Saved game into '%s'\n", buffer);
+
+	return err;
 }
 
 KBgamestate quit_question = {
@@ -5026,8 +5019,6 @@ void adventure_loop(KBgame *game) {
 	SDL_Surface *screen = sys->screen;
 
 	Uint32 *colors = local.message_colors;
-
-	SDL_Rect status_rect = { local.status.x, local.status.y, local.status.w, local.status.h };
 
 	SDL_BlitSurface(local.border[FRAME_MIDDLE], NULL, screen, local.frames[FRAME_MIDDLE] );
 

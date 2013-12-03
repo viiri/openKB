@@ -98,19 +98,19 @@ extern int KB_fclose ## SUFFIX  (KB_File * stream);
  * b) Emulates STDIO interface on non-POSIX systems
  * c) Used internally by other file wrappers to read the actual, non-virtual files
  */
-KB_FILE_IF_NAME_ADD(F);
+KB_FILE_IF_NAME_ADD(F)
 /*
  * CC Inline File ("CC") 
  */
-KB_FILE_IF_NAME_ADD(CC);
+KB_FILE_IF_NAME_ADD(CC)
 /*
  * IMG Inline File ("IMG") 
  */
-KB_FILE_IF_NAME_ADD(IMG);
+KB_FILE_IF_NAME_ADD(IMG)
 /*
  * BUF Array Access ("BUF")
  */
-KB_FILE_IF_NAME_ADD(BUF);
+KB_FILE_IF_NAME_ADD(BUF)
 #undef KB_FILE_IF_NAME_ADD
 
 #ifdef HAVE_LIBSDL

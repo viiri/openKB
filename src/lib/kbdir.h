@@ -108,11 +108,11 @@ extern long KB_telldir ## SUFFIX  (KB_DIR *dirp); \
 extern KB_Entry * KB_readdir ## SUFFIX  (KB_DIR *dirp); \
 extern int KB_closedir ## SUFFIX  (KB_DIR *dirp);
 /* Real Directory ("D") */
-KB_DIR_IF_NAME_ADD(D);
+KB_DIR_IF_NAME_ADD(D)
 /* CC Group File ("CC") */
-KB_DIR_IF_NAME_ADD(CC);
+KB_DIR_IF_NAME_ADD(CC)
 /* IMG Group File ("IMG") */
-KB_DIR_IF_NAME_ADD(IMG);
+KB_DIR_IF_NAME_ADD(IMG)
 #undef KB_DIR_IF_NAME_ADD
 
 

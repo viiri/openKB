@@ -88,6 +88,7 @@ extern void KB_stopENV(KBenv *env);
 
 extern void KB_flip(KBenv *env);
 
+extern void KB_print(KBenv *env, const char *str);
 extern void KB_printf(KBenv *env, const char *fmt, ...);
 extern void KB_vprintf(KBenv *env, const char *fmt, va_list argptr);
 extern SDL_Rect *KB_fontsize(KBenv *env);
