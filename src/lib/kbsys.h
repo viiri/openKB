@@ -37,8 +37,8 @@ typedef Uint8   	byte  ;
 
 #else
 
-#include "endian.h" 
-#include "stdint.h"
+#include <endian.h>
+#include <stdint.h>
 
 #define KB_BYTE_ORDER __BYTE_ORDER
 #define KB_LIL_ENDIAN __LITTLE_ENDIAN
