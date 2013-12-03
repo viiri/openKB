@@ -1059,6 +1059,26 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 				EGA_MAGENTA,// sel_shadow2
 				EGA_YELLOW,	// sel_frame1
 				EGA_YELLOW,	// sel_frame2
+			};
+			byte ega_scheme_chrome_index[] = {
+				EGA_BLACK,	// background
+				EGA_WHITE,	// text1
+				EGA_WHITE,	// text2
+				EGA_WHITE,	// text3
+				EGA_WHITE,	// text4
+				EGA_MAGENTA,// shadow1
+				EGA_MAGENTA,// shadow2
+				EGA_YELLOW,	// frame1
+				EGA_YELLOW,	// frame2
+				EGA_WHITE,	// sel_background
+				EGA_BLACK,	// sel_text1
+				EGA_BLACK,	// sel_text2
+				EGA_BLACK,	// sel_text3
+				EGA_BLACK,	// sel_text4
+				EGA_MAGENTA,// sel_shadow1
+				EGA_MAGENTA,// sel_shadow2
+				EGA_MAGENTA,// sel_frame1
+				EGA_MAGENTA,// sel_frame2
 			};			
 			byte ega_scheme_mb_index[] = {
 				EGA_DBLUE,	// background
@@ -1108,6 +1128,9 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 			if (colors == NULL) return NULL;
 
 			switch (sub_id) {
+				case CS_CHROME: 	/* "Raw" menus (black & white) */
+					ega_index_ptr = ega_scheme_chrome_index;
+					break;
 				case CS_MINIMENU:	/* Savefile selection */
 					ega_index_ptr = ega_scheme_savefile_index;
 					break;

@@ -292,6 +292,8 @@ KBgame *create_game(int pclass) {
 
 	SDL_Surface *screen = sys->screen;
 
+	Uint32 *colors = KB_Resolve(COL_TEXT, CS_CHROME);
+
 	int key = 0;
 	int done = 0;
 	int redraw = 1;
@@ -338,7 +340,7 @@ KBgame *create_game(int pclass) {
 
 		if (redraw) {
 
-			SDL_TextRect(screen, &menu, 0xFFFFFF, 0x000000, 1);
+			SDL_TextRect(screen, &menu, colors[COLOR_TEXT], colors[COLOR_BACKGROUND], 1);
 
 			KB_iloc(menu.x + fs->w, menu.y + fs->h);	
 			KB_iprintf(" %-9s Name: ", classes[pclass][0].title);
@@ -376,6 +378,8 @@ KBgame *create_game(int pclass) {
 		}
 
 	}
+
+	free(colors);
 
 	return game;
 }
@@ -1179,6 +1183,8 @@ void draw_combat(KBcombat *war) {
 
 	SDL_Surface *comtiles = SDL_TakeSurface(GR_COMTILES, 0, 0);
 
+	Uint32 *colors_size = KB_Resolve(COL_TEXT, CS_CHROME);
+
 	int draw_army_size = ((KBgame*)war->heroes[0])->options[4]; /* Hack -- get player */
 
 	/** Draw combat **/
@@ -1218,17 +1224,16 @@ void draw_combat(KBcombat *war) {
 
 				if (draw_army_size) {
 					char count[8];
-					Uint32 *colors_inner = KB_Resolve(COL_TEXT, CS_GENERIC);
 					sprintf(count, "%d", u->count);
 					KB_iloc(dst.x + dst.w - strlen(count) * sys->font_size.w, dst.y + dst.h - sys->font_size.h);
-					KB_icolor(colors_inner);
+					KB_icolor(colors_size);
 					KB_iprint(count);
-					free(colors_inner);
 				}
 			}
 		}
-
 	}
+
+	free(colors_size);
 }
 
 void draw_damage(KBcombat *war, KBunit *u) {

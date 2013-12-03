@@ -455,6 +455,7 @@ void* GNU_Resolve(KBmodule *mod, int id, int sub_id) {
 				"minimenu",/* CS_MINIMENU == 6 */
 				"viewchar",/* CS_VIEWCHAR == 7 */
 				"viewarmy",/* CS_VIEWARMY == 8 */
+				"chrome",  /* CS_CHROME   == 9 */
 			};
 			if (sub_id < 0 || sub_id > 9) return NULL;
 			return GNU_ReadTextColors(mod, "colors.ini", CS_names[sub_id]);
