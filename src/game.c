@@ -2015,8 +2015,7 @@ void audience_with_king(KBgame *game) {
 
 	int i;
 
-	for (i = 0; i < MAX_VILLAINS; i++)
-		if (game->villain_caught[i]) captured++;
+	captured = player_captured(game);
 
 	needed = classes[game->class][game->rank + 1].villains_needed - captured;
 
@@ -2027,12 +2026,34 @@ void audience_with_king(KBgame *game) {
 		"throne to greet you and\n"
 		"proclaims:           (space)", MSG_PAUSE);
 
-	sprintf(message, "\n\n"
-		"My dear %s,\n\n"
-		"I can aid you better after\n"
-		"you've captured %d more\n"
-		"villains.",
-	game->name, needed);
+	if (needed <= 0) {
+
+		if (game->rank < MAX_RANKS - 1) {
+			/* Advance player rank */
+			promote_player(game);
+
+			sprintf(message, "\n\n"
+				"Congratulations %s,\n\n"
+				"I now promote you to\n"
+				"%s.\n",
+			game->name, classes[game->class][game->rank].title);
+		}
+		else {
+			sprintf(message, "\n\n"
+				"%s the %s,\n\n"
+				"Hurry and recover my Scepter\n"
+				"of Order or all will be\n"
+				"lost!",
+			game->name, classes[game->class][game->rank].title);
+		}
+	} else {
+		sprintf(message, "\n\n"
+			"My dear %s,\n\n"
+			"I can aid you better after\n"
+			"you've captured %d more\n"
+			"villains.",
+		game->name, needed);
+	}
 
 	KB_BottomBox(message, "", MSG_PAUSE);
 }

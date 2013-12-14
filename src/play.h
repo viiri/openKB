@@ -51,6 +51,8 @@ extern int player_score(KBgame *game);
 
 /** Player actions **/
 
+extern void promote_player(KBgame *game);
+
 extern void sail_to(KBgame *game, byte continent);
 
 extern int buy_troop(KBgame *game, byte troop_id, word number);

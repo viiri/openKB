@@ -256,7 +256,20 @@ int player_score(KBgame *game) {
 		score /= 2;
 	else
 		score *= difficulty_modifier[game->difficulty];
+	if (score < 0) score = 0;
 	return score;
+}
+
+void promote_player(KBgame *game) {
+	if (game->rank >= MAX_RANKS - 1) return;
+
+	game->rank += 1;
+
+	game->base_leadership += classes[game->class][game->rank].leadership;
+	game->max_spells += classes[game->class][game->rank].max_spell;
+	game->spell_power += classes[game->class][game->rank].spell_power;
+	game->commission += classes[game->class][game->rank].commission;
+	game->knows_magic += classes[game->class][game->rank].knows_magic;
 }
 
 void sail_to(KBgame *game, byte continent) {
