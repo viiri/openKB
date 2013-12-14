@@ -4744,8 +4744,30 @@ void unit_try_shoot(KBcombat *war) {
 
 }
 
+void unit_ranged_damage(KBcombat *war, int other_side, int other_id) {
+	KBunit *victim;
+	word kills;
+
+	KBunit *u = &war->units[war->side][war->unit_id];
+
+	kills = unit_ranged_shot(war, war->side, war->unit_id, other_side, other_id);
+
+	victim = &war->units[other_side][other_id];
+
+	draw_damage(war, victim);
+
+	combat_log("%s shoot %s killing %d", troops[u->troop_id].name, troops[victim->troop_id].name, kills);
+
+	/* A turn well spent */
+	u->acted = 1;
+
+	/* Remove holes */
+	compact_units(war);
+}
+
 int ai_pick_target(KBcombat *combat, int nearby) {
 
+	int far = 1 - nearby;
 	int side = 1 - combat->side;
 	int pick = -1;
 	int i;
@@ -4753,22 +4775,31 @@ int ai_pick_target(KBcombat *combat, int nearby) {
 		KBunit *u = &combat->units[side][i];
 		if (!u->count) continue;
 
-		if (nearby && unit_touching(combat, side, i, combat->unit_id)) continue; 
+		if (nearby && !unit_touching(combat, side, i, combat->unit_id)) continue; 
 
 		if (pick != -1) {
 			KBunit *picked = &combat->units[side][pick];
-			/* Units that shoot has higher priority */
-			if (picked->shots) {
-				if (!u->shots) continue;
-				/* If both shoot, pick one with higher damage */
-				if (troops[u->troop_id].ranged_max < troops[picked->troop_id].ranged_max) continue; 
-			} else {
-				/* Pick one with higher melee */
-				if (troops[u->troop_id].melee_max < troops[picked->troop_id].melee_max) continue;
+			//printf("Comparing %s shots %d vs shots %d of picked %d\n", far ? "far" : "near", u->shots, picked->shots, pick);
+			/* Units that shoot have higher priority */
+			if (far) {
+				if (picked->shots && !u->shots) continue;
+			}
+			/* If it's close, or (not shooting) *
+			 * => check it's hp */
+			if (!far || (!u->shots)) {
+				/* Pick one with... smaller hp */
+				if (troops[u->troop_id].hit_points > troops[picked->troop_id].hit_points) continue;
 			}
 		}
 		/* Save new one */
 		pick = i;
+		//printf("Picked unit %d\n", pick);
+	}
+
+	if (pick != -1) {
+		char *name = troops[combat->units[combat->side][combat->unit_id].troop_id].name;
+		char *name2 = troops[combat->units[side][pick].troop_id].name;
+		printf("Unit %s picked %s as it's %s target\n", name, name2, nearby ? "near" : "far");	
 	}
 
 	return pick;
@@ -4783,17 +4814,8 @@ int ai_unit_think(KBcombat *combat) {
 
 	int acted = 0;
 
-	if (t->abilities & ABIL_FLY) {
-
-		int far_target = ai_pick_target(combat, 0);
-
-		//draw_status("Unitia fly");
-		KB_flip(sys);
-		SDL_Delay(300);
-
-	}
-
-	if (u->shots) {
+	/* Try shooting */
+	if (!acted && u->shots) {
 
 		/* Must not be blocked */
 		if (close_target == -1) {
@@ -4802,25 +4824,75 @@ int ai_unit_think(KBcombat *combat) {
 			if (far_target != -1) {
 				KBunit *target = &combat->units[1-combat->side][far_target];
 				//shoot_projectile(combat, far_target);
+				
+				/* Actualy shoot */
+				unit_ranged_damage(combat, 1-combat->side, far_target);
+
+				acted = 1;
 			}
 
 		}
 
 	}
 
-	if (!u->shots) {
-		int ox, oy;
-		//unit_offset(combat->side, combat->unit_id, close_target);//
-		acted = move_unit(combat, combat->side, combat->unit_id, -1, 0);
+	/* Try flying */
+	if (!acted && u->flights && close_target == -1) {
+		int nx, ny;
+
+		int far_target = ai_pick_target(combat, 0);
+
+		unit_fly_offset(combat, combat->side, combat->unit_id, far_target, &nx, &ny);
+
+		if (nx != u->x && ny != u->y) {
+			/* Actually move */
+			unit_relocate(combat, combat->side, combat->unit_id, nx, ny);
+
+			/* Spend 1 flight point */
+			u->flights--;
+			if (!u->flights) u->acted = 1;
+
+			acted = 1;
+		} else {
+			printf("...but there's no way to fly there...\n");
+		}
 
 		if (acted == 1) {
 			draw_combat(combat);//refresh screen
-			combat_log("%s move", t->name);
+			combat_log("%s fly", t->name);
+		}
+
+		//draw_status("Unitia fly");
+		//KB_flip(sys);
+		//SDL_Delay(300);
+	}
+
+	/* Try moving */
+	if (!acted && !u->shots) {
+		int ox, oy;
+
+		/* There's no one nearby */
+		if (close_target == -1) {
+			close_target = ai_pick_target(combat, 0); /* <-far target*/
+		}
+
+		unit_move_offset(combat, combat->side, combat->unit_id, close_target, &ox, &oy);
+
+		/* Can move */
+		if (ox != 0 || oy != 0) {
+
+			acted = move_unit(combat, combat->side, combat->unit_id, ox, oy);
+
+			if (acted == 1) {
+				draw_combat(combat);//refresh screen
+				combat_log("%s move", t->name);
+			}
+
 		}
 	}
 
+	/* Just wait */
 	if (!acted) {
-	
+
 		return unit_try_wait(combat);
 
 	}

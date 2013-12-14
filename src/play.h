@@ -100,5 +100,7 @@ extern int unit_surrounded(KBcombat *war, int side, int id);
 extern int unit_ranged_shot(KBcombat *war, int side, int id, int other_side, int other_id);
 extern int unit_hit_unit(KBcombat *war, int side, int id, int other_side, int other_id);
 extern void unit_relocate(KBcombat *war, int side, int id, int nx, int ny);
+extern void unit_move_offset(KBcombat *war, int side, int id, int other_full_id, int *ox, int *oy);
+extern void unit_fly_offset(KBcombat *war, int side, int id, int other_full_id, int *tx, int *ty);
 
 #endif

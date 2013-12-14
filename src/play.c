@@ -876,6 +876,167 @@ void unit_relocate(KBcombat *war, int side, int id, int nx, int ny) {
 	u->y = ny;
 }
 
+/* NOTE: DOS version did a different sort of distance calculation.
+ * TODO: fix it to match! */
+
+/* Calculate square root with integer-only math. */
+/* from: http://www.dsprelated.com/showmessage/65265/1.php message by Steve */
+/* NOTE: this code is probably not portable, we should see to it */
+dword isqrt32(dword h) {
+	dword x;
+	dword y;
+	int i;
+
+	/* The answer is calculated as a 32 bit value, where the last
+	   16 bits are fractional. */
+	x =	y = 0;
+	for (i = 0; i < 32;  i++)
+	{
+		x = (x << 1) | 1;
+		if (y < x) x -= 2;
+		else       y -= x;
+		x++;
+		y <<= 1;
+		if ((h & 0x80000000)) y |= 1;
+		h <<= 1;
+		y <<= 1;
+		if ((h & 0x80000000)) y |= 1;
+		h <<= 1;
+	}
+	return x;
+}
+
+/* Integer POWER-OF-TWO "function" */
+#define ipow2(a) ((a) * (a))
+
+/* Shorthand Pythagorean distance formula (integer-based) */
+#define calc_distance(x1, y1, x2, y2) isqrt32(ipow2((x2) - (x1)) + ipow2((y2) - (y1)))
+
+/* Find a tile around position_x/position_y, which has the minimal distance
+ * between target_x/target_y and origin_x/origin_y.
+ * Thus:
+ * For walking units, position_x/position_y must be == origin_x/origin_y
+ * For flying units, position_x/position_y must be == target_x/target_y
+ *
+ * Returns offset between picked_x/picked_y and origin_x/origin_y
+ * or 0, 0 if nothing suitable was found.
+ * */ 
+void unit_closest_offset(KBcombat *war, int side, int id, int position_x, int position_y, int origin_x, int origin_y, int target_x, int target_y, int *ox, int *oy) {
+	int i, j;
+
+	//KBunit *u = &war->units[side][id];
+	//char *name = troops[u->troop_id].name;
+
+	dword max_dist = calc_distance(CLEVEL_W + 1, CLEVEL_H + 1, 0, 0); 
+
+	dword picked_dist = max_dist;
+	int picked_x;
+	int picked_y;
+	for (j = -1; j < 2; j++) {
+		for (i = -1; i < 2; i++) {
+			if (position_x + i < 0) continue;
+			if (position_y + j < 0) continue;
+			if (position_x + i >= CLEVEL_W) continue;
+			if (position_y + j >= CLEVEL_H) continue;
+
+			//printf("%s probe %d, %d\n", name, i, j);
+
+			dword dist = calc_distance(position_x + i, position_y + j, target_x, target_y);
+			//float dist = sqrt( pow(other->x - (start_x+i), 2) + pow(other->y - (start_y+j), 2) );
+
+			if (war->omap[position_y + j][position_x + i]) dist = max_dist; /* Obstacle */
+			if ((position_x != origin_x || position_y != origin_y)
+			&& war->umap[position_y + j][position_x + i]) dist = max_dist; /* Enemy, but we're not interested */
+			if (war->umap[position_y + j][position_x + i] - 1 >= MAX_UNITS
+			&& war->umap[position_y + j][position_x + i] - 1 != side * MAX_UNITS + id) dist = max_dist; /* Friend */
+
+			//printf("Dist is: %d (%08x) vs [%08x]\n", dist, dist, picked_dist);
+
+			if (dist < picked_dist) {
+				picked_dist = dist;
+				picked_x = position_x + i;
+				picked_y = position_y + j;
+			}
+		}
+	}
+
+	if (picked_dist < max_dist) {
+		/* Tile is good */
+		*ox = picked_x - origin_x;
+		*oy = picked_y - origin_y;
+	} else {
+		/* Tile is unwalkable */
+		*ox = 0;
+		*oy = 0;
+	}
+
+}
+
+/* Find a tile that can move unit closer to it's target */
+void unit_move_offset(KBcombat *war, int side, int id, int other_full_id, int *ox, int *oy) {
+	int other_side;
+	int other_id;
+	int i, j;
+
+	KBunit *u, *other;
+
+	other_side = 0;
+	other_id = other_full_id;
+
+	if (other_id >= MAX_UNITS) {
+		other_id -= MAX_UNITS;
+		other_side = 1;
+	}
+
+ 	u = &war->units[side][id];
+ 	other = &war->units[other_side][other_id];
+ 	char *name = troops[u->troop_id].name;
+
+	unit_closest_offset(war, side, id, u->x, u->y, u->x, u->y, other->x, other->y, ox, oy);
+}
+
+/* Find a tile that can fly a unit closer to it's target */
+void unit_fly_offset(KBcombat *war, int side, int id, int other_full_id, int *tx, int *ty) {
+	int nx, ny;
+	int other_side;
+	int other_id;
+	int i;
+
+	KBunit *u, *other;
+
+	other_side = 0;
+	other_id = other_full_id;
+
+	if (other_id >= MAX_UNITS) {
+		other_id -= MAX_UNITS;
+		other_side = 1;
+	}
+
+ 	u = &war->units[side][id];
+ 	other = &war->units[other_side][other_id];
+
+	int ox, oy;
+	
+	ox = 0;
+	oy = 0;
+
+	unit_closest_offset(war, side, id, other->x, other->y, u->x, u->y, other->x, other->y, &ox, &oy);
+
+	nx = u->x + ox;
+	ny = u->y + oy;
+
+	/* Tile is still occupied */
+	if (war->omap[ny][nx] || war->umap[ny][nx]) {
+		*tx = u->x;
+		*ty = u->y;
+	} else {
+	/* Tile is good */
+		*tx = nx;
+		*ty = ny;
+	}
+}
+
+
 /** Spell effects **/
 
 void time_stop(KBgame *game) {
