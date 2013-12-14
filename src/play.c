@@ -186,8 +186,8 @@ int has_power(KBgame *game, byte power) {
 
 /* Return cost of boat rental, in gold */
 word boat_cost(KBgame *game) {
-	if (has_power(game, POWER_CHEAPER_BOAT_RENTAL)) return 100;
-	return 500;
+	if (has_power(game, POWER_CHEAPER_BOAT_RENTAL)) return COST_BOAT_CHEAP;
+	return COST_BOAT_EXPENSIVE;
 }
 
 /* Return 1 if player has boat, 0 if not */

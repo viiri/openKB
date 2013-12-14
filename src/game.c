@@ -2428,7 +2428,7 @@ void visit_town(KBgame *game) {
 			KB_iprint("A) Get New Contract\n");
 			KB_imenu(&five_choices, 1, 30);
 			if (game->boat == 0xFF)
-				KB_iprintf("B) Rent boat (%d week) \n", 500);
+				KB_iprintf("B) Rent boat (%d week) \n", boat_cost(game));
 			else
 				KB_iprint("B) Cancel boat rental\n");
 			KB_imenu(&five_choices, 2, 30);
@@ -2436,7 +2436,7 @@ void visit_town(KBgame *game) {
 			KB_imenu(&five_choices, 3, 30);
 			KB_iprintf("D) %s spell (%d)\n", spell_names[ game->town_spell[id] ], spell_costs[ game->town_spell[id] ]);
 			KB_imenu(&five_choices, 4, 30);
-			KB_iprint("E) Buy seige weapons (3000)\n");
+			KB_iprintf("E) Buy seige weapons (%d)\n", COST_SIEGE_WEAPONS);
 		}
 
 		if (redraw) {
@@ -2486,7 +2486,7 @@ void visit_town(KBgame *game) {
 			/** Rent/cancel Boat **/
 			if (key == 2) {
 				if (game->boat == 0xFF) {
-					if (game->gold <= 500) {
+					if (game->gold <= boat_cost(game)) {
 						KB_BottomBox("\n\n\nYou don't have enough gold!", "", 0);
 						msg_hold = 1;
 					} else {
@@ -2494,7 +2494,7 @@ void visit_town(KBgame *game) {
 
 						redraw_menu = 1;
 
-						game->gold -= 500;
+						game->gold -= boat_cost(game);
 
 						game->boat = game->continent;
 #if 0						
@@ -2556,12 +2556,12 @@ void visit_town(KBgame *game) {
 				if (game->siege_weapons) {
 					KB_BottomBox("\n\n\n   You have siege weapons!", "", 0);
 					msg_hold = 1;
-				} else if (game->gold <= 3000) {
+				} else if (game->gold <= COST_SIEGE_WEAPONS) {
 					KB_BottomBox("\n\n\nYou don't have enough gold!", "", 0);
 					msg_hold = 1;
 				} else {				
 					game->siege_weapons = 1;
-					game->gold -= 3000;
+					game->gold -= COST_SIEGE_WEAPONS;
 				}
 				redraw = 1;
 			}
