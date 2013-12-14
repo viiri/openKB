@@ -2270,7 +2270,7 @@ int lay_siege(KBgame *game, int castle_id) {
 	/* Message */
 	KB_iloc(text->x, text->y + fs->h/4);
 	KB_iprint("\n\n");
-	if (game->castle_owner[id] == 0x7F) {
+	if (game->castle_owner[id] == KBCASTLE_MONSTERS) {
 		KB_iprint("Various groups of monsters\noccupy this castle.");
 	} else {
 		char *name = KB_Resolve(STR_VNAME, game->castle_owner[id] & 0x1F);
@@ -2319,7 +2319,7 @@ void visit_castle(KBgame *game) {
 		&&	castle_coords[i][1] == game->x
 		&&	castle_coords[i][2] == game->y) {
 			id = i;
-			ctype = (game->castle_owner[id] == 0xFF ? your : enemy);
+			ctype = (game->castle_owner[id] == KBCASTLE_PLAYER ? your : enemy);
 		}
 	}
 
@@ -2336,17 +2336,17 @@ void visit_castle(KBgame *game) {
 	if (ctype == enemy) {
 		lay_siege(game, id);
 	}
-
+/*
 	if (game->castle_owner[id] == 0xFF) {
 		printf("Castle owned by you\n");
 	} else if (game->castle_owner[id] == 0x7F) {
 		printf("Castle owned by monsters\n");	
 	} else {
-		char *sign = KB_Resolve(STR_VNAME, game->castle_owner[id] & 0x1F);
-		printf("Got: %s\n", sign);
-		printf("Castle owned by [%08x]\n", game->castle_owner[id] );
+		char *name = KB_Resolve(STR_VNAME, game->castle_owner[id] & 0x1F);
+		printf("Castle owned by [%08x], %s\n", game->castle_owner[id], name);
+		free(name);
 	}
-
+*/
 
 }
 
@@ -2361,7 +2361,7 @@ void gather_information(KBgame *game, int id) {
 	KB_iloc(text->x, text->y - fs->h/4 - fs->h / 8);
 	KB_ilh(fs->h + fs->h/8);
 	KB_iprintf("Castle %s is under\n", castle_names[id]);
-	if (game->castle_owner[id] == 0x7F) {
+	if (game->castle_owner[id] == KBCASTLE_MONSTERS) {
 		KB_iprint("no one's rule.\n");
 	} else {
 		char *name = STR_LoadRESOURCE(STRL_VNAMES, 0, game->castle_owner[id] & 0x1F);
