@@ -107,6 +107,7 @@ void fullfill_contract(KBgame *game, byte villain_id) {
 	int slot = -1;
 
 	/** Fullfill contract **/
+	game->gold += villain_rewards[villain_id];
 	game->villain_caught[villain_id] = 1;
 	game->contract = 0xFF;
 
@@ -347,6 +348,9 @@ void temp_death(KBgame *game) {
 		game->player_numbers[i] = game->player_numbers[i + 1];
 	}
 
+	/* Take away siege weapons */
+	game->siege_weapons = 0;
+
 	/* Give free peasants */
 	game->player_troops[0] = 0; /* MAGIC NUMBER for "Peasants" */
 	game->player_numbers[0] = 20;
@@ -434,7 +438,7 @@ int test_victory(KBcombat *war) {
 	int i;
 	int side = 1;
 	for (i = 0; i < MAX_UNITS; i++) {
-		if (war->units[1][i].count) return 1;
+		if (war->units[side][i].count) return 1;
 	}
 	return 0;
 }
@@ -448,6 +452,8 @@ void prepare_units_player(KBcombat *war, int side, KBgame *game) {
 		war->units[side][i].max_count = war->units[side][i].count;
 		war->units[side][i].y = i;
 		war->units[side][i].x = side * (CLEVEL_W - 1);
+
+		war->spoils[side] += (troops[war->units[side][i].troop_id].spoils_factor * 5) * war->units[side][i].count;
 	}
 	war->heroes[side] = game;
 } 
@@ -456,25 +462,37 @@ void prepare_units_foe(KBcombat *war, int side, KBgame *game, int continent_id, 
 	int i;
 	int max_troops = MAX_UNITS;
 	if (max_troops > 3) max_troops = 3;
+	war->spoils[side] = 0;
 	for (i = 0; i < max_troops; i++)
 	{
 		war->units[side][i].troop_id = game->follower_troops[continent_id][foe_id][i];
 		war->units[side][i].count = game->follower_numbers[continent_id][foe_id][i];
-		war->units[side][i].max_count = war->units[side][i].count; 
+		war->units[side][i].max_count = war->units[side][i].count;
+
 		war->units[side][i].y = i;
 		war->units[side][i].x = side * (CLEVEL_W - 1);
+		
+		war->spoils[side] += (troops[war->units[side][i].troop_id].spoils_factor * 5) * war->units[side][i].count;
 	}
+	war->heroes[side] = NULL;
+	war->powers[side] = 0;
 } 
 
 void prepare_units_castle(KBcombat *war, int side, KBgame *game, int castle_id) {
 	int i;
+	war->spoils[side] = 0;
 	for (i = 0; i < MAX_UNITS; i++)
 	{
 		war->units[side][i].troop_id = game->castle_troops[castle_id][i];
 		war->units[side][i].count = game->castle_numbers[castle_id][i];
+		war->units[side][i].max_count = war->units[side][i].count;
 		war->units[side][i].y = i;
 		war->units[side][i].x = 0;
+
+		war->spoils[side] += (troops[war->units[side][i].troop_id].spoils_factor * 5) * war->units[side][i].count;
 	}
+	war->heroes[side] = NULL;
+	war->powers[side] = 0;
 } 
 
 void accept_units_player(KBgame *game, int side, KBcombat *war) {
@@ -486,15 +504,44 @@ void accept_units_player(KBgame *game, int side, KBcombat *war) {
 	}
 }
 
+void accept_units_foe(KBgame *game, int side, KBcombat *war, int continent_id, int foe_id) {
+	int i;
+	int max_troops = MAX_UNITS;
+	if (max_troops > 3) max_troops = 3;
+	for (i = 0; i < max_troops; i++)
+	{
+		game->follower_troops[continent_id][foe_id][i] = war->units[side][i].troop_id; 
+		game->follower_numbers[continent_id][foe_id][i] = war->units[side][i].count;
+	}
+}
+
+void accept_units_castle(KBgame *game, int side, KBcombat *war, int castle_id) {
+	int i;
+	for (i = 0; i < MAX_UNITS; i++)
+	{
+		game->castle_troops[castle_id][i] = war->units[side][i].troop_id;
+		game->castle_numbers[castle_id][i] = war->units[side][i].count;
+	}
+}
+
+
 void reset_turn(KBcombat *war) {
 	int i, j;
 	for (j = 0; j < MAX_SIDES; j++)
 	for (i = 0; i < MAX_UNITS; i++) {
+		war->units[j][i].turn_count = war->units[j][i].count;
+		war->units[j][i].retaliated = 0;
 		war->units[j][i].acted = 0;
 		war->units[j][i].moves = troops[war->units[j][i].troop_id].move_rate;
 		war->units[j][i].flights = 0;
 		if (troops[war->units[j][i].troop_id].abilities & ABIL_FLY)
 			war->units[j][i].flights = 2;
+		/* End-of-turn abilities */
+		if (war->side == 1) {
+			/* Regen */
+			if (troops[war->units[j][i].troop_id].abilities & ABIL_REGEN)
+				war->units[j][i].injury = 0;
+		}
 	}
 	war->phase = 0;
 	war->spells = 0;
@@ -683,6 +730,7 @@ int compact_units(KBcombat *war) {
 
 					memcpy(&war->units[j][k], &war->units[j][k+1], sizeof(KBunit));
 					//printf("Copying %d to %d\n", k+1, k);
+					war->units[j][k+1].count = 0;
 				}
 			}
 		}
@@ -700,6 +748,7 @@ int compact_units(KBcombat *war) {
 		}
 	}
 
+	return 1;
 }
 
 /* Deal damage */

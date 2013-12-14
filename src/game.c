@@ -1220,7 +1220,7 @@ void draw_combat(KBcombat *war) {
 
 				KBunit *u = &war->units[j][i];
 
-				if (u->count == 0) continue;
+				if (u->turn_count == 0) continue;
 
 				SDL_Rect src = { u->frame * tile->w, j * tile->h, tile->w, tile->h };
 				SDL_Rect dst = { 0, 0, tile->w, tile->h };
@@ -1234,7 +1234,7 @@ void draw_combat(KBcombat *war) {
 
 				if (draw_army_size) {
 					char count[8];
-					sprintf(count, "%d", u->count);
+					sprintf(count, "%d", u->turn_count);
 					KB_iloc(dst.x + dst.w - strlen(count) * sys->font_size.w, dst.y + dst.h - sys->font_size.h);
 					KB_icolor(colors_size);
 					KB_iprint(count);
@@ -3070,6 +3070,78 @@ void take_artifact(KBgame *game, byte num) {
 	free(text);
 }
 
+void draw_victory(KBgame *game, word spoils, int villain_id, int captured) {
+	SDL_Rect border;
+
+	SDL_Rect *fs = &sys->font_size;
+
+	RECT_Text((&border), 16, 36);
+	RECT_Center((&border), sys->screen);
+
+	border.y -= fs->h / 2;
+	border.y += fs->h / 8;
+	border.h -= fs->h / 8;
+
+	Uint32 *colors = local.message_colors;
+
+	SDL_TextRect(sys->screen, &border, colors[COLOR_FRAME], colors[COLOR_BACKGROUND], 1);
+
+	KB_icolor(colors);
+	KB_iloc(border.x + fs->w, border.y + fs->h / 2);
+	KB_ilh(fs->h + fs->h/8);
+	KB_iprintf(
+	"             Victory!");
+	/* NOTE: here we deviate from the DOS version.
+	 * In it, "yet another foe." is displayed after a 1em
+	 * line-break, while the previous 2 phrases have +1px line-break
+	 * between them.
+	 *
+	 * In our version, all 3 phrases are separated with a 9px line-break.
+	 *
+	 * SORRY :( TO FIX THIS: Move "yet another foe." 1 pixel up.
+	 */
+	KB_iloc(border.x + fs->w, border.y + fs->h * 3 - fs->h / 2);
+	KB_ilh(fs->h + fs->h/8);
+	KB_iprintf(
+	"Well done %s the %s,\n"
+	"you have successfully vanquished\n"
+	"yet another foe.\n",
+	game->name, classes[game->class][game->rank].title, spoils);
+	KB_iloc(border.x + fs->w, border.y + fs->h * 7 - fs->h / 2);
+	KB_ilh(fs->h + fs->h/8);
+	KB_iprintf(
+	"Spoils of War: %d gold", spoils);
+
+	if (villain_id != -1) {
+		char *name = KB_Resolve(STR_VNAME, (byte)villain_id);
+		KB_iprintf(
+		" and the\n"
+		"capture of %s\n"
+		"\n", name);
+		KB_iloc(border.x + fs->w, border.y + fs->h * 10);
+		KB_ilh(fs->h + fs->h/8);
+		if (!captured) {
+			KB_iprint(
+			"Since you did not have the proper\n"
+			"contract, the Lord has been set\n"
+			"free.");
+		} else {
+			KB_iprintf(
+			"For fulfilling your contract you\n"
+			"receive an additional %d gold\n"
+			"as bounty... and a piece of the\n"
+			"map to the stolen scepter.", villain_rewards[villain_id]);
+		}
+		free(name);
+	}
+
+	KB_iloc(border.x + border.w - fs->w * 8, border.y + border.h - fs->h - fs->h / 2 + fs->h / 8);
+	KB_iprint("(space)");
+
+	KB_flip(sys);
+	KB_Pause();
+}
+
 void hit_unit(KBcombat *war, int a_side, int a_id, int t_side, int t_id) {
 	int kills;
 	KBunit *u = &war->units[a_side][a_id];
@@ -3147,10 +3219,11 @@ int move_unit(KBcombat *war, int side, int id, int ox, int oy) {
 	return 1;
 }
 
-/* TOH: */ void combat_loop(KBgame *game, KBcombat *combat);
+/* TOH: */ int combat_loop(KBgame *game, KBcombat *combat);
 int run_combat(KBgame *game, int mode, int id) {
 
 	KBcombat combat = { 0 };
+	int winner;
 
 	switch (mode) {
 
@@ -3173,7 +3246,62 @@ int run_combat(KBgame *game, int mode, int id) {
 
 	reset_match(&combat, mode);
 
-	combat_loop(game, &combat);
+	winner = combat_loop(game, &combat);
+
+	switch (mode) {
+
+		case 1: /* Player VS Castle (id) */
+
+			accept_units_castle(game, 1, &combat, id);
+
+		break;
+
+		case 0: /* Player VS Foe (id) */
+		default:
+
+			accept_units_foe(game, 1, &combat, game->continent, id);
+
+			if (winner == 1) {
+				/* If player wins, remove foe from the map */
+				game->map[game->continent][game->y][game->x] = 0;
+			}
+
+		break;
+
+	}
+
+	/* Result of combat: */
+	if (winner == 2) { /* player was defeated by AI */
+		temp_death(game);
+		draw_defeat(game);
+	}
+
+	if (winner == 1) { /* player WON! */
+
+		int villain_id = -1;
+		int captured = 0;
+
+		/* capture villain? */
+		if (mode == 1 && game->castle_owner[id] != KBCASTLE_MONSTERS) {
+			villain_id = (game->castle_owner[id] & 0x1F);
+			printf("(castle %d,%08x)Extracted villain id: %d\n",id,game->castle_owner[id],villain_id); 
+			if (game->contract == villain_id) {
+				//captured
+				fullfill_contract(game, villain_id);
+				captured = 1;
+			}
+		}
+
+		/* regular spoils */
+		game->gold += combat.spoils[1];
+
+		if (mode == 1) {
+			/* If player wins, make castle his */
+			game->castle_owner[id] = KBCASTLE_PLAYER;
+		}
+
+		draw_victory(game, combat.spoils[1], villain_id, captured);
+	}
 
 	return 0;
 }
@@ -3203,6 +3331,8 @@ int attack_foe(KBgame *game) {
 	for (i = 0; i < 3; i++) {
 		byte troop_id = game->follower_troops[game->continent][id][i];
 		word troop_count = game->follower_numbers[game->continent][id][i];
+
+		if (!troop_count) break;
 
 		KB_iprintf("  %s %s\n", number_name(troop_count), troops[troop_id].name);
 	}
@@ -4523,9 +4653,12 @@ void draw_combat_statusbar(KBcombat *war) {
 }
 
 void draw_defeat(KBgame *game) {
+	KBsound *snd_defeat = KB_Resolve(SN_TUNE, TUNE_DEFEAT);
+
+	KB_play(sys, snd_defeat);
 
 	draw_map(game, 0); // arg2 is useless
-
+	draw_sidebar(game, 0);
 	draw_player(game, 3);
 
 	KB_ilh(9);
@@ -4537,6 +4670,8 @@ void draw_defeat(KBgame *game) {
 		"tactics, he reluctantly re-\n"
 		"issues your commission and\n"
 		"sends you on your way.", "", MSG_HARDCODED | MSG_PAUSE);
+
+	free(snd_defeat);
 }
 
 static signed char target_move_offset_x[9] = { -1, 0, 1, -1, 1, -1, 0, 1 };
@@ -4906,7 +5041,8 @@ static signed char move_offset_x[9] = { -1, 0, 1, -1, 0, 1, -1,  0,  1 };
 static signed char move_offset_y[9] = {  1, 1, 1,  0, 0, 0, -1, -1, -1 };
 
 /* Main combat loop (combat screen) */
-void combat_loop(KBgame *game, KBcombat *combat) {
+/* Returns 1 if combat was won by player, 2 if by AI */ 
+int combat_loop(KBgame *game, KBcombat *combat) {
 
 	int key = 0;
 	int done = 0;
@@ -4924,7 +5060,7 @@ void combat_loop(KBgame *game, KBcombat *combat) {
 	while (!done) {
 		key = KB_event(&combat_state);
 
-		if (key == 0xFF) done = 1;
+		if (key == 0xFF) done = 2;
 
 		if (combat->side != 0 && key != COMBAT_SYN_EVENT)
 		{
@@ -4954,6 +5090,8 @@ void combat_loop(KBgame *game, KBcombat *combat) {
 			break;
 			case KEY_ACT(FLY):      	unit_try_fly(combat);	break;
 			case KEY_ACT(GIVE_UP):
+
+				done = 2;
 
 			break;
 			case KEY_ACT(SHOOT):    	unit_try_shoot(combat);	break;
@@ -5029,6 +5167,8 @@ void combat_loop(KBgame *game, KBcombat *combat) {
 
 	}
 #undef KEY_ACT
+
+	return done;
 }
 
 
