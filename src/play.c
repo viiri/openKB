@@ -285,6 +285,7 @@ void sail_to(KBgame *game, byte continent) {
 	game->boat_y = game->y;
 }
 
+/* Returns 1 if not enough gold, 2 if no slots left */
 int buy_troop(KBgame *game, byte troop_id, word number) {
 
 	int slot = -1;

@@ -2163,8 +2163,8 @@ void recruit_soldiers(KBgame *game) {
 				result = buy_troop(game, home_troops[whom-1], number);
 
 				/* Display error if any */
-				if (result == 2) KB_BottomBox("\n\n\nYou don't have enough gold!", "", MSG_PAUSE);
-				else if (result == 1) KB_BottomBox("", "No troop slots left!", MSG_PAUSE);//verify this one
+				if (result == 1) KB_BottomBox("\n\n\nYou don't have enough gold!", "", MSG_PAUSE);
+				else if (result == 2) KB_BottomBox("", "No troop slots left!", MSG_PAUSE);//verify this one
 
 				/* Calculate new "MAX YOU CAN HANDLE" number based on leadership (and troop hp?) */
 				max = army_leadership(game, home_troops[whom-1]) / troops [ home_troops[whom-1] ].hit_points;
@@ -2793,8 +2793,8 @@ int visit_dwelling(KBgame *game, byte rtype) {
 				game->dwelling_population[game->continent][id] -= number;
 
 			/* Display error if any */
-			else if (result == 2) KB_BottomBox("\n\n\nYou don't have enough gold!", "", MSG_PAUSE);
-			else if (result == 1) KB_BottomBox("", "No troop slots left!", 1);//verify this one
+			else if (result == 1) KB_BottomBox("\n\n\nYou don't have enough gold!", "", MSG_PAUSE);
+			else if (result == 2) KB_BottomBox("", "No troop slots left!", 1);//verify this one
 
 			/* Calculate new "MAX YOU CAN HANDLE" number based on leadership (and troop hp?) */
 			max = army_leadership(game, troop_id) / troops [ troop_id ].hit_points;
