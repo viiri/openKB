@@ -2088,6 +2088,8 @@ void recruit_soldiers(KBgame *game) {
 	while (!done) {
 
 		if (redraw) {
+			draw_sidebar(game, 0);
+
 			text = KB_BottomFrame();
 		
 			/** Left side **/
@@ -2754,6 +2756,9 @@ int visit_dwelling(KBgame *game, byte rtype) {
 		if (redraw) {
 			/** Background **/
 			draw_location(2 + rtype, troop_id, 0);
+
+			/** Sidebar **/
+			draw_sidebar(game, 0);
 
 			/** Menu **/
 			text = KB_BottomFrame();
