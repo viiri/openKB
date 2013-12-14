@@ -3,17 +3,22 @@
 
 /* For portability, we must not use fread, or C datatypes
  * but if you're on a x86 machine, this code might just work. */
-#include "endian.h"
+#ifdef _WIN32
+#define __LITTLE_ENDIAN 1234
+#define __BYTE_ORDER __LITTLE_ENDIAN
+#else
+#include <endian.h>
+#endif
 #if (__BYTE_ORDER == __LITTLE_ENDIAN)
 
 #else
 #error "BIG-ENDIAN machines are not supported. Fix this code!"
 #endif
-// #include "stdint.h"
-// etc...
-typedef unsigned short  word ; /* 16-bit */
-typedef unsigned char byte ; /* 8-bit */
-typedef unsigned int word24; /* 24-bit :( */
+
+#include <stdint.h>
+typedef uint16_t   word; /* 16-bit */
+typedef uint8_t    byte; /* 8-bit */
+typedef uint32_t word24; /* 24-bit :( */
 
 #define GRAPHICS_KEPT	64
 
