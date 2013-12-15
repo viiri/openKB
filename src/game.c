@@ -2176,7 +2176,7 @@ int lay_siege(KBgame *game, int castle_id) {
 	if (game->castle_owner[id] == KBCASTLE_MONSTERS) {
 		KB_iprint("Various groups of monsters\noccupy this castle.");
 	} else {
-		char *name = KB_Resolve(STR_VNAME, game->castle_owner[id] & 0x1F);
+		char *name = KB_Resolve(STR_VNAME, game->castle_owner[id] & KBCASTLE_VILLAIN);
 		KB_iprint(name);
 		KB_iprint(" and\narmy occupy this castle.");
 		KB_iprint("\n\n\n");
@@ -2245,7 +2245,7 @@ void visit_castle(KBgame *game) {
 	} else if (game->castle_owner[id] == 0x7F) {
 		printf("Castle owned by monsters\n");	
 	} else {
-		char *name = KB_Resolve(STR_VNAME, game->castle_owner[id] & 0x1F);
+		char *name = KB_Resolve(STR_VNAME, game->castle_owner[id] & KBCASTLE_VILLAIN);
 		printf("Castle owned by [%08x], %s\n", game->castle_owner[id], name);
 		free(name);
 	}
@@ -2267,7 +2267,7 @@ void gather_information(KBgame *game, int id) {
 	if (game->castle_owner[id] == KBCASTLE_MONSTERS) {
 		KB_iprint("no one's rule.\n");
 	} else {
-		char *name = STR_LoadRESOURCE(STRL_VNAMES, 0, game->castle_owner[id] & 0x1F);
+		char *name = STR_LoadRESOURCE(STRL_VNAMES, 0, game->castle_owner[id] & KBCASTLE_VILLAIN);
 		KB_iprintf("%s's rule.\n", name);
 		free(name);
 	}
@@ -3189,7 +3189,7 @@ int run_combat(KBgame *game, int mode, int id) {
 
 		/* capture villain? */
 		if (mode == 1 && game->castle_owner[id] != KBCASTLE_MONSTERS) {
-			villain_id = (game->castle_owner[id] & 0x1F);
+			villain_id = (game->castle_owner[id] & KBCASTLE_VILLAIN);
 			printf("(castle %d,%08x)Extracted villain id: %d\n",id,game->castle_owner[id],villain_id); 
 			if (game->contract == villain_id) {
 				//captured

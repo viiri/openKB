@@ -1161,7 +1161,7 @@ int find_villain(KBgame *game) {
 	for (i = 0; i < MAX_CASTLES; i++) {
 
 		if ((game->castle_owner[i] & 0x3f) == game->last_contract) {
-			game->castle_owner[i] |= 0x40; /* Known */
+			game->castle_owner[i] |= KBCASTLE_KNOWN; /* Known */
 			return i;
 		}
 
