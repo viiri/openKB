@@ -97,6 +97,7 @@
 	_(DAT_SPOWER)	/* [4] "spell power" for specific rank; subId - class */ \
 	_(DAT_MAXSPELL)	/* [4] "max spells" for specific rank; subId - class */ \
 	_(DAT_FAMILIAR)	/* [4] "instant army familiar" for specific rank; subId - class */ \
+	_(WDAT_VREWARD)	/* gold reward for specific villain ; subId - villain_id */ \
 	_(DAT_SKILLS)	/* [MAX_TROOPS] skill levels for specific troop; subId - undefined */ \
 	_(DAT_MOVES)	/* [MAX_TROOPS] move rates for specific troop; subId - undefined */ \
 	_(DAT_MELEEMIN)	/* [MAX_TROOPS] melee min for specific troop; subId - undefined */ \

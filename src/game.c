@@ -219,6 +219,7 @@ void refill_rules() {
 	byte *maxpop = KB_Resolve(DAT_MAXPOP, 0);
 	byte *growth = KB_Resolve(DAT_GROWTH, 0);
 	byte *abilities = KB_Resolve(DAT_ABILS, 0);
+	word *villain_reward = KB_Resolve(WDAT_VREWARD, 0);	
 
 	for (j = 0; j < MAX_CLASSES; j++) {
 		word *commission = KB_Resolve(WDAT_COMM, j);
@@ -246,6 +247,10 @@ void refill_rules() {
 		free(villains_needed);
 		free(leadership);
 		free(commission);
+	}
+
+	for (i = 0; i < MAX_VILLAINS; i++) {
+		if (villain_reward)	villain_rewards[i] = villain_reward[i];
 	}
 
 	for (i = 0; i < MAX_TROOPS; i++) {
@@ -281,6 +286,7 @@ void refill_rules() {
 	free(ranged_ammo);
 	free(ranged_max);
 	free(ranged_min);
+	free(villain_reward);
 }
 
 /* "create game" screen (pick name and difficulty) */
@@ -3215,15 +3221,15 @@ int run_combat(KBgame *game, int mode, int id) {
 int attack_foe(KBgame *game) {
 	int id = 0;
 	int i;
-	for (i = 0; i < MAX_FOLLOWERS; i++) {
-		if (game->follower_coords[game->continent][i][0] == game->x
-		 && game->follower_coords[game->continent][i][1] == game->y) {
+	for (i = 0; i < MAX_FOES; i++) {
+		if (game->foe_coords[game->continent][i][0] == game->x
+		 && game->foe_coords[game->continent][i][1] == game->y) {
 			id = i;
 			break;
 		 }
 	}
 
-	if (id < FRIENDLY_FOLLOWERS) {
+	if (id < FRIENDLY_FOES) {
 
 	} else {
 
@@ -3235,8 +3241,8 @@ int attack_foe(KBgame *game) {
 	KB_iloc(rect->x, rect->y + fs->h * 2 - fs->h / 8);
 	KB_ilh(fs->h + fs->h/8);
 	for (i = 0; i < 3; i++) {
-		byte troop_id = game->follower_troops[game->continent][id][i];
-		word troop_count = game->follower_numbers[game->continent][id][i];
+		byte troop_id = game->foe_troops[game->continent][id][i];
+		word troop_count = game->foe_numbers[game->continent][id][i];
 
 		if (!troop_count) break;
 

@@ -44,7 +44,7 @@
 #define MAX_ARTIFACTS 8
 
 #define MAX_VILLAINS 17
-#define MAX_FOLLOWERS 40
+#define MAX_FOES 40
 
 #define MAX_DWELLINGS 11
 #define MAX_CASTLES 26
@@ -60,7 +60,7 @@
 #define ALCOVE_X 11
 #define ALCOVE_Y 19
 
-#define FRIENDLY_FOLLOWERS 5
+#define FRIENDLY_FOES 5
 
 #define DAY_STEPS	40
 #define WEEK_DAYS	5
@@ -129,9 +129,9 @@ struct KBgame {
 	byte map_coords[MAX_CONTINENTS][2];	/* Special chests  */
 	byte orb_coords[MAX_CONTINENTS][2];	/* 4 per continent */
 
-	byte follower_coords[MAX_CONTINENTS][MAX_FOLLOWERS][2];//0 is X and 1 is Y
-	byte follower_troops[MAX_CONTINENTS][MAX_FOLLOWERS][5];//creature types
-	word follower_numbers[MAX_CONTINENTS][MAX_FOLLOWERS][5];//their count
+	byte foe_coords[MAX_CONTINENTS][MAX_FOES][2];//0 is X and 1 is Y
+	byte foe_troops[MAX_CONTINENTS][MAX_FOES][5];//creature types
+	word foe_numbers[MAX_CONTINENTS][MAX_FOES][5];//their count
 
 	byte steps_left;	/* You can make that much steps before day runs out */
 	word time_stop;

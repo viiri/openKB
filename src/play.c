@@ -410,10 +410,10 @@ byte end_week(KBgame *game) {
 			if (game->dwelling_troop[cont][i] == creature)
 				game->dwelling_population[cont][i] = troops[creature].max_population;
 
-		for (j = 0; j < MAX_FOLLOWERS; j++)
+		for (j = 0; j < MAX_FOES; j++)
 			for (i = 0; i < 3; i++)
-				if (game->follower_troops[cont][j][i] == creature)
-					game->follower_numbers[cont][j][i] += troops[creature].growth;
+				if (game->foe_troops[cont][j][i] == creature)
+					game->foe_numbers[cont][j][i] += troops[creature].growth;
 	}
 	for (j = 0; j < MAX_CASTLES; j++)
 		if (game->castle_owner[j] != 0xFF) /* Not owned by player */
@@ -465,8 +465,8 @@ void prepare_units_foe(KBcombat *war, int side, KBgame *game, int continent_id, 
 	war->spoils[side] = 0;
 	for (i = 0; i < max_troops; i++)
 	{
-		war->units[side][i].troop_id = game->follower_troops[continent_id][foe_id][i];
-		war->units[side][i].count = game->follower_numbers[continent_id][foe_id][i];
+		war->units[side][i].troop_id = game->foe_troops[continent_id][foe_id][i];
+		war->units[side][i].count = game->foe_numbers[continent_id][foe_id][i];
 		war->units[side][i].max_count = war->units[side][i].count;
 
 		war->units[side][i].y = i;
@@ -510,8 +510,8 @@ void accept_units_foe(KBgame *game, int side, KBcombat *war, int continent_id, i
 	if (max_troops > 3) max_troops = 3;
 	for (i = 0; i < max_troops; i++)
 	{
-		game->follower_troops[continent_id][foe_id][i] = war->units[side][i].troop_id; 
-		game->follower_numbers[continent_id][foe_id][i] = war->units[side][i].count;
+		game->foe_troops[continent_id][foe_id][i] = war->units[side][i].troop_id; 
+		game->foe_numbers[continent_id][foe_id][i] = war->units[side][i].count;
 	}
 }
 

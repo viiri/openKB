@@ -157,11 +157,11 @@ KBgame* KB_loadDAT(const char* filename) {
 		for (k = 0; k < 5; k++)
 			game->castle_troops[n][k] = READ_BYTE(p);
 
-	/* Read friendly followers' coords */
+	/* Read friendly foes' coords */
 	for (n = 0; n < MAX_CONTINENTS; n++) {
-		for (k = 0; k < FRIENDLY_FOLLOWERS; k++) {
-			game->follower_coords[n][k][0] = READ_BYTE(p);//X
-			game->follower_coords[n][k][1] = READ_BYTE(p);//Y
+		for (k = 0; k < FRIENDLY_FOES; k++) {
+			game->foe_coords[n][k][0] = READ_BYTE(p);//X
+			game->foe_coords[n][k][1] = READ_BYTE(p);//Y
 		}	
 	}
 
@@ -193,29 +193,29 @@ KBgame* KB_loadDAT(const char* filename) {
 		}
 	}
 
-	/* Read hostile followers' coords */
+	/* Read hostile foes' coords */
 	for (n = 0; n < MAX_CONTINENTS; n++) {
-		for (k = FRIENDLY_FOLLOWERS; k < MAX_FOLLOWERS; k++) {
-			game->follower_coords[n][k][0] = READ_BYTE(p);//X
-			game->follower_coords[n][k][1] = READ_BYTE(p);//Y	
+		for (k = FRIENDLY_FOES; k < MAX_FOES; k++) {
+			game->foe_coords[n][k][0] = READ_BYTE(p);//X
+			game->foe_coords[n][k][1] = READ_BYTE(p);//Y	
 		}
 	}
 
-	/* Read hostile followers' troops */
+	/* Read hostile foes' troops */
 	for (n = 0; n < MAX_CONTINENTS; n++) {	
-		for (k = FRIENDLY_FOLLOWERS; k < MAX_FOLLOWERS; k++) {
-			game->follower_troops[n][k][0] = READ_BYTE(p);
-			game->follower_troops[n][k][1] = READ_BYTE(p);
-			game->follower_troops[n][k][2] = READ_BYTE(p);
+		for (k = FRIENDLY_FOES; k < MAX_FOES; k++) {
+			game->foe_troops[n][k][0] = READ_BYTE(p);
+			game->foe_troops[n][k][1] = READ_BYTE(p);
+			game->foe_troops[n][k][2] = READ_BYTE(p);
 		}
 	}
 
-	/* Read follower numbers */
+	/* Read foe numbers */
 	for (n = 0; n < MAX_CONTINENTS; n++) {	
-		for (k = FRIENDLY_FOLLOWERS; k < MAX_FOLLOWERS; k++) {
-			game->follower_numbers[n][k][0] = READ_BYTE(p);
-			game->follower_numbers[n][k][1] = READ_BYTE(p);
-			game->follower_numbers[n][k][2] = READ_BYTE(p);
+		for (k = FRIENDLY_FOES; k < MAX_FOES; k++) {
+			game->foe_numbers[n][k][0] = READ_BYTE(p);
+			game->foe_numbers[n][k][1] = READ_BYTE(p);
+			game->foe_numbers[n][k][2] = READ_BYTE(p);
 		}
 	}
 
@@ -399,11 +399,11 @@ int KB_saveDAT(const char* filename, KBgame *game) {
 		for (k = 0; k < 5; k++)
 			WRITE_BYTE(p, game->castle_troops[n][k]);
 
-	/* Read friendly followers' coords */
+	/* Read friendly foes' coords */
 	for (n = 0; n < MAX_CONTINENTS; n++) {
-		for (k = 0; k < FRIENDLY_FOLLOWERS; k++) {
-			WRITE_BYTE(p, game->follower_coords[n][k][0]);//X
-			WRITE_BYTE(p, game->follower_coords[n][k][1]);//Y
+		for (k = 0; k < FRIENDLY_FOES; k++) {
+			WRITE_BYTE(p, game->foe_coords[n][k][0]);//X
+			WRITE_BYTE(p, game->foe_coords[n][k][1]);//Y
 		}	
 	}
 
@@ -437,27 +437,27 @@ int KB_saveDAT(const char* filename, KBgame *game) {
 
 	/* Hostile foes' coords */
 	for (n = 0; n < MAX_CONTINENTS; n++) {
-		for (k = FRIENDLY_FOLLOWERS; k < MAX_FOLLOWERS; k++) {
-			WRITE_BYTE(p, game->follower_coords[n][k][0]);//X
-			WRITE_BYTE(p, game->follower_coords[n][k][1]);//Y
+		for (k = FRIENDLY_FOES; k < MAX_FOES; k++) {
+			WRITE_BYTE(p, game->foe_coords[n][k][0]);//X
+			WRITE_BYTE(p, game->foe_coords[n][k][1]);//Y
 		}
 	}
 
 	/* Hostile foes' troops */
 	for (n = 0; n < MAX_CONTINENTS; n++) {
-		for (k = FRIENDLY_FOLLOWERS; k < MAX_FOLLOWERS; k++) {
-			WRITE_BYTE(p, game->follower_troops[n][k][0]);
-			WRITE_BYTE(p, game->follower_troops[n][k][1]);
-			WRITE_BYTE(p, game->follower_troops[n][k][2]);
+		for (k = FRIENDLY_FOES; k < MAX_FOES; k++) {
+			WRITE_BYTE(p, game->foe_troops[n][k][0]);
+			WRITE_BYTE(p, game->foe_troops[n][k][1]);
+			WRITE_BYTE(p, game->foe_troops[n][k][2]);
 		}
 	}
 
 	/* Foes' army counts */
 	for (n = 0; n < MAX_CONTINENTS; n++) {
-		for (k = FRIENDLY_FOLLOWERS; k < MAX_FOLLOWERS; k++) {
-			WRITE_BYTE(p, game->follower_numbers[n][k][0]);
-			WRITE_BYTE(p, game->follower_numbers[n][k][1]);
-			WRITE_BYTE(p, game->follower_numbers[n][k][2]);
+		for (k = FRIENDLY_FOES; k < MAX_FOES; k++) {
+			WRITE_BYTE(p, game->foe_numbers[n][k][0]);
+			WRITE_BYTE(p, game->foe_numbers[n][k][1]);
+			WRITE_BYTE(p, game->foe_numbers[n][k][2]);
 		}
 	}
 

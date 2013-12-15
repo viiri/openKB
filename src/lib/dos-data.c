@@ -24,6 +24,7 @@ enum DOS_offset_names {
 	TUNE_NOTES,	/* Frequency palette */
 	TUNE_DELAY,	/* Delay palette */
 	TUNE_PTR,	/* Pointers into "tunes" (offsets to "freq,delay,...,0xFF" locations) */
+	DOS_VREWARDS,
 };
 int DOS_exe_offsets[][4] = {
 	/* KB90              KB95
@@ -40,6 +41,7 @@ int DOS_exe_offsets[][4] = {
 	{ 0x189D1,	0     ,	0x18B97,	0     	},	//TUNE_NOTES  //????, 0x3347
 	{ 0x18A81,	0     ,	0x18C47,	0     	},	//TUNE_DELAY  //????, 0x33F7
 	{ 0x18AA1,	0     ,	0x18C67,	0       },	//TUNE_PTR  //????, 0x3417 | ????, 0x330d
+	{ 0x1873A, 	0     ,	0x18900,	0       },	//VREWARDS
 };
 
 //TODO: convert all string offsets to relative to DS AND
@@ -324,6 +326,54 @@ char* DOS_read_strings_p(KBmodule *mod, int segment, int ptroff, int num_strings
 	return ret;
 }
 #endif
+
+int DOS_read_word_array(KBmodule *mod, word *dst, int offset, int len) {
+	char *buf, *p;
+
+	KB_File *f;	
+	int n, i;
+
+	buf = malloc(sizeof(word) * len);
+	if (buf == NULL) return -1;
+
+	KB_debuglog(0,"? DOS EXE FILE: %s\n", "KB.EXE");
+	f = DOS_fopen_exe(mod);
+	if (f == NULL) {
+		free(buf);
+		return -2;
+	}
+
+	KB_fseek(f, offset, 0);
+	n = KB_fread(buf, sizeof(word), len, f);
+	DOS_fclose_exe(f);
+	if (n < len) {
+		free(buf);
+		return -3;
+	}
+
+	p = buf;	
+	for (i = 0; i < len; i++) {
+		dst[i] = READ_WORD(p);
+	}
+
+	free(buf);
+	return 0;
+}
+word* DOS_word_array(KBmodule *mod, int offset, int len) {
+	word *dst;
+	int err;
+
+	dst = malloc(sizeof(word) * len);
+	if (dst == NULL) return NULL;
+
+	err = DOS_read_word_array(mod, dst, offset, len);
+	if (err) {
+		free(dst);
+		return NULL;
+	}
+
+	return dst;
+}
 
 char* DOS_read_strings(KBmodule *mod, int off, int endoff) {
 	char *buf;
@@ -1274,6 +1324,11 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 		case RECT_UITILE:
 		{
 			return &DOS_frame_tile;
+		}
+		break;
+		case WDAT_VREWARD:
+		{
+			return DOS_word_array(mod, KBEXE_OFFSET(exe_type, DOS_VREWARDS), 17);
 		}
 		break;
 		default: break;
