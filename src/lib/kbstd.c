@@ -77,7 +77,7 @@ void  KB_errlog(char *fmt, ...)
 }
 
 int KB_rand(int min, int max) {
-	return (int)(rand() % max + min);
+	return (int)(rand() % (max-min+1) + min);
 }
 
 int KB_strlist_max(const char *list)
