@@ -20,27 +20,441 @@
 #include "bounty.h"
 #include "lib/kbstd.h"
 
-void repopulate_castle(KBgame *game, int castle_id) {
+/* forward-declare: */
+void player_accept_rank(KBgame *game);
 
+void roll_creature(int difficulty, byte *id, word *number) {
+	byte index = 0;
+	byte troop_id;
+	word troop_count;
+	byte dwelling = KB_rand(0, 3);
+	byte chance = KB_rand(1, 100);
+
+	while (chance > troop_chance_table[difficulty][index]) {
+		index++;
+		/* Safety: */
+		if (index >= MAX_TROOP_CHANCE_CURVE-1) break;
+	}
+
+	troop_id = dwelling_to_troop[dwelling][index];
+	troop_count = troop_numbers[troop_id][difficulty];
+
+	if (troop_count <= 1) troop_count = 2;
+
+	*id = troop_id;
+	*number = troop_count;
+}
+
+void enforce_dwelling(KBgame *game, int continent, int dwelling_id, byte troop_id) {
+	/* Populate! */
+	game->dwelling_troop[continent][dwelling_id] = troop_id;
+	game->dwelling_population[continent][dwelling_id] = troops[troop_id].max_population;
+}
+
+byte populate_dwelling(KBgame *game, int continent, int dwelling_id) {
+	byte troop_id;
+
+	/* Figure troop id */
+	if (dwelling_id >= MAX_DWELLINGS
+	|| continent_dwellings[continent][dwelling_id] == 0xFF) {
+		/* Roll randomly */
+		troop_id = KB_rand(
+			dwelling_ranges[continent][0],
+			dwelling_ranges[continent][1]);
+	}	else {
+		/* Take from list */
+		troop_id = continent_dwellings[continent][dwelling_id];
+	}
+
+	/* Populate! */
+	enforce_dwelling(game, continent, dwelling_id, troop_id);
+
+	/* Convert troop id to dwelling id */
+	return troops[troop_id].dwells;
+}
+void repopulate_castle(KBgame *game, int castle_id) {
+	int i;
+	for (i = 0; i < 5; i++) {
+		byte troop_id;
+		word troop_count;
+
+		roll_creature(castle_difficulty[castle_id], &troop_id, &troop_count);
+
+		game->castle_troops[castle_id][i] = troop_id;
+		game->castle_numbers[castle_id][i] = troop_count;
+	}
+}
+void repopulate_foe(KBgame *game, int continent, int foe_id) {
+	int i;
+	for (i = 0; i < 3; i++) {
+		byte troop_id;
+		word troop_count;
+
+		roll_creature(continent, &troop_id, &troop_count);
+
+		game->foe_troops[continent][foe_id][i] = troop_id;
+		game->foe_numbers[continent][foe_id][i] = troop_count;
+	}
+}
+
+word chests_on_continent(KBgame *game, int continent) {
+	int i, j;
+	word count = 0;
+	for (j = 0; j < LEVEL_H; j++) {
+		for (i = 0; i < LEVEL_W; i++) {
+			if (game->map[continent][j][i] == 0x8B)
+				count++;
+		}
+	}
+	return count;
+}
+word grass_on_continent(KBgame *game, int continent) {
+	int i, j;
+	word count = 0;
+	for (j = 0; j < LEVEL_H; j++) {
+		for (i = 0; i < LEVEL_W; i++) {
+			if (game->map[continent][j][i] == 0x00
+			|| game->map[continent][j][i] == 0x80)
+				count++;
+		}
+	}
+	return count;
+}
+byte num_castles(int continent) {
+	byte count;
+	int i;
+	count = 0;
+	for (i = 0; i < MAX_CASTLES; i++) {
+		if (castle_coords[i][0] == continent) {
+			count++;
+		}
+	}
+	return count;
+}
+
+void bury_scepter(KBgame *game, int continent, word grass) {
+	int i, j;
+	word count = 0;
+	for (j = 0; j < LEVEL_H; j++) {
+		for (i = 0; i < LEVEL_W; i++) {
+			if (game->map[continent][j][i] == 0x00
+			|| game->map[continent][j][i] == 0x80) {
+				if (count == grass) {
+					game->scepter_x = i;
+					game->scepter_y = i;
+					return;		
+				}
+				count++;
+			}
+		}
+	}
+}
+
+int salt_villains(KBgame *game, int continent, int base_id) {
+	int i, j;
+	int max = num_castles(continent);
+	if (max < villains_per_continent[continent]) {
+		KB_errlog("Not enough (%d) castles to put %d villains in!\n", max,villains_per_continent[continent]);
+		return base_id;
+	}
+	for (j = 0; j < villains_per_continent[continent];) {
+		int villain_id = base_id + j;
+		int castle_id = KB_rand(0, MAX_CASTLES-1);
+		/* Castle on this continent and is unoccupied */
+		if (castle_coords[castle_id][0] == continent
+		 && game->castle_owner[castle_id] == 0x7F) {
+			/* Give ownership to villain */
+			game->castle_owner[castle_id] = villain_id;
+			/* Put his troops */
+			for (i = 0; i < 5; i++) {
+				game->castle_troops[castle_id][i] = villain_army_troops[villain_id][i];
+				game->castle_numbers[castle_id][i] = villain_army_numbers[villain_id][i];
+			}
+			j++;
+		}
+	}
+	return base_id + j;
+}
+
+
+/* Ensure 2 artifacts, 1 navmap, 1 orb, 2 telecaves, 10 dwellings and 5 friendly foes. */
+void salt_continent(KBgame *game, int continent, int min_artifacts, int min_navmaps, int min_orbs, int min_telecaves, int min_dwellings, int min_friendly) {
+	int i, j;
+
+	enum {
+		SALT_NONE,
+		SALT_ARTIFACT,
+		SALT_NAVMAP,
+		SALT_ORB,
+		SALT_TELECAVE,
+		SALT_DWELLING,
+		SALT_FRIENDLY,
+	};
+
+	int num_foe = 0;
+	int num_artifacts, num_dwellings, num_navmaps, num_orbs, num_telecaves, num_friendly;
+	int min_len = min_artifacts + min_navmaps + min_orbs + min_telecaves + min_dwellings + min_friendly;
+
+	byte *barrel;
+	int barrel_index = 0;
+	int barrel_len = chests_on_continent(game, continent);
+
+	if (barrel_len < min_len) {
+		KB_errlog("Unable to salt continent %d, have %d minimum objects and only %d slots!\n", continent, min_len, barrel_len);
+		return;
+	}
+
+	/* Replace start marker with water tile */
+	if (game->map[continent][0][0] == 0xFF) {
+		game->map[continent][0][0] = 0x20;
+	}
+
+	barrel = malloc(sizeof(byte) * barrel_len);
+	if (barrel == NULL) return; /* error */
+
+	memset(barrel, SALT_NONE, barrel_len);
+	num_artifacts = num_dwellings = num_navmaps = num_orbs = num_telecaves = num_friendly = 0;
+
+	for (i = 0; i < min_artifacts; ) {
+		barrel_index = KB_rand(0, barrel_len - 1);
+		if (barrel[barrel_index] == SALT_NONE) {
+			barrel[barrel_index] = SALT_ARTIFACT;
+			i++;
+		}
+	}
+	for (i = 0; i < min_navmaps; ) {
+		barrel_index = KB_rand(0, barrel_len - 1);
+		if (barrel[barrel_index] == SALT_NONE) {
+			barrel[barrel_index] = SALT_NAVMAP;
+			i++;
+		}
+	}
+	for (i = 0; i < min_orbs; ) {
+		barrel_index = KB_rand(0, barrel_len - 1);
+		if (barrel[barrel_index] == SALT_NONE) {
+			barrel[barrel_index] = SALT_ORB;
+			i++;
+		}
+	}
+	for (i = 0; i < min_telecaves; i++) {
+		barrel_index = KB_rand(0, barrel_len - 1);
+		if (barrel[barrel_index] == SALT_NONE) {
+			barrel[barrel_index] = SALT_TELECAVE;
+		}
+	}
+	for (i = 0; i < min_dwellings; i++) {
+		barrel_index = KB_rand(0, barrel_len - 1);
+		if (barrel[barrel_index] == SALT_NONE) {
+			barrel[barrel_index] = SALT_DWELLING;
+		}
+	}
+	for (i = 0; i < min_friendly; i++) {
+		barrel_index = KB_rand(0, barrel_len - 1);
+		if (barrel[barrel_index] == SALT_NONE) {
+			barrel[barrel_index] = SALT_FRIENDLY;
+		}
+	}
+
+	num_foe = min_friendly;
+	barrel_index = 0;
+	for (j = 0; j < LEVEL_H; j++) {
+		for (i = 0; i < LEVEL_W; i++) {
+			if (game->map[continent][j][i] == 0x91) {
+				game->foe_coords[continent][num_foe][0] = i;
+				game->foe_coords[continent][num_foe][1] = j;
+				repopulate_foe(game, continent, num_foe);
+				num_foe++;
+			}
+			else if (game->map[continent][j][i] == 0x8B) {
+
+				if (barrel_index < barrel_len) {
+					switch (barrel[barrel_index]) {
+						case SALT_ARTIFACT:
+							game->map[continent][j][i] = 0x92 + num_artifacts;
+							num_artifacts++;
+						break;
+						case SALT_ORB:
+							game->orb_coords[continent][0] = i;
+							game->orb_coords[continent][1] = j;
+							num_orbs++;
+						break;
+						case SALT_NAVMAP:
+							game->map_coords[continent][0] = i;
+							game->map_coords[continent][1] = j;
+							num_navmaps++;
+						break;
+						case SALT_TELECAVE:
+							game->map[continent][j][i] = 0x8E;
+							game->teleport_coords[continent][num_telecaves][0] = i;
+							game->teleport_coords[continent][num_telecaves][1] = j;
+							num_telecaves++;
+						break;
+						case SALT_DWELLING:
+							game->map[continent][j][i] = 0x8C
+								+ populate_dwelling(game, continent, num_dwellings);
+							game->dwelling_coords[continent][num_dwellings][0] = i;
+							game->dwelling_coords[continent][num_dwellings][1] = j;
+							num_dwellings++;
+						break;
+						case SALT_FRIENDLY:
+							game->map[continent][j][i] = 0x91;
+							game->foe_coords[continent][num_friendly][0] = i;
+							game->foe_coords[continent][num_friendly][1] = j;
+							//game->foe_troops[MAX_CONTINENTS][MAX_FOES][5];
+							//game->foe_numbers[MAX_CONTINENTS][MAX_FOES][5];
+							//populate_foe(game, continent, ??
+							num_friendly++;
+						break;
+						case SALT_NONE:
+						default:
+							/* Do nothing (leave as chest) */
+						break;
+					}
+					barrel_index++;
+				}
+				else if (game->map[continent][j][i] == 0x8C) {
+					/* Plains */
+					game->dwelling_coords[continent][num_dwellings][0] = i;
+					game->dwelling_coords[continent][num_dwellings][1] = j;
+					enforce_dwelling(game, continent, num_dwellings, 0);
+					num_dwellings++;
+				}
+				else
+				{
+					/* Do nothing (leave as chest) */
+				}
+			}
+		}
+	} 
+}
+
+void salt_spells(KBgame *game) {
+	int i, j;
+
+	if (MAX_SPELLS > MAX_CASTLES) {
+		KB_errlog("Can't fit %d spells in %d towns!\n", MAX_SPELLS, MAX_CASTLES);
+		return;
+	}
+
+	/* Set spells for all towns to 0xFF */
+	for (i = 0; i < MAX_CASTLES; i++) {
+		game->town_spell[i] = 0xFF;
+	}
+
+	/* Set spell for town[0x15] to 0x07 */
+	/* huntersville sells bridge! */
+	/* TODO: make this less hardcoded */
+	game->town_spell[0x15] = 0x07; 
+
+	/* Foreach Spell (except 0x07) */
+	for (i = 0; i < MAX_SPELLS; ) {
+		if (i == 0x07) { i++; continue; }
+		j = KB_rand(0, MAX_CASTLES-1);
+		if (game->town_spell[j] == 0xFF) {
+			game->town_spell[j] = i;
+			i++;
+		}
+	}   
+	
+	/* Foreach Town that still sells 0xFF: */
+	for (i = 0; i < MAX_CASTLES; i++) {
+		if (game->town_spell[i] == 0xFF) {
+			/* Random spell */
+			game->town_spell[i] = KB_rand(0, MAX_SPELLS-1);
+		}
+	}
 }
 
 /* Actual KBgame* allocator */
-KBgame *spawn_game(char *name, int pclass, int difficulty) {
-
+KBgame *spawn_game(char *name, int pclass, int difficulty, byte *land) {
+	int i;
 	KBgame* game;
 
 	game = malloc(sizeof(KBgame));
 	if (game == NULL) return NULL;
-
 	memset(game, 0, sizeof(KBgame));
 
-	KB_strcpy(game->name, name);
+	/* Load base map */
+	memcpy(game->map, land, LEVEL_W * LEVEL_H * MAX_CONTINENTS); 
 
-	game->class = pclass;
-	game->rank = 0;
+	/* Hide scepter */
+	game->scepter_key = KB_rand(0x00, 0xFF);
+	game->scepter_continent = KB_rand(100, 400) / 100 - 1;
+	i = KB_rand(0, grass_on_continent(game, game->scepter_continent));
+	bury_scepter(game, game->scepter_continent, i);
+
+	/* Initialize character */
+	KB_strcpy(game->name, name);
 	game->difficulty = difficulty;
-	
+	game->class = pclass;
+	game->days_left = days_per_difficulty[difficulty];
+	game->steps_left = 40;
+
+	game->continent = HOME_CONTINENT;
+	game->x = HOME_X;
+	game->y = HOME_Y - 3;
+
+	game->mount = KBMOUNT_RIDE;
+	game->boat = 0xFF;
+	game->last_x = game->x;
+	game->last_y = game->y;
+
+	game->rank = 0;
+	player_accept_rank(game);
+
 	game->contract = 0xFF;
+	game->last_contract = 0x04;
+	game->max_contract = 0x05;
+	game->contract_cycle[0] = 0;
+	game->contract_cycle[1] = 1;
+	game->contract_cycle[2] = 2;
+	game->contract_cycle[3] = 3;
+	game->contract_cycle[4] = 4;
+
+	for (i = 0; i < 2; i++) {
+		game->player_troops[i] = starting_army_troop[pclass][i];
+		game->player_numbers[i] = starting_army_numbers[pclass][i];
+	}
+	for (i = 2; i < 5; i++) {
+		game->player_troops[i] = 0xFF;
+		game->player_numbers[i] = 0;
+	}
+
+	/* Randomize spells sold in towns */
+	salt_spells(game);
+
+	/* Remove magic alcove */
+	if (game->knows_magic) {
+		game->map[ALCOVE_CONTINENT][ALCOVE_Y][ALCOVE_X] = 0;
+	}
+
+	/* Salt each continent */
+	for (i = 0; i < MAX_CONTINENTS; i++) {
+		/* This also populates Foes encountered on the map. */
+		/* This also popluates all dwellings */	
+		/* This also populates dwelling at 0,1b,b with peasants (hard coded). */
+		/* Ensure 2 artifacts, 1 navmap, 1 orb, 2 telecaves, 10 dwellings and 5 friendly foes. */
+		salt_continent(game, i, 2, 1, 1, 2, 10, 5);
+	}
+
+	/* Castles */
+	for (i = 0; i < MAX_CASTLES; i++) {
+		/* Initially, give castle to monsters */
+		game->castle_owner[i] = 0x7F;
+	}
+
+	/* Villains! */
+	i = salt_villains(game, 0, 0);
+	i = salt_villains(game, 1, i);
+	i = salt_villains(game, 2, i);
+	i = salt_villains(game, 3, i);
+
+	/* Populate all castles owned by monsters */
+	for (i = 0; i < MAX_CASTLES; i++) {
+		if (game->castle_owner[i] == 0x7F) {
+			repopulate_castle(game, i);
+		}
+	}
 
 	return game;
 }
@@ -261,16 +675,20 @@ int player_score(KBgame *game) {
 	return score;
 }
 
-void promote_player(KBgame *game) {
-	if (game->rank >= MAX_RANKS - 1) return;
-
-	game->rank += 1;
-
+void player_accept_rank(KBgame *game) {
 	game->base_leadership += classes[game->class][game->rank].leadership;
 	game->max_spells += classes[game->class][game->rank].max_spell;
 	game->spell_power += classes[game->class][game->rank].spell_power;
 	game->commission += classes[game->class][game->rank].commission;
 	game->knows_magic += classes[game->class][game->rank].knows_magic;
+}
+
+void promote_player(KBgame *game) {
+	if (game->rank >= MAX_RANKS - 1) return;
+
+	game->rank += 1;
+
+	player_accept_rank(game);
 }
 
 void sail_to(KBgame *game, byte continent) {

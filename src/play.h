@@ -25,7 +25,7 @@
 
 /** High-level game functions **/
 /* Create new game. */
-extern KBgame* spawn_game(char *name, int pclass, int difficulty);
+extern KBgame* spawn_game(char *name, int pclass, int difficulty, byte *land);
 
 /** Calculators and tests **/
 

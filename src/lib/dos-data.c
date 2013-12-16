@@ -1331,6 +1331,21 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 			return DOS_word_array(mod, KBEXE_OFFSET(exe_type, DOS_VREWARDS), 17);
 		}
 		break;
+		case DAT_WORLD:
+		{
+			KB_File *f;
+			int n;
+			byte *world;
+			int len = 64 * 64 * 4;
+			world = malloc(sizeof(byte) * len);
+			if (!world) return NULL;
+			f = KB_fopen_with("LAND.ORG", "rb", mod);
+			if (f == NULL) return NULL;
+			n = KB_fread(world, sizeof(byte), len, f);
+			KB_fclose(f);
+			return world;
+		}
+		break;
 		default: break;
 	}
 

@@ -337,9 +337,15 @@ KBgame *create_game(int pclass) {
 		}
 
 		if (key == SDLK_RETURN) {
+			byte *land = KB_Resolve(DAT_WORLD, 0);
+			if (!land) {
+				KB_errlog("Unable to load map!\n");
+				break;
+			}
 			refill_rules();
-			game = spawn_game(name, pclass, sel);
+			game = spawn_game(name, pclass, sel, land);
 			done = 1;
+			free(land);
 		}
 
 		if (redraw) {

@@ -52,6 +52,9 @@
 
 #define MAX_TELECAVES 2
 
+#define MAX_TROOP_DIFFICULTY 4
+#define MAX_TROOP_CHANCE_CURVE 5
+
 #define HOME_CONTINENT 0
 #define HOME_X 11
 #define HOME_Y 7
@@ -307,7 +310,11 @@ extern byte starting_army_troop[MAX_CLASSES][2];
 extern byte starting_army_numbers[MAX_CLASSES][2];
 extern byte instant_army_multiplier[MAX_RANKS];
 
+extern byte villains_per_continent[MAX_CONTINENTS];
 extern word villain_rewards[MAX_VILLAINS];
+extern byte villain_army_troops[MAX_VILLAINS][5];
+extern word villain_army_numbers[MAX_VILLAINS][5];
+
 extern word days_per_difficulty[4];
 extern char *dwelling_names[MAX_DWELLINGS];
 extern char *town_names[MAX_TOWNS];
@@ -335,10 +342,17 @@ extern char *morale_names[3];
 extern char *continent_names[4];
 
 extern byte continent_entry[MAX_CONTINENTS][2];	/* [x][y] */
+extern byte castle_difficulty[MAX_CASTLES];
 extern byte castle_coords[MAX_CASTLES][3];	/* [continent][x][y] */
 extern byte town_coords[MAX_CASTLES][3];
 extern byte towngate_coords[MAX_CASTLES][3];
 extern byte boat_coords[MAX_CASTLES][3];
+
+extern byte troop_chance_table[MAX_TROOP_DIFFICULTY][MAX_TROOP_CHANCE_CURVE-1];
+extern byte dwelling_to_troop[MAX_TROOP_DIFFICULTY][MAX_TROOP_CHANCE_CURVE];
+extern byte troop_numbers[MAX_TROOPS][MAX_TROOP_DIFFICULTY];
+extern byte continent_dwellings[MAX_CONTINENTS][MAX_DWELLINGS];
+extern byte dwelling_ranges[MAX_CONTINENTS][2];
 
 extern signed char puzzle_map[PUZZLEMAP_H][PUZZLEMAP_W]; /* each piece is covered by villain face or artifact */
 
