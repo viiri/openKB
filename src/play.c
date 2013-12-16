@@ -874,6 +874,12 @@ void prepare_units_player(KBcombat *war, int side, KBgame *game) {
 		war->spoils[side] += (troops[war->units[side][i].troop_id].spoils_factor * 5) * war->units[side][i].count;
 	}
 	war->heroes[side] = game;
+	war->powers[side] = 0;
+	for (i = 0; i < MAX_ARTIFACTS; i++) {
+		if (game->artifact_found[i]) {
+			war->powers[side] |= artifact_powers[i];
+		}
+	}
 } 
 
 void prepare_units_foe(KBcombat *war, int side, KBgame *game, int continent_id, int foe_id) {
