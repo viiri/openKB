@@ -3202,6 +3202,28 @@ void draw_victory(KBgame *game, word spoils, int villain_id, int captured) {
 	KB_Pause();
 }
 
+void draw_defeat(KBgame *game) {
+	KBsound *snd_defeat = KB_Resolve(SN_TUNE, TUNE_DEFEAT);
+
+	KB_play(sys, snd_defeat);
+
+	draw_map(game, 0); // arg2 is useless
+	draw_sidebar(game, 0);
+	draw_player(game, 3);
+
+	KB_ilh(9);
+	KB_BottomBox(
+		"After being disgraced on the\n"
+		"field of battle, King\n"
+		"Maximus summons you to his\n"
+		"castle. After a lesson in\n"
+		"tactics, he reluctantly re-\n"
+		"issues your commission and\n"
+		"sends you on your way.", "", MSG_HARDCODED | MSG_PAUSE);
+
+	free(snd_defeat);
+}
+
 void hit_unit(KBcombat *war, int a_side, int a_id, int t_side, int t_id) {
 	int kills;
 	KBunit *u = &war->units[a_side][a_id];
@@ -4710,28 +4732,6 @@ void draw_combat_statusbar(KBcombat *war) {
 			KB_iprintf(",S%d", u->shots);
 		}
 	}
-}
-
-void draw_defeat(KBgame *game) {
-	KBsound *snd_defeat = KB_Resolve(SN_TUNE, TUNE_DEFEAT);
-
-	KB_play(sys, snd_defeat);
-
-	draw_map(game, 0); // arg2 is useless
-	draw_sidebar(game, 0);
-	draw_player(game, 3);
-
-	KB_ilh(9);
-	KB_BottomBox(
-		"After being disgraced on the\n"
-		"field of battle, King\n"
-		"Maximus summons you to his\n"
-		"castle. After a lesson in\n"
-		"tactics, he reluctantly re-\n"
-		"issues your commission and\n"
-		"sends you on your way.", "", MSG_HARDCODED | MSG_PAUSE);
-
-	free(snd_defeat);
 }
 
 static signed char target_move_offset_x[9] = { -1, 0, 1, -1, 1, -1, 0, 1 };
