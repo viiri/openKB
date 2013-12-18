@@ -895,8 +895,8 @@ KBgamestate five_choices = {
 void draw_location(int loc_id, int troop_id, int frame) {
 	SDL_Rect *tile = local.map_tile;
 
-	SDL_Surface *bg = SDL_LoadRESOURCE(GR_LOCATION, loc_id, 0);
-	SDL_Surface *troop = SDL_LoadRESOURCE(GR_TROOP, troop_id, 1);
+	SDL_Surface *bg = SDL_TakeSurface(GR_LOCATION, loc_id, 0);
+	SDL_Surface *troop = SDL_TakeSurface(GR_TROOP, troop_id, 1);
 
 	SDL_Rect pos;
 	SDL_Rect tpos;
@@ -904,9 +904,9 @@ void draw_location(int loc_id, int troop_id, int frame) {
 
 	SDL_Rect *fs = &sys->font_size;
 
-	SDL_Rect *left_frame = RECT_LoadRESOURCE(RECT_UI, 1);
-	SDL_Rect *top_frame = RECT_LoadRESOURCE(RECT_UI, 0);
-	SDL_Rect *bar_frame  = RECT_LoadRESOURCE(RECT_UI, 4);
+	SDL_Rect *left_frame  = local.frames[FRAME_LEFT];
+	SDL_Rect *top_frame  = local.frames[FRAME_TOP];
+	SDL_Rect *bar_frame  = local.frames[FRAME_MIDDLE];
 
 	RECT_Size(&pos, bg); 
 	pos.x = left_frame->w;
@@ -923,11 +923,6 @@ void draw_location(int loc_id, int troop_id, int frame) {
 	SDL_BlitSurface(bg, NULL, sys->screen, &pos);
 
 	SDL_BlitSurface(troop, &troop_frame, sys->screen, &tpos);
-
-	SDL_FreeSurface (bg);
-	free(left_frame);
-	free(top_frame);
-	free(bar_frame);
 }
 
 void draw_sidebar(KBgame *game, int tick) {
