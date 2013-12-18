@@ -59,6 +59,10 @@ extern int buy_troop(KBgame *game, byte troop_id, word number);
 
 extern void dismiss_troop(KBgame *game, byte slot);
 
+extern int garrison_troop(KBgame *game, int castle_id, byte slot);
+
+extern int ungarrison_troop(KBgame *game, int castle_id, byte slot);
+
 /** Game events **/
 
 extern int end_day(KBgame *game);

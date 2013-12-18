@@ -891,6 +891,21 @@ KBgamestate five_choices = {
 	0
 };
 
+KBgamestate five_choices_and_space = {
+	{
+		{	{ 0 }, SDLK_a, 0, 0      	},
+		{	{ 0 }, SDLK_b, 0, 0      	},
+		{	{ 0 }, SDLK_c, 0, 0      	},
+		{	{ 0 }, SDLK_d, 0, 0      	},
+		{	{ 0 }, SDLK_e, 0, 0      	},
+		{	{ 0 }, SDLK_SPACE, 0, 0    	},
+
+		{	{ 60 }, SDLK_SYN, 0, KFLAG_TIMER },
+		0,
+	},
+	0
+};
+
 
 void draw_location(int loc_id, int troop_id, int frame) {
 	SDL_Rect *tile = local.map_tile;
@@ -2159,7 +2174,139 @@ void visit_home_castle(KBgame *game) {
 }
 
 void visit_own_castle(KBgame *game, int castle_id) {
+	enum {
+		MODE_GARRISON,
+		MODE_REMOVE,
+	} mode = MODE_REMOVE;
+	const char *actions[] = {
+		"Garrison",
+		"Remove"
+	};
 
+	int home_troops[5];
+	int off = 0;
+
+	int i;
+	for (i = 0; i < MAX_TROOPS; i++) {
+		if (troops[i].dwells == DWELLING_CASTLE)
+			home_troops[off++] = i;
+	}
+
+	SDL_Rect *fs = &sys->font_size;
+
+	/* Status bar */
+	KB_TopBox(MSG_CENTERED, "Press 'ESC' to exit");
+
+	int random_troop = home_troops[ rand() % 5 ];
+
+	const char *twirl = "\x1D" "\x05" "\x1F" "\x1C" ; /* stands for: | / - \ */
+	byte twirl_pos = 0;
+
+	byte *troops_src = NULL;
+	word *numbers_src = NULL;
+	int max = 0;
+
+	int done = 0;
+	int frame = 0;
+	int redraw = 1;
+	int redraw_menu = 1;
+	while (!done) {
+
+		int key = KB_event(&five_choices_and_space);
+
+		if (key == 0xFF) done = 1;
+
+		if (key >= 1 && key <= 5) {
+			int result;
+
+			if (mode == MODE_GARRISON) {
+				result = garrison_troop(game, castle_id, key-1);
+			} else {
+				result = ungarrison_troop(game, castle_id, key-1);
+			}
+
+			/* Display error if any */
+			if (result == 2) KB_BottomBox(""," You cannot garrison your\n        last army!", MSG_PAUSE); /* Note: this is one pixel too low :( */
+			else if (result == 1) KB_BottomBox("", "No troop slots left!", MSG_PAUSE);//verify this one
+
+			max = 0;
+			redraw_menu = 1;
+		}
+
+		if (key == 6) {
+			/* Toggle */
+			mode = 1 - mode;
+			max = 0;
+			redraw_menu = 1;
+		}
+
+		if (key == 7) {
+			twirl_pos++;
+			if (twirl_pos > 3) twirl_pos = 0;
+			redraw_menu = 1;
+			if (twirl_pos == 2) { frame++; redraw = 1; } 
+		}
+		if (frame > 3) frame = 0;
+
+		if (redraw || redraw_menu) {
+
+			if (redraw_menu) {
+				SDL_Rect *text = KB_BottomFrame();
+
+				if (mode == MODE_GARRISON) {
+					troops_src = game->player_troops;
+					numbers_src = game->player_numbers;
+				} else {
+					troops_src = game->castle_troops[castle_id];
+					numbers_src = game->castle_numbers[castle_id];
+				}
+
+				/** Left side **/
+				/* Header (few pixels up) */
+				KB_iloc(text->x, text->y - fs->h/4 - fs->h/8);
+				KB_iprintf("Castle %s\n", castle_names[castle_id]);
+
+				/* Menu */
+				KB_iloc(text->x, text->y - fs->h/2 + fs->h * 2);
+				KB_ilh(fs->h + fs->h/8);
+				for (i = 0; i < 5; i++) {
+					KB_imenu(&five_choices_and_space, i, 16);
+					if (troops_src[i] == 0xFF || numbers_src[i] == 0) { 
+						KB_iprintf("%c) %-10s %s\n", 'A' + i, "Empty", "n/a");
+					} else {
+						KB_iprintf("%c) %-10s %d\n", 'A' + i, troops[troops_src[i]].name, numbers_src[i]);
+						max = i + 1;
+					}
+				}
+
+				/** Right side **/
+				/* Header (few pixels up) */
+				KB_iloc(text->x + text->w - fs->w * 8, text->y - fs->h/4 - fs->h/8);
+				KB_iprintf("GP=%dK", game->gold / 1000);
+
+				/* Menu */
+				KB_iloc(text->x + text->w - fs->w * 8, text->y - fs->h/2 + fs->h * 2);
+				KB_ilh(fs->h + fs->h/8);
+				KB_iprintf("%s\n", actions[mode]);
+				if (max)
+				KB_iprintf("(%c-%c)", 'A', 'A' + max - 1);
+
+				KB_iprintf(" %c", twirl[twirl_pos]);
+				KB_iprint("\n\nSpace to\n");
+				KB_imenu(&five_choices_and_space, 5, 8);
+				KB_iprintf("%s", actions[1-mode]);
+			}
+
+			if (redraw) {
+				/* Background */
+				draw_location(0, random_troop, frame);
+			}
+
+			KB_flip(sys);
+			redraw = 0;
+			redraw_menu = 0;
+		}
+	}
 }
 
 int lay_siege(KBgame *game, int castle_id) {

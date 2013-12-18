@@ -704,21 +704,12 @@ void sail_to(KBgame *game, byte continent) {
 	game->boat_y = game->y;
 }
 
-/* Returns 1 if not enough gold, 2 if no slots left */
-int buy_troop(KBgame *game, byte troop_id, word number) {
-
-	int slot = -1;
-	
+/* Returns 0 on success, 1 if no slots were found */
+int add_troop(KBgame *game, byte troop_id, word number) {
 	int i;
+	int slot = -1;
 
-	int cost = troops[troop_id].recruit_cost * number;
-	
-	if (cost > game->gold) {
-		return 1;
-	}
-	
 	for (i = 0; i < 5; i++) {
-	
 		if (game->player_troops[i] == troop_id) {
 			slot = i;
 			break;
@@ -730,11 +721,28 @@ int buy_troop(KBgame *game, byte troop_id, word number) {
 	}
 
 	if (slot == -1) {
-		return 2;
+		return 1;
 	}
 
 	game->player_troops[slot] = troop_id;
 	game->player_numbers[slot] += number;
+	return 0;
+}
+
+/* Returns 1 if not enough gold, 2 if no slots left */
+int buy_troop(KBgame *game, byte troop_id, word number) {
+	int i;
+
+	int cost = troops[troop_id].recruit_cost * number;
+	
+	if (cost > game->gold) {
+		return 1;
+	}
+
+	if (add_troop(game, troop_id, number)) {
+		/* Failed to add */
+		return 2;
+	}
 
 	game->gold -= troops[troop_id].recruit_cost * number;
 
@@ -749,6 +757,65 @@ void dismiss_troop(KBgame *game, byte slot) {
 	}
 	game->player_troops[4] = 0xFF;
 	game->player_numbers[4] = 0;
+}
+
+/* Return 0 on success, 1 if no slots left, 2 if players last army */
+int garrison_troop(KBgame *game, int castle_id, byte slot) {
+	int i;
+	int dst_slot = -1;
+
+	/* If it's player's last troop, fail */
+	if (game->player_troops[1] == 0xFF
+	 || game->player_numbers[1] == 0) {
+		return 2;
+	}
+
+	/* Find same troop OR empty slot */
+	for (i = 0; i < 5; i++) {
+		if (game->castle_troops[castle_id][i] == game->player_troops[slot]) {
+			dst_slot = i;
+			break;
+		}
+		if (game->castle_numbers[castle_id][i] == 0) {
+			dst_slot = i;
+			break;
+		}
+	}
+
+	/* No slot found */
+	if (dst_slot == -1) {
+		return 1;
+	}
+
+	/* Add to castle */
+	game->castle_troops[castle_id][dst_slot] = game->player_troops[slot];
+	game->castle_numbers[castle_id][dst_slot] += game->player_numbers[slot];
+	/* Remove from player */
+	dismiss_troop(game, slot);
+
+	return 0;
+}
+/* Return 0 on success, 1 if no slots left */
+int ungarrison_troop(KBgame *game, int castle_id, byte slot) {
+	int i;
+
+	/* Add to player */
+	if (add_troop(game,
+		game->castle_troops[castle_id][slot],
+		game->castle_numbers[castle_id][slot])) {
+		/* Failed to add */
+		return 1;
+	}
+
+	/* Remove from castle */
+	for (i = slot; i < 4; i++) {
+		game->castle_troops[castle_id][i] = game->castle_troops[castle_id][i + 1];
+		game->castle_numbers[castle_id][i] = game->castle_numbers[castle_id][i + 1];
+	}
+	game->castle_troops[castle_id][4] = 0xFF;
+	game->castle_numbers[castle_id][4] = 0;
+
+	return 0;
 }
 
 void temp_death(KBgame *game) {
