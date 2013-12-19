@@ -828,9 +828,9 @@ void temp_death(KBgame *game) {
 	game->mount = KBMOUNT_RIDE;
 
 	/* Wipe army */
-	for (i = 1; i < 5; i++) {
-		game->player_troops[i] = game->player_troops[i + 1];
-		game->player_numbers[i] = game->player_numbers[i + 1];
+	for (i = 0; i < 5; i++) {
+		game->player_troops[i] = 0xFF;
+		game->player_numbers[i] = 0;
 	}
 
 	/* Take away siege weapons */
