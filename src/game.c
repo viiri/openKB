@@ -4095,6 +4095,35 @@ void lose_game(KBgame *game) {
 	free(lines);
 }
 
+/* Returns 0 for yes, 1 for no */
+int ask_giveup(KBgame *game) {
+
+	Uint32 *colors = local.message_colors;
+	SDL_Rect *fs = &sys->font_size;
+	SDL_Rect *text = KB_BottomFrame();
+
+	KB_TopBox(MSG_CENTERED, "Press 'ESC' to exit");
+
+	KB_iloc(text->x, text->y + fs->h + fs->h/2 + fs->h/8);
+	KB_ilh(fs->h + fs->h/8);
+	KB_icolor(colors);
+	KB_iprint(
+		"Giving up will forfeit your\n"
+		"armies and send you back to\n"
+		"the King. Give up (y/n)?"
+	);
+
+	KB_flip(sys);
+
+	int key = 0;
+	while (!key) key = KB_event(&yes_no_question);
+
+	/* "Yes" */
+	if (key == 1) return 0;
+
+	return 1;
+}
+
 /* Returns 0 if the game was won, 1 if search was futile, 2 if search was cancelled */
 int ask_search(KBgame *game, int *weekend) {
 
@@ -5152,7 +5181,9 @@ int combat_loop(KBgame *game, KBcombat *combat) {
 			case KEY_ACT(FLY):      	unit_try_fly(combat);	break;
 			case KEY_ACT(GIVE_UP):
 
-				done = 2;
+				if (!ask_giveup(game)) {
+					done = 2;
+				}
 
 			break;
 			case KEY_ACT(SHOOT):    	unit_try_shoot(combat);	break;
