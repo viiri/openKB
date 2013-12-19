@@ -2294,6 +2294,7 @@ void visit_own_castle(KBgame *game, int castle_id) {
 				KB_iprintf(" %c", twirl[twirl_pos]);
 				KB_iprint("\n\nSpace to\n");
 				KB_imenu(&five_choices_and_space, 5, 8);
+				five_choices_and_space.spots[5].coords.h *= 2;
 				KB_iprintf("%s", actions[1-mode]);
 			}
 
