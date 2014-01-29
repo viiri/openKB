@@ -24,7 +24,7 @@ void interactive_main(KBgame *game) {
 	if ( read_file_config(&KBconf, KBconf.config_file) )
 	{
 		KB_errlog("[config] Unable to read config file '%s'\n", KBconf.config_file); 
-		return 1;
+		return;
 	}
 
 	/* Output final config to stdout */
@@ -45,7 +45,7 @@ void interactive_main(KBgame *game) {
 
 	/* Must be successfull to continue */
 	if (!sys) {
-		return -1;
+		return;
 	}
 
 	/* Module auto-discovery */
@@ -58,7 +58,7 @@ void interactive_main(KBgame *game) {
 	/* No module! (Unlikely...) */
 	if (conf->num_modules == 0) {
 		KB_errlog("No modules found.\n");
-		return -1;
+		return;
 	}
 
 	/* Load and use module font */
@@ -75,6 +75,7 @@ void interactive_main(KBgame *game) {
 }
 
 void stdout_game(KBgame *game) {
+	int cont, k, j, i;
 
 	printf("Difficulty: %d\n", game->difficulty);
 	printf("Scepter: %d, X=%d, Y=%d\n", game->scepter_continent, game->scepter_x, game->scepter_y);
@@ -94,7 +95,6 @@ void stdout_game(KBgame *game) {
 	printf("Player: Owns Boat: %s\n", game->boat != 0xFF ? "YES" : "NO");
 
 	printf("Artifcats: ");
-	int i = 0;
 	for (i = 0; i < MAX_ARTIFACTS; i++) {
 		printf("[%c] ", game->artifact_found[i] ? 'X' : ' ');
 	}
@@ -132,8 +132,6 @@ void stdout_game(KBgame *game) {
 	}
 	printf("\n");
 
-	int cont = 0;
-	int j = 0;
 	for (cont = 0; cont < MAX_CONTINENTS; cont++) {
 		printf("Continent %d: \n", cont);
 		for (j = LEVEL_H - 1; j >= 0; j--) {
@@ -205,20 +203,21 @@ void stdout_game(KBgame *game) {
 	}
 #endif
 
+	char *names[] = { 
+		"Mury","Hack","Ammi","Baro","Drea","Cane","Mora","Barr",
+		"Barg","Rina","Ragf","Mahk","Auri","Czar","Magu","Urth","Arec" };
+
+	char *troops[] = {
+		"Peasants","Sprites","Milita","Wolfs","Skeletons","Zombies","Gnomes","Orcs",
+		"Archers","Elves","Pikemen","Nomads","Dwarves","Ghosts","Knights","Ogres", 
+		"Barbarians","Trolls","Cavalery","Druids","Arcmages","Vampires","Giants",
+		"Demons","Dragons" };
+
 	for (j = 0; j < MAX_VILLAINS; j++) {
-		char *names[] = { "Mury","Hack","Ammi","Baro","Drea","Cane","Mora","Barr",
-					"Barg","Rina","Ragf","Mahk","Auri","Czar","Magu","Urth","Arec" };
-		//char *name = STR_LoadRESOURCE(STRL_VNAMES, 0, j);
 		printf("Villain%d: %s [%s]\n", j, names[j], game->villain_caught[j] ? "X" : " ");
-		//free(name);
 		if (game->villain_caught[j]) continue;
-		int k;
 		for (k = 0; k < MAX_CASTLES; k++) {
 			if ((game->castle_owner[k] & 0x7F) == j) {
-				char *troops[] = {
-				"Peasant","Sprite","Milita","Wolf","Skelet","Zombi","Gnome","Orc",
-				"Archer","Elf","Pikeman","Nomad","Dwarf","Ghost","Knight","Ogre", 
-				"Barbarian","Troll","Cavalery","Druid","Arcmag","Vampir","Giant","Demon","Dragon" };
 				/* Army */
 				for (i = 0; i < 5; i++) {
 					if (game->castle_numbers[k][i] == 0) break;
@@ -228,6 +227,17 @@ void stdout_game(KBgame *game) {
 			}
 		}
 	}
+	
+	for (k = 0; k < MAX_CASTLES; k++) {
+		//if ((game->castle_owner[k] & 0x7F) == j) {
+			/* Army */
+			for (i = 0; i < 5; i++) {
+				if (game->castle_numbers[k][i] == 0) break;
+				printf("Monster Castle%2d: Troop%d: %02d x %s\n", k, i, game->castle_numbers[k][i], troops[game->castle_troops[k][i]]);
+			}
+		//}
+	}
+	
 }
 
 int main(int argc, char* argv[]) {
