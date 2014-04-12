@@ -7,7 +7,7 @@
 # https://developer.apple.com/library/mac/documentation/GraphicsAnimation/Conceptual/HighResolutionOSX/Optimizing/Optimizing.html
 
 function show_usage {
-	echo "Usage: ./bundle.sh TOPDIR DESTDIR"
+	echo "Usage: ./bundle.sh TOPDIR DESTDIR VERSION"
 	exit
 }
 if [ "$1" = "" ]; then
@@ -16,11 +16,15 @@ fi
 if [ "$2" = "" ]; then
 	show_usage
 fi
+if [ "$3" = "" ]; then
+	show_usage
+fi
 
 TOPDIR=$1
 DESTDIR=$2
+VERSION=$3
 
-ICONDIR=$TOPDIR/dist/openkb.iconset
+ICONDIR=$TOPDIR/dist/osx/openkb.iconset
 APP=$DESTDIR/OpenKB.app
 
 # Step 0.
@@ -52,10 +56,14 @@ done
 # Step 3.
 # Copy data and Info.plist.
 
-cp $TOPDIR/dist/osx/Info.plist $APP/Contents/.
+#cp $TOPDIR/dist/osx/Info.plist.in $APP/Contents/Info.plist
+sed s/@VERSION@/$VERSION/ $TOPDIR/dist/osx/Info.plist.in > $APP/Contents/Info.plist
 cp -r $TOPDIR/data $APP/Contents/Resources
 
 # Step 4.
 # Create iconset.
 
+mkdir $ICONDIR
+cp $TOPDIR/data/icon_32x32.png $ICONDIR/.
 iconutil -c icns -o $APP/Contents/Resources/openkb.icns $ICONDIR
+rm -rf $ICONDIR
