@@ -5,7 +5,7 @@
   <key>CFBundleName</key>
   <string>OpenKB</string>
   <key>CFBundleGetInfoString</key>
-  <string>OpenKB 0.0.2</string>
+  <string>OpenKB @VERSION@</string>
   <key>CFBundleIdentifier</key>
   <string>org.sourceforge.openkb</string>
   <key>CFBundleExecutable</key>
@@ -13,7 +13,7 @@
   <key>CFBundleIconFile</key>
   <string>openkb.icns</string>
   <key>CFBundleShortVersionString</key>
-  <string>0.0.2</string>
+  <string>@VERSION@</string>
   <key>CFBundleInfoDictionaryVersion</key>
   <string>6.0</string>
   <key>CFBundlePackageType</key>
