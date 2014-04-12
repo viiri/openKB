@@ -20,6 +20,10 @@
 #include "config.h"
 #ifndef HAVE_LIBSDL
 	#error "Sorry, there's no reason to compile without HAVE_LIBSDL define..."
+#else
+	/* We must include SDL.h here, because on some platforms (OSX)
+         * main shall be replaced with SDLmain. */
+	#include <SDL.h>
 #endif
 #include "lib/kbconf.h"
 

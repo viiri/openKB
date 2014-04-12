@@ -21,7 +21,16 @@
 #define _OPENKB_LIBKB_STD
 
 #include "../config.h"
-#include <malloc.h>
+#ifndef HAVE_MALLOC
+    #error "Your system doesn't have malloc() ..?!"
+#else
+    #ifdef HAVE_MALLOC_H
+	#include <malloc.h>
+    #else
+	#include <memory.h>
+    #endif
+#endif
+
 
 #ifdef PATH_MAX
 #define PATH_LEN PATH_MAX
