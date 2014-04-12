@@ -1,0 +1,10 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=OpenKB
+Version=@VERSION@
+Type=Application
+Comment=Open-source King's Bounty clone
+Icon=openkb
+Exec=openkb
+Categories=Game
+Terminal=false
