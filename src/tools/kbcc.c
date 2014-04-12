@@ -149,7 +149,27 @@ void builtin_list(int mode) {
 void load_list(char *listfile) {
 
 	FILE *f;
+	char line[1024];
+	int l = 0;
 
+	f = fopen(listfile, "r");
+
+	if (!f) {
+		fprintf(stderr, "Unable to open %s \n", listfile);
+		return;
+	}
+
+	while (fgets(line, 1024, f)) {
+		l = strlen(line);
+		if (l < 1) continue;
+		line[l-1] = 0;
+		if (line[0] == '#' || line[0] == ';' || line[0] == 0) continue;
+		//printf("Line: %s\n", line);
+		
+		add_filename(line);
+	}
+
+	fclose(f);
 }
 
 
@@ -312,8 +332,8 @@ void list_infiles(char *archivename) {
 		
 
 		/* Output! */
-//		printf("%12s\t%06x\t%06x\t%04x\t%04x\n", name , offset, bdunno, bkey[0], head.files[i].key);
-		printf("%s\n", name);
+		printf("%-12s\t%06x\t%06x\t%04x\t%04x\n", name , offset, bdunno, bkey[0], head.files[i].key);
+//		printf("%s\n", name);
 		
 		//printf("Offset: %04x, File %d = key %04x = offset %04x = page %04x = unknown %04x\n", i*8+2, i, head.files[i].key, head.files[i].offset, head.files[i].page, head.files[i].dunno);
 	}
@@ -638,6 +658,11 @@ int main(int argc, char *argv[]) {
 			next++;
 			continue;
 		}
+		if (next == 1) {
+			strncpy(listfile, argv[i], 80);
+			next = -1;//? err
+			continue;
+		}
 	}
 
 	if (mode == -1) {
@@ -652,7 +677,8 @@ int main(int argc, char *argv[]) {
 	/* A) List all files */
 	if (mode == 0) {
 
-		if (filename[0] == '4')	builtin_list(0);
+		if (listfile[0]) load_list(listfile);
+		else if (filename[0] == '4')	builtin_list(0);
 		else if (filename[0] == '2') builtin_list(1);
 
 		list_infiles(filename);
