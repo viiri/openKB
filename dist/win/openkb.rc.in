@@ -1,0 +1,25 @@
+1 VERSIONINFO
+FILEVERSION     @WINVERSION@
+PRODUCTVERSION  @WINVERSION@
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "080904E4"
+    BEGIN
+      VALUE "CompanyName", "org.sourceforge.openkb"
+      VALUE "FileDescription", "Open-source King's Bounty clone"
+      VALUE "FileVersion", "@VERSION@"
+      VALUE "InternalName", "openkb"
+      VALUE "LegalCopyright", "GNU GPLv3, CC-BY-SA"
+      VALUE "OriginalFilename", "openkb.exe"
+      VALUE "ProductName", "OpenKB"
+      VALUE "ProductVersion", "@VERSION@"
+    END
+  END
+
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0x809, 1252
+  END
+END
+id ICON "dist/openkb.ico"
