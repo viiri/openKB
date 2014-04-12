@@ -70,12 +70,10 @@ GAME2_OBJECTS=$(GAME2_SOURCES:.c=.o)
 all: $(GAME_BINARY)
 
 $(LIBHFS_BINARY): $(VEND_DEPS)
-	cd vendor/libhfs; ./configure; cd ../..
 	make -C vendor/libhfs
 	cp vendor/libhfs/libhfs.a vendor/.
 
 $(LIBRSRC_BINARY): $(VEND_DEPS)
-	cd vendor/librsrc; ./configure; cd ../..
 	make -C vendor/librsrc
 	cp vendor/librsrc/librsrc.a vendor/.
 
@@ -102,6 +100,8 @@ mans: $(MAN_PAGES)
 
 $(VEND_DEPS):
 	vendor/drop.sh vendor/
+	cd vendor/libhfs; ./configure; cd ../..
+	cd vendor/librsrc; ./configure; cd ../..
 
 $(VEND_SOURCES):
 	vendor/drop.sh vendor/
