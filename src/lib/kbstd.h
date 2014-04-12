@@ -65,6 +65,10 @@ extern char* KB_strlist_ind_dbg(const char *list, int id, const char *list_name,
  * Match a string in an asciiz-list, return word_index+1 on success, 0 on failure
  */
 extern int KB_strlistcmp(const char *list, const char *needle);
+/* 
+ * Return byte length of asciiz-list 
+ */
+extern int KB_strlist_len(const char *list);
 
 #ifdef HAVE_STRCASECMP
 
