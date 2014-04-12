@@ -45,6 +45,8 @@ KBenv *KB_startENV(KBconfig *conf) {
 
 	SDL_AudioSpec desired;
 
+	char *iconfile;
+
 	KBenv *nsys = malloc(sizeof(KBenv));
 
 	if (!nsys) {
@@ -96,6 +98,26 @@ KBenv *KB_startENV(KBconfig *conf) {
 
 	SDL_WM_SetCaption("openkb " PACKAGE_VERSION, "openkb " PACKAGE_VERSION);
 
+	/* Set window icon */
+	iconfile = KB_fastpath(conf->data_dir, "/", "icon_32x32"
+#ifdef HAVE_LIBSDL_IMAGE
+	".png"
+#else
+	".bmp"
+#endif
+	); 
+	nsys->icon = 
+#ifdef HAVE_LIBSDL_IMAGE
+	IMG_Load(iconfile);
+#else
+	SDL_LoadBMP(iconfile);
+#endif
+	if (!nsys->icon) {
+		KB_errlog("Couldn't open icon file: %s\n", iconfile);
+	}
+	free(iconfile);
+	SDL_WM_SetIcon(nsys->icon, NULL);
+
 	if (conf->sound) {
 		/* Open audio device */
 		desired.format = AUDIO_FORMAT;
@@ -143,6 +165,7 @@ void KB_stopENV(KBenv *env) {
 	SDL_CloseAudio();
 
 	if (env->font) SDL_FreeSurface(env->font);
+	if (env->icon) SDL_FreeSurface(env->icon);
 
 	SDL_FreeCachedSurfaces();
 

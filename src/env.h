@@ -31,6 +31,7 @@ typedef struct KBenv {
 
 	SDL_Surface *screen;
 	SDL_Surface *font;
+	SDL_Surface *icon;
 
 	SDL_AudioSpec mixer;
 	KBsound *sound;
