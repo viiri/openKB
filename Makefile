@@ -18,9 +18,15 @@ LDFLAGS=-lpng -lSDL_image -lSDL
 
 VERSION=$(shell sed -nr 's/AC_INIT\(\w+?,\s*?([^,]+),.+\)/\1/p' configure.ac)
 
-MSYS_TEST=$(shell uname -so | grep -i msys | grep -i mingw32)
+GAME_RESOURCES=
+GAME_RES_OBJECTS=
+GAME_WIN_VERSION=
+MSYS_TEST=$(shell uname -a | grep -i msys | grep -i mingw32)
 ifneq ("$(MSYS_TEST)","")
 	CFLAGS+=-I/mingw/include/SDL -DUSE_WINAPI
+	GAME_RESOURCES+=dist/win/openkb.rc
+	GAME_RES_OBJECTS+=dist/win/openkb.rc.o
+	GAME_WIN_VERSION=$(shell echo @VERSION@ | tr . ,),0
 endif
 
 CONFIG_SOURCE=src/config.h.in
@@ -56,7 +62,7 @@ LIBRSRC_BINARY=vendor/librsrc.a
 
 LIB_OBJECTS=$(LIB_SOURCES:.c=.o) $(LIBHFS_BINARY) $(LIBRSRC_BINARY)
 VEND_OBJECTS=$(VEND_SOURCES:.c=.o)
-GAME_OBJECTS=$(GAME_SOURCES:.c=.o)
+GAME_OBJECTS=$(GAME_SOURCES:.c=.o) $(GAME_RES_OBJECTS)
 GAME2_OBJECTS=$(GAME2_SOURCES:.c=.o)
 
 .SUFFIXES: .6 .man
@@ -135,3 +141,12 @@ install: all
 	$(INSTALL) openkb $(DESTDIR)$(bindir)/openkb
 	$(INSTALL_DATA) data $(DESTDIR)$(datadir)/openkb-data
 	$(INSTALL_DATA) docs/openkb.6 $(DESTDIR)$(mandir)/man6/openkb.6
+
+dist/win/openkb.rc: dist/win/openkb.rc.in
+	cp dist/win/openkb.rc.in $@
+	sed -i.bak s/@VERSION@/$(VERSION)/g $@
+	sed -i.bak s/@WINVERSION@/$(GAME_WIN_VERSION)/g $@
+	rm $@.bak
+
+dist/win/openkb.rc.o: dist/win/openkb.rc
+	windres dist/win/openkb.rc $@
