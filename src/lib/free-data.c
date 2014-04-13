@@ -423,6 +423,21 @@ void* GNU_Resolve(KBmodule *mod, int id, int sub_id) {
 			return hit_points;
 		}
 		break;
+		case DAT_WORLD:
+		{
+			KB_File *f;
+			int n;
+			byte *world;
+			int len = 64 * 64 * 4;
+			world = malloc(sizeof(byte) * len);
+			if (!world) return NULL;
+			f = KB_fopen_with("land.org", "rb", mod);
+			if (f == NULL) return NULL;
+			n = KB_fread(world, sizeof(byte), len, f);
+			KB_fclose(f);
+			return world;
+		}
+		break;
 		case RECT_UI:
 		{
 			if (sub_id < 0 || sub_id > 4) return NULL;
