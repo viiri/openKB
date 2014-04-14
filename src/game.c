@@ -2867,21 +2867,27 @@ int visit_dwelling(KBgame *game, byte rtype) {
 }
 
 void read_signpost(KBgame *game) {
+	char *sign;
 
 	int id = 0;
 	int ok = 0;
-	int i, j;
-	for (j = 0; j < LEVEL_H; j++) {
-		for (i = 0; i < LEVEL_W; i++) {
-			if (game->map[0][j][i] == TILE_SIGNPOST) {
-				if (i == game->x && j == game->y) { ok = 1; break; }
-				id ++;
+	int i, j, k;
+	/* Note: DOS version had "signs_per_continent" hardcoded array.
+	 * For flexibility, we just count. */
+	for (k = 0; k < MAX_CONTINENTS; k++) {
+		for (j = 0; j < LEVEL_H; j++) {
+			for (i = 0; i < LEVEL_W; i++) {
+				if (game->map[k][j][i] == TILE_SIGNPOST) {
+					if (k == game->continent && i == game->x && j == game->y) { ok = 1; break; }
+					id++;
+				}
 			}
+			if (ok) break; 
 		}
-		if (ok) break; 
+		if (ok) break;
 	}
 
-	char *sign = KB_Resolve(STR_SIGN, id);
+	sign = KB_Resolve(STR_SIGN, id);
 
 	if (sign == NULL) {
 		KB_errlog("Unable to read Signpost #%d\n", id);
