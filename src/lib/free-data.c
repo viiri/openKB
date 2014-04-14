@@ -21,6 +21,7 @@
 #include "kbconf.h"	/* KBmodule type */
 #include "kbres.h"	/* GR_? defines */
 #include "kbfile.h"	/* KB_File operations */
+#include "kbauto.h"	/* KB_fopen_with */
 
 #include <SDL.h>  	/* SDL data types */
 #ifdef HAVE_LIBSDL_IMAGE
