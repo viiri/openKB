@@ -5,6 +5,6 @@ openkb Programmed By:
   driedfruit
 
 free Graphics By:
-  missandei
+  missandei, Santiago Iborra
 
      GNU GPL3+ CC-BY-SA
