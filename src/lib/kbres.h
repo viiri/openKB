@@ -262,6 +262,8 @@ enum {
 /* Troop and villain names provided by DOS module */
 extern char* DOS_villain_names[];
 extern char* DOS_troop_names[];
+extern char* DOS_class_names[];
+extern char* DOS_location_names[];
 
 
 #ifdef HAVE_LIBSDL

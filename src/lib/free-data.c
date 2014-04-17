@@ -339,6 +339,22 @@ void* GNU_Resolve(KBmodule *mod, int id, int sub_id) {
 			is_transparent = 0;
 		}
 		break;
+		case GR_PORTRAIT:	/* subId - class */
+		{
+			if (sub_id < 0 || sub_id > 3) sub_id = 0;
+			image_name = DOS_class_names[sub_id];
+			image_suffix = _EXTN;
+			is_transparent = 0;
+		}
+		break;
+		case GR_LOCATION:	/* subId - 0 home 1 town 2 - 6 dwelling */
+		{
+			if (sub_id < 0 || sub_id > 5) sub_id = 0;
+			image_name = DOS_location_names[sub_id];
+			image_suffix = _EXTN;
+			is_transparent = 0;
+		}
+		break;
 		case GR_COINS:
 		{
 			image_name = "coins";
