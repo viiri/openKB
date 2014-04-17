@@ -1,0 +1,10 @@
+King's Bounty Designed By:
+  Jon Van Caneghem
+
+openkb Programmed By:
+  driedfruit
+
+free Graphics By:
+  missandei
+
+     GNU GPL3+ CC-BY-SA
