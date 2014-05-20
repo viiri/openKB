@@ -196,6 +196,17 @@ KB_File* execomp_uncompress(KB_File *f)
 		return NULL;
 	}
 
+	/* Verify this file is actually compressed, and not just an exe */
+	/* We check if 0x200 contains "e99900". Another approach is to check
+	 * if 0x24d contains "KB.EXE" */
+	char mini_buf[4];
+	KB_fseek(f, 0x200, SEEK_SET);
+	n = KB_fread(mzHeader, sizeof(char), 4, f); /* read bytes */
+	if (n < 4 || mini_buf[0] != 0xE9 || mini_buf[1] != 0x99 || mini_buf[2] != 0x00) {
+		KB_debuglog(0, "[execomp] No signature found (%02x%02x%02x at 0x200)\n", mini_buf[0],mini_buf[1],mini_buf[2]);
+		return NULL;
+	}
+
 	//print_EXE(&mz, inputFile); /* show some info to stdout */
 
 	int exe_data_start = mz.header_paragraphs * 16L;
