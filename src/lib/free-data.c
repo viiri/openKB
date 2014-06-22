@@ -77,7 +77,7 @@ dword* GNU_extract_ini(KBmodule *mod, const char *inifile, const char *module, c
 	}
 	name_test_len = strlen(name);
 
-	int filled;
+	int filled = 0;
 	while (KB_fgets(line, sizeof(line), fd)) {
 
 		if (!strncasecmp(line, module_test, module_test_len)) {
