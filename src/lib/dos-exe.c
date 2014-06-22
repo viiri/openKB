@@ -25,6 +25,7 @@
 #include "kbres.h"
 
 #include "kbstd.h" /* for malloc */
+#include "dos-cc.h" /* for KB_funLZW */
 
 #define KBEXETYPE_RAW   	0
 #define KBEXETYPE_EXEPACK	1
