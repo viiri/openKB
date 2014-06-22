@@ -63,7 +63,7 @@ extern void  KB_debuglog(int mod, char *fmt, ...);
 /*
  * Generic RND
  */
-int KB_rand(int min, int max);
+extern int KB_rand(int min, int max);
 
 /*
  * Return Nth word in an asciiz-list
