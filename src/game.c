@@ -24,6 +24,7 @@
 #include "play.h"
 #include "save.h"
 #include "ui.h"
+#include "rogue.h"
 #include "lib/kbconf.h"
 #include "lib/kbres.h"
 #include "lib/kbauto.h"
@@ -344,6 +345,7 @@ KBgame *create_game(int pclass) {
 			}
 			refill_rules();
 			game = spawn_game(name, pclass, sel, land);
+			furnish_map(game);/* Hack -- should work somewhat differently */
 			done = 1;
 			free(land);
 		}
