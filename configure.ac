@@ -7,6 +7,8 @@ AC_INIT(openkb, 0.0.2, https://sourceforge.net/p/openkb/tickets/)
 AC_CONFIG_SRCDIR([src/main.c])
 AC_CONFIG_HEADERS([src/config.h])
 
+: ${CFLAGS="-g"}
+
 # Checks for programs.
 AC_PROG_CC
 AC_PROG_INSTALL
