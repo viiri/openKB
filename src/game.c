@@ -844,7 +844,7 @@ void KB_BlitMap(SDL_Surface *dest, SDL_Surface *tileset, SDL_Rect *viewport) {
 
 inline byte KB_GetMapTile(KBgame *game, byte continent, int y, int x) {
 	/* If coordinates are in bounds, return the tile */
-	return  (y >= 0 && y < LEVEL_W - 1 && x >= 0 && x <= LEVEL_H - 1) 
+	return  (y >= 0 && y < LEVEL_H && x >= 0 && x < LEVEL_W)
 			? game->map[continent][y][x] & 0x7F /* ***WITH INTERACTIVITY BIT REMOVED*** */
 			: TILE_DEEP_WATER; /* otherwise, return water tile */
 }
