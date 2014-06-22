@@ -380,7 +380,7 @@ KBgame *spawn_game(char *name, int pclass, int difficulty, byte *land) {
 	/* Hide scepter */
 	game->scepter_key = KB_rand(0x00, 0xFF);
 	game->scepter_continent = KB_rand(100, 400) / 100 - 1;
-	i = KB_rand(0, grass_on_continent(game, game->scepter_continent));
+	i = KB_rand(0, grass_on_continent(game, game->scepter_continent) - 1);
 	bury_scepter(game, game->scepter_continent, i);
 
 	/* Initialize character */
