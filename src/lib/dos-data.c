@@ -1008,7 +1008,7 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 				TREE,
 				CASTLE,
 				MAP_OBJECT,
-			} tile_type;
+			} tile_type = DEEP_WATER;
 			byte ega_minimap_index[8] = {
 				EGA_BLUE,
 				EGA_DBLUE,

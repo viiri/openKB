@@ -34,7 +34,7 @@
 #define KBCASTLE_KNOWN  	0x40
 #define KBCASTLE_PLAYER 	0xFF
 #define KBCASTLE_MONSTERS	0x7F
-#define KBCASTLE_VILLAIN	0x3F
+#define KBCASTLE_VILLAIN	0x1F
 
 #define MAX_CONTINENTS 4
 #define LEVEL_W	64
@@ -70,6 +70,10 @@
 
 #define PUZZLEMAP_W	5
 #define PUZZLEMAP_H	5
+
+#define MAX_PLAYER_ARMY 5
+#define MAX_CASTLE_ARMY 5
+#define MAX_FOE_ARMY 5
 
 typedef struct KBgame KBgame;
 

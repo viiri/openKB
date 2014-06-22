@@ -388,7 +388,7 @@ KBgame *spawn_game(char *name, int pclass, int difficulty, byte *land) {
 	game->difficulty = difficulty;
 	game->class = pclass;
 	game->days_left = days_per_difficulty[difficulty];
-	game->steps_left = 40;
+	game->steps_left = DAY_STEPS;
 
 	game->continent = HOME_CONTINENT;
 	game->x = HOME_X;
