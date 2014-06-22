@@ -88,8 +88,8 @@ KBenv *KB_startENV(KBconfig *conf) {
 		}
 	}
 
-    nsys->screen = SDL_SetVideoMode( width, height, 32, flags );
-   
+	nsys->screen = SDL_SetVideoMode( width, height, 32, flags );
+
 	if (nsys->screen == NULL) {
 		KB_errlog("Couldn't create output screen: %s\n", SDL_GetError());
 		free(nsys);
