@@ -478,16 +478,16 @@ void* GNU_Resolve(KBmodule *mod, int id, int sub_id) {
 		case COL_TEXT:
 		{
 			const char *CS_names[] = { /* Index is one of CS_ defines from kbres.h */
-				"generic", /* CS_GENERIC  == 0 */
-				"status1", /* CS_STATUS_1 == 1 */
-				"status2", /* CS_STATUS_2 == 2 */
-				"status3", /* CS_STATUS_3 == 3 */
-				"status4", /* CS_STATUS_4 == 4 */
-				"status5", /* CS_STATUS_5 == 5 */
-				"minimenu",/* CS_MINIMENU == 6 */
-				"viewchar",/* CS_VIEWCHAR == 7 */
-				"viewarmy",/* CS_VIEWARMY == 8 */
-				"chrome",  /* CS_CHROME   == 9 */
+				"generic",  /* CS_GENERIC  == 0 */
+				"status1",  /* CS_STATUS_1 == 1 */
+				"status2",  /* CS_STATUS_2 == 2 */
+				"status3",  /* CS_STATUS_3 == 3 */
+				"status4",  /* CS_STATUS_4 == 4 */
+				"status5",  /* CS_STATUS_5 == 5 */
+				"submenu",  /* CS_MINIMENU == 6 */
+				"character",/* CS_VIEWCHAR == 7 */
+				"army",     /* CS_VIEWARMY == 8 */
+				"chrome",   /* CS_CHROME   == 9 */
 			};
 			if (sub_id < 0 || sub_id > 9) return NULL;
 			return GNU_ReadTextColors(mod, "colors.ini", CS_names[sub_id]);
