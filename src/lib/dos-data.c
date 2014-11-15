@@ -1190,6 +1190,26 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 				EGA_MAGENTA,// sel_frame1
 				EGA_MAGENTA,// sel_frame2
 			};
+			byte ega_scheme_ending_index[] = {
+				EGA_DBLUE,	// win_background
+				EGA_WHITE,	// win_text1
+				EGA_WHITE,	// win_text2
+				EGA_WHITE,	// win_text3
+				EGA_WHITE,	// win_text4
+				EGA_MAGENTA,// win_shadow1
+				EGA_MAGENTA,// win_shadow2
+				EGA_MAGENTA,// win_frame1
+				EGA_MAGENTA,// win_frame2
+				EGA_DBLUE,	// lose_background
+				EGA_WHITE,	// lose_text1
+				EGA_WHITE,	// lose_text2
+				EGA_WHITE,	// lose_text3
+				EGA_WHITE,	// lose_text4
+				EGA_MAGENTA,// lose_shadow1
+				EGA_MAGENTA,// lose_shadow2
+				EGA_MAGENTA,// lose_frame1
+				EGA_MAGENTA,// lose_frame2
+			};
 			byte *ega_index_ptr;
 			int i;
 			Uint32 *colors;
@@ -1198,6 +1218,9 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 			if (colors == NULL) return NULL;
 
 			switch (sub_id) {
+				case CS_ENDING: 	/* Ending message */
+					ega_index_ptr = ega_scheme_ending_index;
+					break;
 				case CS_CHROME: 	/* "Raw" menus (black & white) */
 					ega_index_ptr = ega_scheme_chrome_index;
 					break;
