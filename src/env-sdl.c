@@ -169,8 +169,6 @@ void KB_stopENV(KBenv *env) {
 
 	SDL_FreeCachedSurfaces();
 
-	kill_inline_font();
-
 	free(env);
 
 	SDL_Quit();
