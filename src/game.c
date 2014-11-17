@@ -350,6 +350,7 @@ KBgame *create_game(int pclass) {
 				break;
 			}
 			refill_rules();
+			name[0] = toupper(name[0]);
 			game = spawn_game(name, pclass, sel, land);
 			furnish_map(game);/* Hack -- should work somewhat differently */
 			done = 1;

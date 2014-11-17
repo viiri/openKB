@@ -390,9 +390,12 @@ KBgame *spawn_game(char *name, int pclass, int difficulty, byte *land) {
 	game->days_left = days_per_difficulty[difficulty];
 	game->steps_left = DAY_STEPS;
 
+	game->gold = starting_gold[pclass];
+
 	game->continent = HOME_CONTINENT;
 	game->x = HOME_X;
-	game->y = HOME_Y - 3;
+	game->y = HOME_Y - 2;
+	game->continent_found[HOME_CONTINENT] = 1;
 
 	game->mount = KBMOUNT_RIDE;
 	game->boat = 0xFF;
@@ -401,6 +404,8 @@ KBgame *spawn_game(char *name, int pclass, int difficulty, byte *land) {
 
 	game->rank = 0;
 	player_accept_rank(game);
+	game->leadership = game->base_leadership;
+	game->time_stop = 0;
 
 	game->contract = 0xFF;
 	game->last_contract = 0x04;
