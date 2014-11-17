@@ -588,7 +588,9 @@ SDL_Rect* KB_BottomFrame() {
 
 	/* A nice frame */
 	SDL_TextRect(screen, &border, ui, bg, 1);
-	SDL_FillRect(screen, &text, 0x00FF00);//debug fill
+	//SDL_FillRect(screen, &text, 0x00FF00);//debug fill
+
+	KB_icolor(&local.message_colors[0]);
 
 	return &text;
 }
@@ -599,7 +601,7 @@ SDL_Rect* KB_BottomBox(const char *header, const char *str, byte flag) {
 
 	SDL_Rect *text = KB_BottomFrame();	
 
-	/* Header (few pixels up) */	
+	/* Header (few pixels up) */
 	KB_iloc(text->x, text->y - fs->h/4 - fs->h/8);
 	if (flag & MSG_HARDCODED) KB_ilh(fs->h + 1);
 	if (header) KB_iprint(header);
