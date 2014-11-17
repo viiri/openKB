@@ -1,6 +1,6 @@
 /*
  *  game.c -- core gameplay routines
- *  Copyright (C) 2011 Vitaly Driedfruit
+ *  Copyright (C) 2011-2014 Vitaly Driedfruit
  *
  *  This file is part of openkb.
  *
@@ -127,12 +127,14 @@ void render_game(KBenv *env, KBgame *game, KBgamestate *state, KBconfig *conf) {
 #define combat_error combat_log
 
 /* Enter name */
-char *text_input(int max_len, int numbers_only, int x, int y) {
+char *text_input(int max_len, int numbers_only, int x, int y, int loc_id, int troop_id) {
 	static char entered_name[11];
 
 	int key = 0;
 	int done = 0;
 	int redraw = 1;
+	int troop_frame = 3;
+	int troop_delay = 0;
 
 	SDL_Rect *fs = &sys->font_size;
 
@@ -163,7 +165,10 @@ char *text_input(int max_len, int numbers_only, int x, int y) {
 		else
 		if (key == SDLK_SYN) {
 			twirl_pos++;
+			troop_delay++;
 			if (twirl_pos > 3) twirl_pos = 0;
+			if (troop_delay > 2) { troop_delay = 0; troop_frame++; }
+			if (troop_frame > 3) troop_frame = 0;
 			redraw = 1;
 		} else
 		if (key) {
@@ -182,6 +187,7 @@ char *text_input(int max_len, int numbers_only, int x, int y) {
 		}
 
 		if (redraw) {
+			if (loc_id != 0xFF) draw_location(loc_id, troop_id, troop_frame);
 
 			KB_iloc(x, y);
 			KB_iprintf("%s", entered_name);
@@ -383,7 +389,7 @@ KBgame *create_game(int pclass) {
 		}
 
 		if (!has_name) {
-			name = text_input(10, 0, menu.x + fs->w * 18, menu.y + fs->h);
+			name = text_input(10, 0, menu.x + fs->w * 18, menu.y + fs->h, 0xFF, 0xFF);
 			if (name == NULL || name[0] == '\0') done = 1;
 			else has_name = 1;
 			redraw = 1;
@@ -887,7 +893,7 @@ KBgamestate five_choices = {
 		{	{ 0 }, SDLK_d, 0, 0      	},
 		{	{ 0 }, SDLK_e, 0, 0      	},
 
-		{	{ 60 }, SDLK_SYN, 0, KFLAG_TIMER },
+		{	{ 90 }, SDLK_SYN, 0, KFLAG_TIMER },
 		0,
 	},
 	0
@@ -902,7 +908,7 @@ KBgamestate five_choices_and_space = {
 		{	{ 0 }, SDLK_e, 0, 0      	},
 		{	{ 0 }, SDLK_SPACE, 0, 0    	},
 
-		{	{ 60 }, SDLK_SYN, 0, KFLAG_TIMER },
+		{	{ 90 }, SDLK_SYN, 0, KFLAG_TIMER },
 		0,
 	},
 	0
@@ -1983,7 +1989,7 @@ void audience_with_king(KBgame *game) {
 	KB_BottomBox(message, "", MSG_PAUSE);
 }
 
-void recruit_soldiers(KBgame *game) {
+void recruit_soldiers(KBgame *game, int loc_id, int troop_id) {
 
 	int home_troops[5];
 	int off = 0;
@@ -2010,13 +2016,16 @@ void recruit_soldiers(KBgame *game) {
 
 	int done = 0;
 	int redraw = 1;
+	int troop_frame = 3;
+	int troop_delay = 0;
 	while (!done) {
 
 		if (redraw) {
+			draw_location(loc_id, troop_id, troop_frame);
 			draw_sidebar(game, 0);
 
 			text = KB_BottomFrame();
-		
+
 			/** Left side **/
 			/* Header (few pixels up) */
 			KB_iloc(text->x, text->y - fs->h/4);
@@ -2073,12 +2082,15 @@ void recruit_soldiers(KBgame *game) {
 			}
 			if (key == 6) {
 				twirl_pos++;
+				troop_delay++;
 				if (twirl_pos > 3) twirl_pos = 0;
+				if (troop_delay > 2) { troop_delay = 0; troop_frame++; }
+				if (troop_frame > 3) troop_frame = 0;
 				redraw = 1;
 			}
 
 		} else {
-			char *enter = text_input(6, 1, text->x + fs->w * 20, text->y + fs->h/4 + (fs->h + fs->h/8) * 5);
+			char *enter = text_input(6, 1, text->x + fs->w * 20, text->y + fs->h/4 + (fs->h + fs->h/8) * 5, loc_id, troop_id);
 
 			if (enter == NULL) { whom = 0; }
 			else {
@@ -2134,7 +2146,7 @@ void visit_home_castle(KBgame *game) {
 
 		if (key == 0xFF) done = 1;
 		if (key == 1) {
-			recruit_soldiers(game);
+			recruit_soldiers(game, 0, random_troop);
 			redraw_menu = 1;
 		}
 		if (key == 2) {
@@ -2464,6 +2476,7 @@ void visit_town(KBgame *game) {
 
 	int done = 0;
 	int frame = 0;
+	int troop_delay = 0;
 	int redraw = 1;
 	int redraw_menu = 1;
 	int msg_hold = 0;
@@ -2500,6 +2513,8 @@ void visit_town(KBgame *game) {
 		}
 
 		if (redraw) {
+
+			draw_sidebar(game, frame);
 
 			/** Draw pretty picture (Background + Animated Troop) **/
 			draw_location(1, random_troop, frame);
@@ -2541,7 +2556,12 @@ void visit_town(KBgame *game) {
 				game->contract = game->last_contract;
 
 				/* show contract on screen */
+				draw_sidebar(game, 0);
 				view_contract(game);
+
+				/* clear screen afterwards */
+				redraw_menu = 1;
+				redraw = 1;
 			}
 			/** Rent/cancel Boat **/
 			if (key == 2) {
@@ -2627,7 +2647,8 @@ void visit_town(KBgame *game) {
 			}
 		}
 
-		if (key == 6) { frame++; redraw = 1; }
+		if (key == 6) troop_delay++;
+		if (troop_delay > 1) { frame++; troop_delay = 0; redraw = 1; }
 		if (frame > 3) frame = 0;
 	}
 
@@ -2840,7 +2861,7 @@ int visit_dwelling(KBgame *game, byte rtype) {
 			redraw = 0;
 		}
 
-		enter = text_input(6, 1, text->x + fs->w * 17, text->y - fs->h/4 + (fs->h) * 6);
+		enter = text_input(6, 1, text->x + fs->w * 17, text->y - fs->h/4 + (fs->h) * 6, 2 + rtype, troop_id);
 
 		if (enter == NULL) { done = 1; }
 		else {
