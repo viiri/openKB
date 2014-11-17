@@ -5616,8 +5616,12 @@ void adventure_loop(KBgame *game) {
 				}
 			}
 			if (!walk) {
+				int tmp_x = game->x;
+				int tmp_y = game->y;
 				game->x = game->last_x;
 				game->y = game->last_y;
+				game->last_x = tmp_x;
+				game->last_y = tmp_y;
 				walk = 1;
 			} else {
 				walk = 0;
@@ -5634,7 +5638,7 @@ void adventure_loop(KBgame *game) {
 						game->boat_x = game->last_x;
 						game->boat_y = game->last_y;
 					}
-				}	
+				}
 			}
 			continue;
 		}
