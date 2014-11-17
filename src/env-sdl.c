@@ -598,13 +598,13 @@ char *STRL_LoadRESOURCE(int id, int sub_id) {
 char *STR_LoadRESOURCE(int id, int sub_id, int line) {
 	char *list = KB_Resolve(id, sub_id);
 	char *match = KB_strlist_peek(list, line);
-	int len = strlen(match);
+	int len = strlen(match) + 1;
 	char *item = malloc(sizeof(char) * len);
 	item[0] = '\0';
 	KB_strncpy(item, match, len);
 	/* FREE! */
 	free(list);
-	return match;
+	return item;
 }
 #endif
 
