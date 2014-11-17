@@ -3520,7 +3520,7 @@ void end_of_week(KBgame *game, int num) {
 	KB_icurs(0, 3);
 	KB_iprintf("Payment% 6d", game->commission);
 	KB_icurs(0, 4);
-	KB_iprintf("Boat   % 6d", boat_cost(game));
+	KB_iprintf("Boat   % 6d", player_has_boat(game) ? boat_cost(game) : 0);
 	KB_icurs(0, 5);
 	KB_iprintf("Army   % 6d", army_cost);
 	KB_icurs(0, 6);

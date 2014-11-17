@@ -1,6 +1,6 @@
 /*
  *  play.c -- gameplay mechanics
- *  Copyright (C) 2011 Vitaly Driedfruit
+ *  Copyright (C) 2011-2014 Vitaly Driedfruit
  *
  *  This file is part of openkb.
  *
@@ -862,6 +862,7 @@ byte end_week(KBgame *game) {
 		creature = KB_rand(1, MAX_TROOPS - 1);
 
 	/** Budget **/
+	credit = 0;
 
 	/* Add commission */
 	game->gold += game->commission;
@@ -873,7 +874,7 @@ byte end_week(KBgame *game) {
 	for (i = 0; i < 5; i++) {
 		if (game->player_numbers[i] == 0) break;
 		credit +=
-			game->player_numbers[i] * troops[ game->player_troops[i] ].recruit_cost;
+			game->player_numbers[i] * (troops[ game->player_troops[i] ].recruit_cost / 10);
 	}
 
 	/* Spend gold */
