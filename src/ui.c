@@ -334,7 +334,24 @@ int KB_event(KBgamestate *state) {
 							eve = kbd->sym; /* !!! */
 							if ((kbd->mod & KMOD_SHIFT) && (eve < 128)) { //shift -- uppercase!
 								if (eve >= SDLK_a && eve <= SDLK_z) eve -= 32;
-								if (eve >= SDLK_0 && eve <= SDLK_9) eve -= 16;
+								else if (eve == SDLK_2) eve = '@';
+								else if (eve == SDLK_6) eve = '^';
+								else if (eve == SDLK_7) eve = '&';
+								else if (eve == SDLK_8) eve = '*';
+								else if (eve == SDLK_9) eve = '(';
+								else if (eve == SDLK_0) eve = ')';
+								else if (eve >= SDLK_0 && eve <= SDLK_9) eve -= 16;
+								else if (eve == '`') eve = '~';
+								else if (eve == '-') eve = '_';
+								else if (eve == '=') eve = '+';
+								else if (eve == '\\') eve = '|';
+								else if (eve == ',') eve = '<';
+								else if (eve == '.') eve = '>';
+								else if (eve == '/') eve = '?';
+								else if (eve == ';') eve = ':';
+								else if (eve == '\'') eve = '"'; //"
+								else if (eve == '[') eve = '{';
+								else if (eve == ']') eve = '}';
 							}
 						}
 					}
