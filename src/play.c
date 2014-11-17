@@ -709,6 +709,57 @@ void sail_to(KBgame *game, byte continent) {
 	game->boat_y = game->y;
 }
 
+/* Move foe "foe_id" to a new location "nx,ny" */
+void foe_relocate(KBgame *game, int foe_id, int nx, int ny) {
+
+	int old_x = game->foe_coords[game->continent][foe_id][0];
+	int old_y = game->foe_coords[game->continent][foe_id][1];
+
+	game->map[game->continent][old_y][old_x] = 0;//TILE_GRASS;
+	game->map[game->continent][ny][nx] = 0x91;//TILE_FOE;
+
+	game->foe_coords[game->continent][foe_id][0] = nx;
+	game->foe_coords[game->continent][foe_id][1] = ny;
+}
+
+void foe_closest_offset(KBgame *game, int foe_id, int position_x, int position_y, int target_x, int target_y, int *ox, int *oy);
+
+void foe_follow(KBgame *game, int foe_id) {
+	int foe_x = game->foe_coords[game->continent][foe_id][0];
+	int foe_y = game->foe_coords[game->continent][foe_id][1];
+
+	int move_x;
+	int move_y;
+	foe_closest_offset(game, foe_id,
+		foe_x, // foe x
+		foe_y, // foe y
+		game->last_x, // player x
+		game->last_y, // player y
+		&move_x, &move_y);
+
+	foe_relocate(game, foe_id, foe_x + move_x, foe_y + move_y);
+}
+
+/* Note: foes in radius of player origin move to player origin (last_x,last_y).
+ * They really do follow. */
+void foes_follow(KBgame *game) {
+	int id = 0;
+	int i;
+	/* For each foe, that is ON-SCREEN */
+	for (i = 0; i < MAX_FOES; i++) {
+		int diff_x = game->foe_coords[game->continent][i][0] - game->last_x;
+		int diff_y = game->foe_coords[game->continent][i][1] - game->last_y;
+		/* Poor man's abs() */
+		if (diff_x < 0) diff_x = -diff_x;
+		if (diff_y < 0) diff_y = -diff_y;
+		/* Too far */
+		if (diff_y > 2 || diff_x > 2) continue;
+
+		/* Do follow */
+		foe_follow(game, i);
+	}
+}
+
 /* Returns 0 on success, 1 if no slots were found */
 int add_troop(KBgame *game, byte troop_id, word number) {
 	int i;
@@ -1582,6 +1633,57 @@ void unit_fly_offset(KBcombat *war, int side, int id, int other_full_id, int *tx
 		*ty = ny;
 	}
 }
+
+/** For offset calculator **/
+/* This is copy-pasted from unit_closets_offset... */
+void foe_closest_offset(KBgame *game, int foe_id, int position_x, int position_y, int target_x, int target_y, int *ox, int *oy) {
+	int i, j;
+
+	dword max_dist = calc_distance(LEVEL_W + 1, LEVEL_H + 1, 0, 0);
+
+	dword picked_dist = max_dist;
+	int picked_x;
+	int picked_y;
+//printf("--------------------------------------\n");
+	for (j = -1; j < 2; j++) {
+		for (i = -1; i < 2; i++) {
+			if (position_x + i < 0) continue;
+			if (position_y + j < 0) continue;
+			if (position_x + i >= LEVEL_W) continue;
+			if (position_y + j >= LEVEL_H) continue;
+
+			//printf("%s probe %d, %d\n", name, i, j);
+
+			dword dist = calc_distance(position_x + i, position_y + j, target_x, target_y);
+			//float dist = sqrt( pow(other->x - (start_x+i), 2) + pow(other->y - (start_y+j), 2) );
+
+			/* Check for obstacles, only when moving */
+			if (i || j)
+			if (game->map[game->continent][position_y + j][position_x + i]) dist = max_dist; /* Obstacle */
+//printf("%d,%d=%d (current picked dist: %d)\n",i,j,dist,picked_dist);
+			//printf("Dist is: %d (%08x) vs [%08x]\n", dist, dist, picked_dist);
+
+			if (dist < picked_dist) {
+//printf("Picked\n");
+				picked_dist = dist;
+				picked_x = position_x + i;
+				picked_y = position_y + j;
+			}
+		}
+	}
+
+	if (picked_dist < max_dist) {
+		/* Tile is good */
+		*ox = picked_x - position_x;
+		*oy = picked_y - position_y;
+	} else {
+		/* Tile is unwalkable */
+		*ox = position_x;
+		*oy = position_y;
+	}
+
+}
+
 
 
 /** Spell effects **/

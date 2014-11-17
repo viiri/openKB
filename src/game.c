@@ -5625,6 +5625,14 @@ void adventure_loop(KBgame *game) {
 				walk = 1;
 			} else {
 				walk = 0;
+				/* Move foes */
+				foes_follow(game);
+				if (game->map[game->continent][game->y][game->x] == TILE_FOE) {
+					/* Stepped on a foe */
+					walk = 1;
+					continue;
+				}
+
 				if (game->time_stop) {
 					game->time_stop -= 1;
 				} else {
