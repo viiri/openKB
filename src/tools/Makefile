@@ -7,6 +7,7 @@ SDL_CFLAGS=-g `sdl-config --cflags` -DHAVE_LIBSDL
 SDL_LDFLAGS=`sdl-config --libs` -lSDL_image
 
 LIB_SOURCES=../lib/kbdir.c ../lib/kbfile.c ../lib/free-data.c ../lib/md-rom.c ../lib/dos-exe.c ../lib/dos-data.c ../lib/dos-img.c ../lib/dos-snd.c ../lib/dos-cc.c ../lib/kbstd.c ../lib/kbres.c ../lib/kbconf.c ../lib/kbsound.c ../lib/kbauto.c ../../vendor/strlcat.c ../../vendor/strlcpy.c
+MINILIB_SOURCES=../lib/kbdir.c ../lib/kbfile.c ../lib/dos-cc.c ../lib/dos-img.c ../lib/kbstd.c ../../vendor/strlcat.c ../../vendor/strlcpy.c
 
 all: unexecomp unexepack kbcc kbview kbimg2dos kbrowse kbmaped
 
@@ -18,6 +19,9 @@ unexepack: unexepack.c
 
 kbcc: kbcc.c
 	$(CC) $(CFLAGS) kbcc.c -o kbcc $(LDFLAGS)
+
+kbcc2: kbcc2.c modding.c
+	$(CC) $(CFLAGS) kbcc2.c modding.c $(MINILIB_SOURCES) -o kbcc $(LDFLAGS)
 
 kbview: kbview.c
 	$(CC) $(SDL_CFLAGS) kbview.c -o kbview $(SDL_LDFLAGS)
