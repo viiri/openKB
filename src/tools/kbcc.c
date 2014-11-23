@@ -341,6 +341,55 @@ void list_infiles(char *archivename) {
 	fclose(f);
 }
 
+/* This function dumps the raw, compressed file into buffer. This is NOT NEEDED for
+ * general purpose work, this is just for debugging purposes. */
+int load_infile_raw(char *archivename, char *filename, char *buffer, struct ccHeader *head) {
+
+	int i, n;
+	FILE *f;
+
+	/* Load archive header */
+	struct ccHeader localHead;
+	if (head == NULL) {
+		printf(">:(\n");
+		load_ccHeader(&localHead, archivename);
+		head = &localHead;
+	}
+
+	/* Find file */
+	i = find_infile(head, filename);
+	if (i == -1) return 0;
+
+	/* Figure *compressed* size */
+	word24 compressed_size =
+		((head->files[i].size << 8) & 0xFF00)
+		|
+		((head->files[i].size_page << 0) & 0x00FF);
+
+	word24 offset = head->files[i].offset_page;
+	offset <<= 16;
+	offset &= 0x00FF0000;
+	offset |= head->files[i].offset;
+
+	/*
+	word24 next_offset = head->files[i+1].page;
+	next_offset <<= 16;
+	next_offset &= 0x00FF0000;
+	next_offset |= head->files[i+1].offset;
+	printf("Next offset: %d, diff: %d\n", next_offset, next_offset - offset);
+	*/
+
+	//printf("Going to seek %06x\n", offset);
+
+	f = fopen(archivename, "rb");
+
+	fseek(f, offset, 0);
+
+	n = fread(buffer, sizeof(char), compressed_size, f);
+
+	return n;
+}
+
 /*
  * Load FILENAME from ARCHIVENAME into BUFFER limited by MAX bytes
  * Returns Number of bytes read, 0 on error 
