@@ -13,13 +13,13 @@ all: unexecomp unexepack kbcc kbview kbrowse kbmaped
 unexecomp: unexecomp.c
 	$(CC) $(CFLAGS) unexecomp.c -o unexecomp $(LDFLAGS)
 
-unexepack:
+unexepack: unexepack.c
 	$(CC) $(CFLAGS) unexepack.c -o unexepack $(LDFLAGS)
 
-kbcc:
+kbcc: kbcc.c
 	$(CC) $(CFLAGS) kbcc.c -o kbcc $(LDFLAGS)
 
-kbview:
+kbview: kbview.c
 	$(CC) $(SDL_CFLAGS) kbview.c -o kbview $(SDL_LDFLAGS)
 
 kbplay:
