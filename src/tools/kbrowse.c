@@ -231,6 +231,20 @@ void examine_directory(const char *path) {
 			SDL_SetColors(draw, pal->format->palette->colors, 0, 256);
 			redraw = 1;
 		}
+		if (key == SDLK_p && mod) {
+			//dump_pallette(pal);
+			char *file;
+			inprint(screen, "Enter filename to save palette as:            ", 0, screen->h - 16);
+			file = input_text(80, 0, 10, screen->h - 8);
+			if (file) {
+				if (!SDL_SavePNG(pal, file)) {
+					printf("Wrote PNG palette: %s\n", file);
+				} else {
+					printf("Unable to write PNG palette: %s\n", SDL_GetError());
+				}
+			}
+			redraw = 1;
+		}
 		if (key == SDLK_F2 && draw) {
 			char *file;
 			inprint(screen, "Enter filename to save file as:            ", 0, screen->h - 16);
