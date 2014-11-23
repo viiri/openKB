@@ -9,6 +9,42 @@
 #include "../env.h"
 struct KBconfig KBconf;
 struct KBenv *sys;
+int filemode = 0;
+
+KBgame* load_land(const char *filename) {
+
+	KBgame *game;
+	FILE *f;
+	int map_size, n;
+
+	game = malloc(sizeof(KBgame));
+	if (game == NULL) return NULL;
+
+	map_size = ( MAX_CONTINENTS * LEVEL_W * LEVEL_H );
+	memset(game->map, 0, sizeof(char) * map_size);
+
+	game->map[0][0][0] = 0xFF;
+	game->map[1][0][0] = 0xFF;
+	game->map[2][0][0] = 0xFF;
+	game->map[3][0][0] = 0xFF;
+
+	KB_strncpy(game->savefile, filename, 64);
+
+	f = fopen(filename, "rb");
+	if (f) {
+
+		n = fread(game->map, sizeof(char), map_size, f);
+		if (n != map_size) {
+			printf("Read %d bytes of %d expected\n", n, map_size);
+		}
+		fclose(f);
+
+	} else {
+		printf("Unable to OPEN file %s\n", filename);
+	}
+
+	return game;
+}
 
 void interactive_edit(KBgame *game) {
 
@@ -244,17 +280,27 @@ int main(int argc, char* argv[]) {
 
 	int be_interactive = 1;
 
+	KBgame *game;
+
 	if (argc < 3) {
 	
 		printf("Usage: ./kbmaped [OPTION] SAVEFILE\n");
 		printf("OPTIONS are:\n");
 		printf("\t--dump\t Print textual representation of SAVEFILE and exit\n");
 		printf("\t--cheat\t Fill target SAVEFILE with dragons\n");
+		printf("\t--land\t Treat SAVEFILE as land.org\n");
 	
 		return -1;
 	}
 
-	KBgame *game = KB_loadDAT(argv[2]);
+	if (!strcasecmp(argv[1], "--land")) {
+
+		game = load_land(argv[2]);
+
+	}
+	else
+
+		game = KB_loadDAT(argv[2]);
 	
 	if (game == NULL) {
 	
