@@ -1,5 +1,5 @@
-#include "stdio.h"
-#include "string.h"
+#include <stdio.h>
+#include <string.h>
 
 /* For portability, we must not use fread, or C datatypes
  * but if you're on a x86 machine, this code might just work. */
@@ -125,7 +125,7 @@ void builtin_list(int mode) {
 		add_filename("CGA.DRV");
 		add_filename("EGA.DRV");
 		add_filename("TGA.DRV");
-		add_filename("HGA.DRV");	
+		add_filename("HGA.DRV");
 
 	} else {
 
@@ -183,9 +183,9 @@ struct ccHeader {	/* 1122 bytes header */
 
 		word key;
 		word offset;
-		byte page;
-		byte _align; /* imagine this is AFTER dunno	*/
-		word dunno;
+		byte offset_page;
+		byte size_page;
+		word size;
 
 	} files[132];
 	
@@ -215,7 +215,7 @@ void load_ccHeader(struct ccHeader* head, char *archivename) {
 		return;
 	}
 	
-	printf("Loaded %d byte header.\n ", sizeof(struct ccHeader));
+	printf("Loaded %d byte header.\n", sizeof(struct ccHeader));
 
 	fclose(f);
 }
@@ -306,7 +306,7 @@ void list_infiles(char *archivename) {
 		j = match_name(head.files[i].key); // but switch to literal name 
 		if (j != -1) name = list_names[j]; // if we have one
 
-		offset = head.files[i].page;
+		offset = head.files[i].offset_page;
 		offset <<= 16;
 		offset &= 0x00FF0000;
 		offset |= head.files[i].offset;
@@ -322,7 +322,7 @@ void list_infiles(char *archivename) {
 		//bdunno |= head.files[i]._align;
 		
 		if (i < head.ccTableLen-1) {
-		int noffset = head.files[i+1].page;
+		int noffset = head.files[i+1].offset_page;
 		noffset <<= 16;
 		noffset &= 0x00FF0000;
 		noffset |= head.files[i+1].offset;
@@ -368,10 +368,9 @@ int load_infile(char *archivename, char *filename, char *buffer, struct ccHeader
 
 	f = fopen(archivename, "rb");
 
-	word24 offset = head->files[i].page;
+	word24 offset = head->files[i].offset_page;
 	offset <<= 16;
 	offset &= 0x00FF0000;
-
 	offset |= head->files[i].offset;
 
 	fseek(f, offset, 0);
@@ -407,10 +406,10 @@ int load_infile(char *archivename, char *filename, char *buffer, struct ccHeader
 
 	/* Those masks help us get the relevant bits */ 
 	word keyMask[4] = {
-		0x01FF, 	// 0001 1111 
-		0x03FF,		// 0011 1111
-		0x07FF,		// 0111 1111
-		0x0FFF,		// 1111 1111
+		0x01FF, 	// 0001 1111 1111
+		0x03FF,		// 0011 1111 1111
+		0x07FF,		// 0111 1111 1111
+		0x0FFF,		// 1111 1111 1111
 	};
 
 	/*
