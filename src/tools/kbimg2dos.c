@@ -27,6 +27,7 @@ char *render_modes[] = {
 };
 
 extern int DOS_Write1BPP(char *dst, int dst_max, SDL_Surface *src, SDL_Rect *src_rect);
+extern int DOS_Write1BPP_8x8(char *dst, int dst_max, SDL_Surface *src, SDL_Rect *src_rect);
 extern int DOS_CalcMask(SDL_Surface *src, SDL_Rect *src_rect);
 extern int DOS_WriteMask(char *dst, int dst_max, SDL_Surface *src, SDL_Rect *src_rect);
 extern int DOS_CalcCGA(SDL_Surface *src, SDL_Rect *src_rect);
@@ -465,6 +466,19 @@ int main( int argc, char* args[] )
 	if (!f) {
 		fprintf(stderr, "Unable to open %s for writing!\n", output);
 		exit(2);
+	}
+
+	if (render_mode == RENDER_1BPP) { /* Hack -- write font file in it's own format */
+		char *buf;
+		int size = DOS_CalcMask(frames[0], NULL);
+		buf = malloc(sizeof(char) * size);
+		DOS_Write1BPP_8x8(buf, size, frames[0], NULL);
+		fwrite(buf, sizeof(char), size, f);
+		free(buf);
+		fclose(f);
+		SDL_FreeSurface(frames[0]);
+		free(frames);
+		return 0;
 	}
 
 	WRITE_WORD(hp, num_inputs);

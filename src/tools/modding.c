@@ -64,6 +64,52 @@ SDL_Surface *create_indexed_surface() {
 }
 
 /* Returns number of bytes written on success, -1 on error */
+int DOS_Write1BPP_8x8(char *dst, int dst_max, SDL_Surface *src, SDL_Rect *src_rect) {
+	int i, x, y, bpp, b;
+	char c;
+	int point = 0, px = 0, py = 0;
+
+	if (src == NULL) return -1;	/* ensure valid SDL_Surface is passed */
+	bpp = src->format->BytesPerPixel;
+	if (bpp != 1) return -1; /* ensure it's a palette image */
+	src_rect = SDL_EnsureRect(src, src_rect); /* ensure src_rect exists even if NULL was passed */
+
+	int cols = src_rect->w / 8;
+	int rows = src_rect->h / 8;
+
+	/* 8 bits contain 8 pixels */
+	i = 0; c = 0; b = 0;
+	int col, row;
+	for (row = 0; row < rows; row++) {
+	for (col = 0; col < cols; col++) {
+		for (py = 0; py < 8; py++) {
+		for (px = 0; px < 8; px++) {
+
+			y = src_rect->y + row * 8 + py;
+			x = src_rect->x + col * 8 + px;
+
+			/* Here p is the address to the pixel we want to retrieve */
+			Uint8 *p = (Uint8 *)src->pixels + y * src->pitch + x * bpp;
+
+			c |= ((*p << (7-b)) & (0x01 << (7-b)));// bin:00000000 <<
+
+			b++;
+			if (b > 7) {
+				dst[i] = c;
+				i++;
+				b = 0;
+				c = 0;
+			}
+		}
+		}
+		point++;
+	}
+	}
+
+	return i;
+}
+
+/* Returns number of bytes written on success, -1 on error */
 int DOS_Write1BPP(char *dst, int dst_max, SDL_Surface *src, SDL_Rect *src_rect) {
 	int i, x, y, bpp, b;
 	char c;
