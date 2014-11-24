@@ -780,13 +780,15 @@ int filename_extension_to_render_mode(const char *filename) {
 	return -1;
 }
 
-void display_surface(SDL_Surface *tiles)
+void display_surface(SDL_Surface *tiles, const char *caption)
 {
 	SDL_Surface *screen;
 
 	SDL_Init( SDL_INIT_VIDEO );
 
 	screen = SDL_SetVideoMode( tiles->w, tiles->h, 32, SDL_SWSURFACE );
+
+	SDL_WM_SetCaption(caption, NULL);
 
 	int done = 0;
 	int redraw = 1;
@@ -912,7 +914,7 @@ int main( int argc, char* args[] )
 		tiles = show_tiles(input_file, show_mask, horizontal_align, vertical_align, frame_padding);
 
 	if (output_mode == -1)
-		display_surface(tiles);
+		display_surface(tiles, input_file);
 	else
 		if (output_mode == 0) /* BMP */
 			SDL_SaveBMP(tiles, output_file);
