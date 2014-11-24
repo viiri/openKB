@@ -546,6 +546,11 @@ SDL_Surface *show_tiles(char *filename, int show_mask, int frame, int frame_num,
 
 	int k = 2;
 
+	if (frame < 0 || frame >= num_frames)
+		frame = 0;
+	if (frame_num < 1 || frame + frame_num >= num_frames)
+		frame_num = num_frames - frame;
+
 	for (i = 0; i < num_frames; i++) {
 
 		pos = ((buf[k + 1] << 8)) | (buf[k] & 0xFF);
@@ -601,16 +606,14 @@ SDL_Surface *show_tiles(char *filename, int show_mask, int frame, int frame_num,
 	}
 #endif
 
-	if (frame < 0 || frame >= num_frames)
-		frame = 0;
-	if (frame_num < 1 || frame + frame_num >= num_frames)
-		frame_num = num_frames - frame;
-
+	width = 0;
+	height = 0;
+	for (i = frame; i < frame + frame_num; i++)
 	{
-		width = (buf[frame_pos[0]] & 0xFF) | buf[frame_pos[0] + 1] << 8;
-		height = (buf[frame_pos[0] + 2] & 0xFF) | buf[frame_pos[0] + 3] << 8;
-		width *= (frame_num * _h);
-		height *= (frame_num * _v);
+		int w = (buf[frame_pos[i]] & 0xFF) | buf[frame_pos[i] + 1] << 8;
+		int h = (buf[frame_pos[i] + 2] & 0xFF) | buf[frame_pos[i] + 3] << 8;
+		width += (w * _h);
+		height += (h * _v);
 	}
 
 	if (!num_masks) show_mask = 0;
@@ -955,7 +958,7 @@ int main( int argc, char* args[] )
 	fill_vgapal(palette_file);
 	fill_cgapal();
 
-	//First frame: %d, n frames: %d, last frame: %d\n", first_frame, total_frames, first_frame + total_frames);
+	//printf("First frame: %d, n frames: %d, last frame: %d\n", first_frame, total_frames, first_frame + total_frames - 1);
 
 	if (render_mode == 0)
 		tiles = show_font(input_file, 0);
