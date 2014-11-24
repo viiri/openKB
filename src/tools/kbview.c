@@ -555,8 +555,8 @@ SDL_Surface *show_tiles(char *filename, int show_mask, int frame, int frame_num,
 
 		pos = ((buf[k + 1] << 8)) | (buf[k] & 0xFF);
 		mask = ((buf[k + 3] << 8)) | (buf[k + 2] & 0xFF);
-		
-		pos &= 0xFFFF;		
+
+		pos &= 0xFFFF;
 		mask &= 0xFFFF;
 
 		x_width = ((buf[pos + 1] << 8)) | (buf[pos+0] & 0xFF);
@@ -569,7 +569,11 @@ SDL_Surface *show_tiles(char *filename, int show_mask, int frame, int frame_num,
 			//pos = 0;
 		}
 
+		if ((frame != 0 || frame_num != num_frames) && frame == i) printf("[\n");
+
 		printf("Entry %d, Offset: 0x%04lx, Mask: 0x%04lx, Size: %d x %d px\n", i, pos, mask, x_width, x_height);
+
+		if ((frame != 0 || frame_num != num_frames) && frame + frame_num - 1 == i) printf("]\n");
 
 		frame_pos[i] = pos;
 		mask_pos[i] = mask;
