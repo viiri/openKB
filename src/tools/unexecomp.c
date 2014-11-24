@@ -310,7 +310,7 @@ int main(int argc, char **argv) {
 	const char *inputFile = NULL;
 	const char *outputFile = NULL;
 
-	if (argc < 2) {
+	if (argc < 3) {
 		fprintf(stderr, "Usage: %s INPUT-FILE OUTPUT-FILE\n", argv[0]);
 		exit(-3);
 	}
