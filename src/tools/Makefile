@@ -47,6 +47,12 @@ kbrowse: kbrowse.c
 	$(CC) $(SDL_CFLAGS) -DHAVE_LIBPNG -c ../../vendor/savepng.c $(SDL_LDFLAGS)
 	$(CC) $(SDL_CFLAGS) kbrowse.c ../../vendor/inprint.c -DHAVE_LIBPNG ../../vendor/savepng.c -UHAVE_LIBPNG $(LIB_SOURCES) -o kbrowse $(SDL_LDFLAGS) savepng.o
 
+kbrowse_win32: kbrowse.c
+	$(CC) $(SDL_CFLAGS) -I/usr/local/include kbrowse.c ../../vendor/inprint.c ../../vendor/savepng.c -DHAVE_LIBPNG $(LIB_SOURCES) $(SDL_LDFLAGS) -lpng -lz -o kbrowse
+
+kbrowse_win32_s: kbrowse.c
+	$(CC) $(SDL_CFLAGS) -I/usr/local/include kbrowse.c ../../vendor/inprint.c ../../vendor/savepng.c -DHAVE_LIBPNG $(LIB_SOURCES) $(SDL_STATIC) -lpng -lz -o kbrowse
+
 kbmaped: kbmaped.c
 	$(CC) $(SDL_CFLAGS) kbmaped.c ../save.c ../env-sdl.c ../../vendor/inprint.c ../../vendor/scale2x.c $(LIB_SOURCES) -o kbmaped $(SDL_LDFLAGS)
 
