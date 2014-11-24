@@ -10,7 +10,7 @@
  */
 
 #ifdef HAVE_LIBSDL
-#error "You should probably adjust config.h and undefine HAVE_LIBSDL."
+//#error "You should probably adjust config.h and undefine HAVE_LIBSDL."
 #endif
 
 #include <string.h>

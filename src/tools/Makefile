@@ -16,6 +16,8 @@ MINILIB_SOURCES=../lib/kbdir.c ../lib/kbfile.c ../lib/dos-cc.c ../lib/dos-img.c 
 
 all: unexecomp unexepack kbcc kbview kbimg2dos kbrowse kbmaped
 
+win32: unexecomp unexepack kbcc2 kbview_s kbimg2dos_s kbrowse_win32_s kbmaped_s
+
 unexecomp: unexecomp.c
 	$(CC) $(CFLAGS) unexecomp.c -o unexecomp $(LDFLAGS)
 
