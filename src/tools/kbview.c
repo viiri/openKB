@@ -511,6 +511,10 @@ SDL_Surface *show_tiles(char *filename, int show_mask, int frame, int frame_num,
 	long width;
 
 	f = fopen(filename, "rb");
+	if (f == NULL) {
+		fprintf(stderr, "Unable to open file '%s'\n", filename);
+		return NULL;
+	}
 
 	fseek(f, 0, SEEK_END); // seek to end of file
 	flen = ftell(f); // get current file pointer
@@ -521,8 +525,9 @@ SDL_Surface *show_tiles(char *filename, int show_mask, int frame, int frame_num,
 	char *buf = malloc(sizeof(char) * flen);
 	//char buf[flen];
 	if (buf == NULL) {
+		fclose(f);
 		fprintf(stderr, "Unable to allocate %ld bytes\n", sizeof(char) * flen);
-		return 0; 
+		return NULL;
 	}
 
 	n = fread ( buf, sizeof(char), flen, f);

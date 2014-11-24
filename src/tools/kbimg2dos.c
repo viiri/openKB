@@ -12,8 +12,8 @@ typedef Uint16	word  ; /* 16-bit */
 typedef Uint8	byte  ; /* 8-bit */
 
 #define WRITE_WORD(PTR, DATA) \
-		*PTR++ = (DATA & 0xFF), \
-		*PTR++ = ((DATA >> 8) & 0xFF)
+		*PTR++ = ((DATA) & 0xFF), \
+		*PTR++ = (((DATA) >> 8) & 0xFF)
 
 #define RENDER_1BPP 0
 #define RENDER_CGA 1
@@ -26,12 +26,25 @@ char *render_modes[] = {
 	"VGA",
 };
 
+extern int DOS_Write1BPP(char *dst, int dst_max, SDL_Surface *src, SDL_Rect *src_rect);
+extern int DOS_CalcMask(SDL_Surface *src, SDL_Rect *src_rect);
+extern int DOS_WriteMask(char *dst, int dst_max, SDL_Surface *src, SDL_Rect *src_rect);
+extern int DOS_CalcCGA(SDL_Surface *src, SDL_Rect *src_rect);
+extern int DOS_WriteCGA(char *dst, int dst_max, SDL_Surface *src, SDL_Rect *src_rect);
+extern int DOS_CalcEGA(SDL_Surface *src, SDL_Rect *src_rect);
+extern int DOS_WriteEGA(char *dst, int dst_max, SDL_Surface *src, SDL_Rect *src_rect);
+extern int DOS_CalcVGA(SDL_Surface *src, SDL_Rect *src_rect);
+extern int DOS_WriteVGA(char *dst, int dst_max, SDL_Surface *src, SDL_Rect *src_rect);
+extern int DOS_WritePalette_BUF(char *dst, int dst_max, SDL_Color *pal, int num);
+
 int render_mode = -1; /* Important */
 
 inline void SDL_ClonePalette(SDL_Surface *dst, SDL_Surface *src)
 {
 	SDL_SetPalette(dst, SDL_LOGPAL | SDL_PHYSPAL, src->format->palette->colors, 0, src->format->palette->ncolors);
 }
+
+int find_255(SDL_Surface *src); /* forward-declare */
 
 int count_mask_ref(SDL_Surface *src)
 {
@@ -81,6 +94,8 @@ int count_Xbpp(SDL_Surface *src)
 	if (render_mode == RENDER_CGA)  return DOS_CalcCGA(src, NULL);
 #endif
 	if (render_mode == RENDER_1BPP) return count_mask(src);
+	fprintf(stderr, "Error: Undefined render mode, can't count bytes.\n");
+	return -1;
 }
 
 #if 1
@@ -345,8 +360,8 @@ int filename_extension_to_render_mode(const char *filename) {
 
 int main( int argc, char* args[] ) 
 {
-	SDL_Surface *screen;
-	SDL_Surface *tiles;
+	//SDL_Surface *screen;
+	//SDL_Surface *tiles;
 
 	char *output = NULL;
 	char *input[128];
@@ -401,9 +416,19 @@ int main( int argc, char* args[] )
 	//Create N SDL_Surfaces, where N equals final number of frames
 	SDL_Surface **frames;
 	frames = malloc(sizeof(SDL_Surface) * num_inputs);
+	if (frames == NULL) {
+		fprintf(stderr, "Unable to allocate %ld bytes for input frames.\n", sizeof(SDL_Surface) * num_inputs);
+		return -1;
+	}
 	int i;
 	if (auto_cut) {
 		SDL_Surface *big = IMG_Load(input[0]);
+
+		if (!big) {
+			fprintf(stderr, "Unable to load %s\n", input[0]);
+			free(frames);
+			return -1;
+		}
 
 		int w = big->w / auto_cut;
 		num_inputs = auto_cut;
@@ -415,7 +440,7 @@ int main( int argc, char* args[] )
 			SDL_ClonePalette(frames[i], big);
 			SDL_BlitSurface(big, &src, frames[i], &dst);
 		}
-		
+
 	} else {
 		for (i = 0; i < num_inputs; i++) 
 		{

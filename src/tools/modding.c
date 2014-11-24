@@ -178,6 +178,8 @@ int DOS_WriteCGA(char *dst, int dst_max, SDL_Surface *src, SDL_Rect *src_rect) {
 
 		}
 	}
+
+	return i;
 }
 
 int DOS_CalcEGA(SDL_Surface *src, SDL_Rect *src_rect) {
@@ -320,7 +322,7 @@ int DOS_LZW(char *dst, int dst_max, char *src, int src_len) {
 	word    dict_range = 0x0200; /* Allow that much entries before increasing step */
 
 	word last_value;	/* value from previous iteration */
-	byte next_value;	/* value we currently examine */
+	//byte next_value;	/* value we currently examine */
 	int err = 0; /* Loop breaker */
 
 	dict = malloc(MAX_DICT_SIZE);
