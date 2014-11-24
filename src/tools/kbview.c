@@ -630,10 +630,14 @@ SDL_Surface *show_tiles(char *filename, int show_mask, int frame, int frame_num,
 
 	width = 0;
 	height = 0;
+	max_width = 0;
+	max_height = 0;
 	for (i = frame; i < frame + frame_num; i++)
 	{
 		int w = (buf[frame_pos[i]] & 0xFF) | buf[frame_pos[i] + 1] << 8;
 		int h = (buf[frame_pos[i] + 2] & 0xFF) | buf[frame_pos[i] + 3] << 8;
+		if (w > max_width) max_width = w;
+		if (h > max_height) max_height = h;
 		width += (w * _h);
 		height += (h * _v);
 	}
