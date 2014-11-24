@@ -477,6 +477,10 @@ SDL_Surface *show_font(char *filename, unsigned long off)
 	n = fread(buf, sizeof(char), flen, f);
 	fclose(f);
 
+	if (n != flen){
+		fprintf(stderr, "Warning: read %d bytes, expected %d\n", n, flen);
+	}
+
 	surf = SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, 8, 0, 0, 0, 0);
 
 	for (i = 0; i < 128; i++) {
@@ -542,7 +546,7 @@ SDL_Surface *show_tiles(char *filename, int show_mask, int frame, int frame_num,
 	printf("### Entries: (%d total)\n", num_frames);
 
 	int i;
-	int j = 0;
+	//int j = 0;
 
 	int max_width = 0;
 	int max_height = 0;
@@ -719,13 +723,15 @@ SDL_Surface *show_tiles(char *filename, int show_mask, int frame, int frame_num,
 	return surf;
 }
 
-int redraw_frame(SDL_Surface *screen)
-{
-
+void fill_monopal() {
+	int i;
+	for (i = 0; i < 2; i++) {
+		mono_pallete_rgb[i] = ega_pallete_rgb[cga_pallete_mask_idx[i]];
+	}
 }
 
 void fill_cgapal() {
-	int i, j;
+	int i;
 	for (i = 0; i < 4; i++) {
 		cga_pallete_rgb[i] = ega_pallete_rgb[cga_pallete_ega[i]];
 	}
