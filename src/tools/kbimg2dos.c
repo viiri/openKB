@@ -5,8 +5,8 @@
  * 
  * THIS CODE IS DIRT
  */
-#include <SDL/SDL_video.h>
-#include <SDL/SDL_image.h>
+#include <SDL.h>
+#include <SDL_image.h>
 
 typedef Uint16	word  ; /* 16-bit */
 typedef Uint8	byte  ; /* 8-bit */
