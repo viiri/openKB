@@ -408,7 +408,11 @@ int main( int argc, char* args[] )
 		exit(1);
 	}
 
-	printf("Using render mode: %s\n", render_modes[render_mode]);
+	if (auto_cut) {
+		num_inputs = auto_cut;
+	}
+
+	printf("Using render mode: %s, frames: %d\n", render_modes[render_mode], num_inputs);
 
 	//Ok, let's do it.
 
@@ -420,6 +424,7 @@ int main( int argc, char* args[] )
 		fprintf(stderr, "Unable to allocate %ld bytes for input frames.\n", sizeof(SDL_Surface) * num_inputs);
 		return -1;
 	}
+
 	int i;
 	if (auto_cut) {
 		SDL_Surface *big = IMG_Load(input[0]);
