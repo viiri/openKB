@@ -825,6 +825,19 @@ void display_surface(SDL_Surface *tiles, const char *caption)
 	SDL_Quit(); 
 }
 
+void show_usage(const char *prog_name) {
+	printf("kbview 4/16/256 viewer/writer, Usage:\n");
+	printf(" %s [OPTIONS] INPUT-FILE [-o OUTPUT-FILE]\n", prog_name);
+	printf("OPTIONS are:\n");
+	printf("\t-i INPUT-FILE\tSource 4/16/256 file.\n");
+	printf("\t-o OUTPUT-FILE\tTarget bmp/png file.\n");
+	printf("\t-p PALETTE-FILE\tLoad palete from bmp file.\n");
+	printf("\t-V\tAlign frames verticaly.\n");
+	printf("\t-H\tAlign frames horizontaly.\n");
+	printf("\t-M\tHide mask.\n");
+	printf("\t-P\tHide frame padding.\n");
+}
+
 int main( int argc, char* args[] ) 
 {
 	SDL_Surface *tiles;
@@ -878,7 +891,7 @@ int main( int argc, char* args[] )
 	} 
 
 	if (input_file == NULL) {
-		printf("no filename specified!\n");
+		show_usage(args[0]);
 		exit(1);
 	}
 
