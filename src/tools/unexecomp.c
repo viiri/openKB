@@ -350,6 +350,19 @@ int main(int argc, char **argv) {
 
 	print_EXE(&mz, inputFile); /* show some info to stdout */
 
+	/* Verify this file is actually compressed, and not just an exe */
+	/* We check if 0x200 contains "e99900". Another approach is to check
+	 * if 0x24d contains "???.EXE" */
+	unsigned char test_buf[4];
+	fseek(f, 0x200, SEEK_SET);
+	n = fread(test_buf, sizeof(char), 4, f); /* read bytes */
+	if (n < 4 || test_buf[0] != 0xE9 || test_buf[1] != 0x99 || test_buf[2] != 0x00) {
+		fprintf(stderr, "No signature found (%02x%02x%02x at 0x200), aborting.\n", test_buf[0],test_buf[1],test_buf[2]);
+		fclose(f);
+		return -1;
+	}
+
+
 	int exe_data_start = mz.header_paragraphs * 16L;
 
 	int extra_data_start = mz.blocks_in_file * 512L;
