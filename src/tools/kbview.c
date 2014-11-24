@@ -487,7 +487,7 @@ SDL_Surface *show_font(char *filename, unsigned long off)
 	return surf;
 }
 
-SDL_Surface *show_tiles(char *filename, int show_mask, int _h, int _v, int padding)
+SDL_Surface *show_tiles(char *filename, int show_mask, int frame, int frame_num, int _h, int _v, int padding)
 {
 	unsigned long flen;
 
@@ -601,11 +601,16 @@ SDL_Surface *show_tiles(char *filename, int show_mask, int _h, int _v, int paddi
 	}
 #endif
 
+	if (frame < 0 || frame >= num_frames)
+		frame = 0;
+	if (frame_num < 1 || frame + frame_num >= num_frames)
+		frame_num = num_frames - frame;
+
 	{
 		width = (buf[frame_pos[0]] & 0xFF) | buf[frame_pos[0] + 1] << 8;
 		height = (buf[frame_pos[0] + 2] & 0xFF) | buf[frame_pos[0] + 3] << 8;
-		width *= (num_frames * _h);
-		height *= (num_frames * _v);
+		width *= (frame_num * _h);
+		height *= (frame_num * _v);
 	}
 
 	if (!num_masks) show_mask = 0;
@@ -615,11 +620,11 @@ SDL_Surface *show_tiles(char *filename, int show_mask, int _h, int _v, int paddi
 	int total_height;
 
 	if (_h) {
-		total_width = width + (num_frames * padding);
+		total_width = width + (frame_num * padding);
 		total_height = max_height * (show_mask+1);
 	} else {
 		total_width = max_width * (show_mask+1);
-		total_height = height + (num_frames * padding);
+		total_height = height + (frame_num * padding);
 	}
 		printf("Total width: %d, height: %d, show_mask: %d\n", total_width, total_height, show_mask);
 	SDL_Surface *surf = SDL_CreateRGBSurface(SDL_SWSURFACE, total_width, total_height, 8, 0, 0, 0, 0);
@@ -632,6 +637,9 @@ SDL_Surface *show_tiles(char *filename, int show_mask, int _h, int _v, int paddi
 	
 	int offset;
 	for (i = 0; i < num_frames; i++) {
+
+		if (i < frame) continue;
+		if (i >= frame + frame_num) break;
 
 		offset = frame_pos[i];
 
@@ -829,9 +837,12 @@ void show_usage(const char *prog_name) {
 	printf("kbview 4/16/256 viewer/writer, Usage:\n");
 	printf(" %s [OPTIONS] INPUT-FILE [-o OUTPUT-FILE]\n", prog_name);
 	printf("OPTIONS are:\n");
-	printf("\t-i INPUT-FILE\tSource 4/16/256 file.\n");
-	printf("\t-o OUTPUT-FILE\tTarget bmp/png file.\n");
-	printf("\t-p PALETTE-FILE\tLoad palete from bmp file.\n");
+	printf("\t-i FILE\tSource 4/16/256 file.\n");
+	printf("\t-o FILE\tTarget bmp/png file.\n");
+	printf("\t-p FILE\tLoad palete from bmp/png file.\n");
+	printf("\t-f N\tStart with frame N (default 0).\n");
+	printf("\t-l N\tShow only N frames (default all frames).\n");
+	printf("\t-1cev\tEnforce 1BPP, CGA, EGA, VGA mode.\n");
 	printf("\t-V\tAlign frames verticaly.\n");
 	printf("\t-H\tAlign frames horizontaly.\n");
 	printf("\t-M\tHide mask.\n");
@@ -853,23 +864,46 @@ int main( int argc, char* args[] )
 	int frame_padding = 2;
 	int show_mask = 1;
 
+	int first_frame = 0;
+	int total_frames = 0; /* 0 means "max" */
+
 	int ai;
 	int next_is_file = 1;
 	int next_type = 0;
 	for (ai = 1; ai < argc; ai++ ) {
 //		printf("ARGS: %d, %s\n", ai, args[ai]);
+		if (!strcmp(args[ai], "--help")) { show_usage(args[0]); return 0; }
 		if (!strcmp(args[ai], "-o")) { next_is_file = 1; next_type = 1; output_mode = 0; continue; }
 		if (!strcmp(args[ai], "-p")) { next_is_file = 1; next_type = 2; continue; }
 		if (!strcmp(args[ai], "-i")) { next_is_file = 1; next_type = 0; continue; }
+		if (!strcmp(args[ai], "-r")) { next_is_file = 0; next_type = 0; continue; }
+		if (!strcmp(args[ai], "-f")) { next_is_file = 0; next_type = 1; continue; }
+		if (!strcmp(args[ai], "-l")) { next_is_file = 0; next_type = 2; continue; }
+		if (!strcmp(args[ai], "-v")) { render_mode = RENDER_VGA; continue; }
+		if (!strcmp(args[ai], "-e")) { render_mode = RENDER_EGA; continue; }
+		if (!strcmp(args[ai], "-c")) { render_mode = RENDER_CGA; continue; }
+		if (!strcmp(args[ai], "-1")) { render_mode = RENDER_1BPP; continue; }
 		if (!strcmp(args[ai], "-V")) { horizontal_align = 0; vertical_align = 1; continue; }
 		if (!strcmp(args[ai], "-H")) { horizontal_align = 1; vertical_align = 0; continue; }
 		if (!strcmp(args[ai], "-M")) { show_mask = 0; continue; }
 		if (!strcmp(args[ai], "-P")) { frame_padding = 0; continue; }
 		if (!strcmp(args[ai], "-m")) { next_is_file = 0; continue; }
 		if (!next_is_file) {
-			long off = atoi(args[ai]);
-//			printf("OFFSET: %ld\n", off);
-			render_mode = off;
+			long value = atoi(args[ai]);
+//			printf("VALUE: %ld\n", value);
+			if (next_type == 0)
+			{
+				render_mode = value;
+			}
+			if (next_type == 1)
+			{
+				first_frame = value;
+				total_frames = 1;
+			}
+			if (next_type == 2)
+			{
+				total_frames = value;
+			}
 			next_is_file = 1;
 			next_type = (input_file == NULL ? 0 : 1);
 		} else {
@@ -921,10 +955,12 @@ int main( int argc, char* args[] )
 	fill_vgapal(palette_file);
 	fill_cgapal();
 
+	//First frame: %d, n frames: %d, last frame: %d\n", first_frame, total_frames, first_frame + total_frames);
+
 	if (render_mode == 0)
 		tiles = show_font(input_file, 0);
 	else
-		tiles = show_tiles(input_file, show_mask, horizontal_align, vertical_align, frame_padding);
+		tiles = show_tiles(input_file, show_mask, first_frame, total_frames, horizontal_align, vertical_align, frame_padding);
 
 	if (output_mode == -1)
 		display_surface(tiles, input_file);
