@@ -393,14 +393,19 @@ int main( int argc, char* args[] )
 		exit(1);
 	}
 
-	printf("Using render mode: %s\n", render_modes[render_mode]);
+	if (auto_cut) {
+		num_inputs = auto_cut;
+	}
+
+	printf("Using render mode: %s, frames: %d\n", render_modes[render_mode], num_inputs);
 
 	//Ok, let's do it.
 
 	//Step 1.
 	//Create N SDL_Surfaces, where N equals final number of frames
 	SDL_Surface **frames;
-	frames = malloc(sizeof(SDL_Surface) * num_inputs);
+	frames = malloc(sizeof(SDL_Surface*) * num_inputs);
+
 	int i;
 	if (auto_cut) {
 		SDL_Surface *big = IMG_Load(input[0]);
