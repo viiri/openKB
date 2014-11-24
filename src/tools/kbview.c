@@ -67,7 +67,7 @@ Uint8 cga_pallete_ega[16] =
 Uint8 cga_pallete_mask_idx[16] =
 {
 	0,
-	3,
+	7,
 };
 
 Uint8 cga_pallete_mask_ega[16] =
@@ -77,6 +77,8 @@ Uint8 cga_pallete_mask_ega[16] =
 	3, // 01 // cyan // bin:01
 	5, // 02 // magenta // bin:10
 };
+
+Uint32 mono_pallete_rgb[2];
 
 Uint32 cga_pallete_rgb[4];
 
@@ -110,6 +112,10 @@ void apply_pal(SDL_Surface *dest, Uint32 *pal, int pal_max, int mask_index)
 	SDL_SetColors(dest, colors, 0, 256);
 }
 
+void apply_mono_pal(SDL_Surface *dest, int mask_index)
+{
+	apply_pal(dest, mono_pallete_rgb, 2, mask_index);
+}
 void apply_cga_pal(SDL_Surface *dest, int mask_index)
 {
 	apply_pal(dest, cga_pallete_rgb, 4, mask_index);
@@ -143,7 +149,7 @@ void put_1bpp(SDL_Surface *dest, char *src, unsigned long n, unsigned int width,
 	for (i = 0; i < n; i += 1) {
 
 		char test = src[i];
-		char c[8];
+		unsigned char c[8];
 
 		c[0] = ((test & 0x80) >> 7);// bin:10000000
 		c[1] = ((test & 0x40) >> 6);// bin:01000000
@@ -159,7 +165,8 @@ void put_1bpp(SDL_Surface *dest, char *src, unsigned long n, unsigned int width,
 		for (j = 0; j < 8; j++) {
 
 			p = (Uint8*) dest->pixels + (dy+ty) * dest->pitch + (dx+tx);
-			*p = cga_pallete_mask_idx[c[j]];
+			//*p = cga_pallete_mask_idx[c[j]];
+			*p = c[j];
 
 			dx ++;
 			if (dx >= width) {
@@ -483,6 +490,8 @@ SDL_Surface *show_font(char *filename, unsigned long off)
 			dest.y += 8;
 		}
 	}
+
+	apply_mono_pal(surf, 0);
 
 	return surf;
 }
@@ -961,6 +970,7 @@ int main( int argc, char* args[] )
 
 	fill_vgapal(palette_file);
 	fill_cgapal();
+	fill_monopal();
 
 	//printf("First frame: %d, n frames: %d, last frame: %d\n", first_frame, total_frames, first_frame + total_frames - 1);
 
