@@ -4,8 +4,8 @@ CFLAGS+=-g -Wall
 LDFLAGS+=
 
 SDL_CFLAGS=$(CFLAGS) `sdl-config --cflags` -DHAVE_LIBSDL
-SDL_LDFLAGS=`sdl-config --libs` -lSDL_image
-SDL_STATIC_LIBS=`sdl-config --static-libs | sed 's/-mwindows/ /'` -lSDL_image
+SDL_LDFLAGS=`sdl-config --libs` -lSDL_image $(LDFLAGS)
+SDL_STATIC_LIBS=`sdl-config --static-libs | sed 's/-mwindows/ /'` -lSDL_image $(LDFLAGS)
 
 SDL_STATIC=-static -Wl,-Bstatic $(SDL_STATIC_LIBS)
 #-Wl,-Bdynamic
@@ -41,7 +41,7 @@ kbimg2dos: kbimg2dos.c
 
 kbimg2dos_s: kbimg2dos.c
 	$(CC) $(SDL_CFLAGS) kbimg2dos.c modding.c -o kbimg2dos $(SDL_STATIC)
-	
+
 kbplay:
 	$(CC) $(SDL_CFLAGS) kb_play.c -o kbplay $(SDL_LDFLAGS)
 
@@ -60,6 +60,6 @@ kbmaped: kbmaped.c
 
 kbmaped_s: kbmaped.c
 	$(CC) $(SDL_CFLAGS) kbmaped.c ../save.c ../env-sdl.c ../../vendor/inprint.c ../../vendor/scale2x.c $(LIB_SOURCES) -o kbmaped $(SDL_STATIC)
-	
+
 clean:
 	rm -f *.o *.a unexecomp unexepack kbcc kbview kbimg2dos kbplay kbrowse kbmaped
