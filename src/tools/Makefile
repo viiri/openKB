@@ -40,7 +40,7 @@ kbimg2dos: kbimg2dos.c
 	$(CC) $(SDL_CFLAGS) kbimg2dos.c modding.c -o kbimg2dos $(SDL_LDFLAGS)
 
 kbimg2dos_s: kbimg2dos.c
-	$(CC) $(SDL_CFLAGS) kbimg2dos.c modding.c -o kbimg2dos $(SDL_STATIC)
+	$(CC) $(SDL_CFLAGS) kbimg2dos.c modding.c -o kbimg2dos $(SDL_STATIC) -lpng -lz
 
 kbplay:
 	$(CC) $(SDL_CFLAGS) kb_play.c -o kbplay $(SDL_LDFLAGS)
