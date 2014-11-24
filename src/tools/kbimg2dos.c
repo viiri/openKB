@@ -430,7 +430,7 @@ int main( int argc, char* args[] )
 		SDL_Surface *big = IMG_Load(input[0]);
 
 		if (!big) {
-			fprintf(stderr, "Unable to load %s\n", input[0]);
+			fprintf(stderr, "Unable to load %s: %s\n", input[0], IMG_GetError());
 			free(frames);
 			return -1;
 		}
