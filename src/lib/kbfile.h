@@ -28,6 +28,8 @@
 #ifndef _OPENKB_LIBKB_FILE
 #define _OPENKB_LIBKB_FILE
 
+#include <stdio.h> /* SEEK_SET and friends defines, 'stderr' variable */
+
 #define MAX_KBFTYPE	4
 
 #define KBFTYPE_BUF 	0x00
