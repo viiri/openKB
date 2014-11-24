@@ -37,7 +37,14 @@ typedef Uint8   	byte  ;
 
 #else
 
+#ifdef __MINGW32__
+/* Assume WIN32 is always little-endian */
+#define __LITTLE_ENDIAN 1234
+#define __BIG_ENDIAN 3412
+#define __BYTE_ORDER __LITTLE_ENDIAN
+#else
 #include <endian.h>
+#endif
 #include <stdint.h>
 
 #define KB_BYTE_ORDER __BYTE_ORDER
