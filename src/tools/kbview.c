@@ -35,7 +35,7 @@
 #include <SDL_image.h>
 #include <math.h>
 
-//#include "../../vendor/savepng.h"
+#include "../../vendor/savepng.h"
 
 typedef Uint16	word  ; /* 16-bit */
 typedef Uint8	byte  ; /* 8-bit */
@@ -931,9 +931,9 @@ int main( int argc, char* args[] )
 	else
 		if (output_mode == 0) /* BMP */
 			SDL_SaveBMP(tiles, output_file);
-	//else
-		//if (output_mode == 1) /* PNG */
-			//SDL_SavePNG(tiles, output_file);
+	else
+		if (output_mode == 1) /* PNG */
+			SDL_SavePNG(tiles, output_file);
 
 	return 0; 
 }

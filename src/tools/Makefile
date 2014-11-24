@@ -31,10 +31,10 @@ kbcc2: kbcc2.c modding.c
 	$(CC) $(CFLAGS) kbcc2.c modding.c $(MINILIB_SOURCES) -o kbcc $(LDFLAGS)
 
 kbview: kbview.c
-	$(CC) $(SDL_CFLAGS) kbview.c -o kbview $(SDL_LDFLAGS)
+	$(CC) $(SDL_CFLAGS) -DHAVE_LIBPNG kbview.c ../../vendor/savepng.c -o kbview $(SDL_LDFLAGS) -lpng
 
 kbview_s: kbview.c
-	$(CC) $(SDL_CFLAGS) kbview.c -o kbview $(SDL_STATIC)
+	$(CC) $(SDL_CFLAGS) -DHAVE_LIBPNG -I/usr/local/include kbview.c ../../vendor/savepng.c -o kbview $(SDL_STATIC) -lpng -lz
 
 kbimg2dos: kbimg2dos.c
 	$(CC) $(SDL_CFLAGS) kbimg2dos.c modding.c -o kbimg2dos $(SDL_LDFLAGS)
