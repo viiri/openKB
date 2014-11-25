@@ -447,10 +447,11 @@ int main( int argc, char* args[] )
 			SDL_BlitSurface(big, &src, frames[i], &dst);
 		}
 
+		SDL_FreeSurface(big);
 	} else {
-		for (i = 0; i < num_inputs; i++) 
+		for (i = 0; i < num_inputs; i++)
 		{
-			frames[i] = IMG_Load(input[i]);		
+			frames[i] = IMG_Load(input[i]);
 		}
 	}
 
@@ -464,7 +465,12 @@ int main( int argc, char* args[] )
 
 	FILE *f = fopen(output, "wb");
 	if (!f) {
-		fprintf(stderr, "Unable to open %s for writing!\n", output);
+		fprintf(stderr, "Unable to open '%s' for writing!\n", output);
+		for (i = 0; i < num_inputs; i++)
+		{
+			SDL_FreeSurface(frames[i]);
+		}
+		free(frames);
 		exit(2);
 	}
 
@@ -548,6 +554,10 @@ int main( int argc, char* args[] )
 	}
 
 	fclose(f);
-	
+	for (i = 0; i < num_inputs; i++)
+	{
+		SDL_FreeSurface(frames[i]);
+	}
+	free(frames);
 	return 0; 
 }
