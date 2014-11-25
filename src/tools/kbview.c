@@ -463,7 +463,7 @@ SDL_Surface *show_font(char *filename, unsigned long off)
 
 	fseek(f, 0, SEEK_END); // seek to end of file
 	flen = ftell(f); // get current file pointer
-	fseek(f, 32, SEEK_SET); // seek back to beginning of file
+	fseek(f, 0, SEEK_SET); // seek back to beginning of file
 
 	//printf("Filesize: %d bytes [%04x]\n", flen, flen);
 
