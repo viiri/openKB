@@ -286,6 +286,8 @@ void* GNU_Resolve(KBmodule *mod, int id, int sub_id) {
 	char *image_name = NULL;
 	char *image_suffix = NULL;
 	char *image_subid = "";
+	SDL_Rect image_cutout_rect;
+	int image_cutout = 0;
 	int is_transparent = 1;
 #ifdef HAVE_LIBSDL_IMAGE
 #define _EXTN ".png"
@@ -396,6 +398,24 @@ void* GNU_Resolve(KBmodule *mod, int id, int sub_id) {
 			image_name = "comtiles";
 			image_suffix = _EXTN;
 			is_transparent = 1;
+		}
+		break;
+		case GR_TILE:	/* subId - tile index */
+		{
+			/* A tile */
+			if (sub_id > 35) {
+				sub_id -= 36;
+				image_name = "tilesetb";
+			} else {
+				image_name = "tileseta";
+			}
+			image_suffix = _EXTN;
+			is_transparent = 0;
+			image_cutout = 1;
+			image_cutout_rect.x = sub_id * TILE_W;
+			image_cutout_rect.y = 0;
+			image_cutout_rect.w = TILE_W;
+			image_cutout_rect.h = TILE_H;
 		}
 		break;
 		case GR_TILEROW:	/* subId - row index */
@@ -546,6 +566,13 @@ void* GNU_Resolve(KBmodule *mod, int id, int sub_id) {
 		SDL_Surface *surf = SDL_LoadBMP(realname);
 		if (surf == NULL) KB_debuglog(0, "> FAILED TO OPEN, %s\n", SDL_GetError());
 #endif
+		if (image_cutout) {
+			SDL_Surface *piece = SDL_CreatePALSurface(image_cutout_rect.w, image_cutout_rect.h);
+			SDL_ClonePalette(piece, surf);
+			SDL_BlitSurface(surf, &image_cutout_rect, piece, NULL);
+			SDL_FreeSurface(surf);
+			surf = piece;
+		}
 
 		if (surf && is_transparent)
 			SDL_SetColorKey(surf, SDL_SRCCOLORKEY, 0xFF);
