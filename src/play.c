@@ -747,6 +747,12 @@ void foes_follow(KBgame *game) {
 	int i;
 	/* For each foe, that is ON-SCREEN */
 	for (i = 0; i < MAX_FOES; i++) {
+		/* If foe is dead (no tile), ignore it */
+		{
+			int x = game->foe_coords[game->continent][i][0];
+			int y = game->foe_coords[game->continent][i][1];
+			if (game->map[game->continent][y][x] != 0x91) continue;
+		}
 		int diff_x = game->foe_coords[game->continent][i][0] - game->last_x;
 		int diff_y = game->foe_coords[game->continent][i][1] - game->last_y;
 		/* Poor man's abs() */
