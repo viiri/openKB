@@ -3424,6 +3424,58 @@ int run_combat(KBgame *game, int mode, int id) {
 	return 0;
 }
 
+int accept_foe(KBgame *game, int foe_id) {
+	char header[80]; // A few Peasants
+
+	byte troop_id = 0;
+	word troop_count = 20;
+
+	roll_creature(game->continent, &troop_id, &troop_count);
+
+	sprintf(header, "%s %s,", number_name(troop_count), troops[troop_id].name);
+
+	//KB_BottomBox(header, "with desires of greater\nglory wish to join you\n\n               Accept (y/n)?", 0);
+
+	SDL_Rect *rect = KB_BottomBox(header, "", 0);
+	SDL_Rect *fs = &sys->font_size;
+
+	if (!player_army_slots(game)) {
+		KB_iloc(rect->x, rect->y + fs->h * 2 + fs->h / 4);
+		KB_ilh(fs->h + fs->h/8);
+		KB_iprintf("flee in terror at the sight\nyour vast army.");
+
+		KB_iloc(rect->x, rect->y + fs->h * 6 - fs->h / 4);
+		KB_iprint("                     (space)\n");
+
+		KB_flip(sys);
+		KB_Pause();
+		goto end;
+	}
+
+	KB_iloc(rect->x, rect->y + fs->h * 2 + fs->h / 4);
+	KB_ilh(fs->h + fs->h/8);
+	KB_iprintf("with desires of greater\nglory, wish to join you");
+
+	KB_iloc(rect->x, rect->y + fs->h * 6 - fs->h / 4);
+	KB_iprint("               Accept (y/n)?\n");
+
+	KB_flip(sys);
+
+	int key = 0;
+	while (!key) key = KB_event(&yes_no_question);
+
+	/* "Yes" */
+	if (key == 1) {
+		add_troop(game, troop_id, troop_count);
+	}
+end:
+	/* Remove foe from the map */
+	game->map[game->continent][game->y][game->x] = 0;
+
+	return key - 1;
+}
+
+/* Returns: 0 if attacked foe, 1 if canceled */
 int attack_foe(KBgame *game) {
 	int id = 0;
 	int i;
@@ -3436,7 +3488,8 @@ int attack_foe(KBgame *game) {
 	}
 
 	if (id < FRIENDLY_FOES) {
-
+		accept_foe(game, id);
+		return 0;
 	} else {
 
 	}

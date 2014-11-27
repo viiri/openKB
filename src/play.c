@@ -616,6 +616,19 @@ int player_has_boat(KBgame *game) {
 	return 1;
 }
 
+/* Return number of free player army slots, 0 if full */
+int player_army_slots(KBgame *game) {
+	int i;
+	int slots = 0;
+	for (i = 0; i < 5; i++) {
+		if (game->player_numbers[i] == 0) {
+			slots++;
+		}
+	}
+
+	return slots;
+}
+
 /* Return total number of troops in player army */
 int player_army(KBgame *game) {
 	int followers = 0;
