@@ -3280,6 +3280,9 @@ void hit_unit(KBcombat *war, int a_side, int a_id, int t_side, int t_id) {
 		combat_log("%s retaliate, killing %d", troops[t->troop_id].name, kills);
 	}
 
+	u->turn_count = u->count;
+	t->turn_count = t->count;
+
 	/* A turn well spent */
 	u->acted = 1;
 
