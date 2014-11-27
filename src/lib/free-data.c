@@ -183,6 +183,30 @@ Uint32* GNU_ReadMinimapColors(KBmodule *mod, const char *inifile) {
 	return colors;
 }
 
+Uint32* GNU_ReadDwellingColors(KBmodule *mod, const char *inifile) {
+	dword values[1] = { 0 };
+
+	const char *names[] = { /* Should map to COL_MINIMAP special enum */
+		"dwelling0",	/* 0 */
+		"dwelling1",   	/* 1 */
+		"dwelling2",   	/* 2 */
+		"dwelling3",   	/* 3 */
+		"dwelling4"    	/* 4 */
+	};
+
+	int i;
+
+	Uint32 *colors = malloc(sizeof(Uint32) * 5);
+	if (colors == NULL) return NULL;
+
+	for (i = 0; i < 5; i++) {
+		GNU_extract_ini(mod, inifile, "dwellings", names[i], 0, 1, &values[0]);
+		colors[i] = values[0];
+	}
+
+	return colors;
+}
+
 SDL_Rect* GNU_ReadRect(KBmodule *mod, const char *inifile, int which) {
 	dword values[4] = { 0 };
 
@@ -492,6 +516,11 @@ void* GNU_Resolve(KBmodule *mod, int id, int sub_id) {
 			};
 			if (sub_id < 0 || sub_id > 9) return NULL;
 			return GNU_ReadTextColors(mod, "colors.ini", CS_names[sub_id]);
+		}
+		break;
+		case COL_DWELLING:
+		{
+			return GNU_ReadDwellingColors(mod, "colors.ini");
 		}
 		break;
 		case COL_MINIMAP:
