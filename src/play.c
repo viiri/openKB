@@ -709,6 +709,22 @@ void promote_player(KBgame *game) {
 	player_accept_rank(game);
 }
 
+void clear_fog(KBgame *game) {
+	int i;
+	int j;
+	for (j = -2; j < 3; j++) {
+		for (i = -2; i < 3; i++) {
+			int x = game->x + i;
+			int y = game->y + j;
+			if (x < 0) x = 0;
+			if (x > LEVEL_W - 1) x = LEVEL_W - 1;
+			if (y < 0) y = 0;
+			if (y > LEVEL_H - 1) y = LEVEL_H - 1;
+			game->fog[game->continent][y][x] = 1;
+		}
+	}
+}
+
 void sail_to(KBgame *game, byte continent) {
 	game->continent = continent;
 	game->x = continent_entry[game->continent][0];

@@ -5633,6 +5633,8 @@ void adventure_loop(KBgame *game) {
 				game->x = cursor_x;
 				game->y = cursor_y;
 
+				clear_fog(game);
+
 				if (m == TILE_TELECAVE && !visit_telecave(game, 1)) {
 					printf("HUH %d %d\n", cursor_x, cursor_y);
 					m = game->map[game->continent][cursor_y][cursor_x];
