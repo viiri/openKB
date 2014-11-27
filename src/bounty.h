@@ -63,6 +63,10 @@
 #define ALCOVE_X 11
 #define ALCOVE_Y 19
 
+#define MAX_SPECIAL_PLACES 2
+#define SP_HOME 0
+#define SP_ALCOVE 1
+
 #define FRIENDLY_FOES 5
 
 #define DAY_STEPS	40
@@ -347,6 +351,7 @@ extern char *continent_names[4];
 
 extern byte continent_entry[MAX_CONTINENTS][2];	/* [x][y] */
 extern byte castle_difficulty[MAX_CASTLES];
+extern byte special_coords[MAX_SPECIAL_PLACES][3]; /* [continent][x][y] */
 extern byte castle_coords[MAX_CASTLES][3];	/* [continent][x][y] */
 extern byte town_coords[MAX_CASTLES][3];
 extern byte towngate_coords[MAX_CASTLES][3];

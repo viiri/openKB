@@ -392,9 +392,9 @@ KBgame *spawn_game(char *name, int pclass, int difficulty, byte *land) {
 
 	game->gold = starting_gold[pclass];
 
-	game->continent = HOME_CONTINENT;
-	game->x = HOME_X;
-	game->y = HOME_Y - 2;
+	game->continent = special_coords[SP_HOME][0];
+	game->x = special_coords[SP_HOME][1];
+	game->y = special_coords[SP_HOME][2] - 2;
 	game->continent_found[HOME_CONTINENT] = 1;
 
 	game->mount = KBMOUNT_RIDE;
@@ -913,9 +913,9 @@ void temp_death(KBgame *game) {
 	int i;
 
 	/* Teleport back home */
-	game->continent = HOME_CONTINENT;
-	game->last_x = game->x = HOME_X;
-	game->last_y = game->y = HOME_Y - 1;
+	game->continent = special_coords[SP_HOME][0];
+	game->last_x = game->x = special_coords[SP_HOME][1];
+	game->last_y = game->y = special_coords[SP_HOME][2] - 1;
 	game->mount = KBMOUNT_RIDE;
 
 	/* Wipe army */

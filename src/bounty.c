@@ -584,6 +584,11 @@ byte castle_difficulty[MAX_CASTLES] = {
 	3,
 };
 
+byte special_coords[2][3] = {
+	{ HOME_CONTINENT, HOME_X, HOME_Y }, /* Home castle */
+	{ ALCOVE_CONTINENT, ALCOVE_X, ALCOVE_Y }, /* Magic alcove */
+};
+
 /* continent, X, Y */
 byte castle_coords[MAX_CASTLES][3] = {
 	{ 0, 30,27 },

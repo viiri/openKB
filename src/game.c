@@ -2381,8 +2381,9 @@ void visit_castle(KBgame *game) {
 	int id = 0;
 	int i, j;
 
-	if (HOME_CONTINENT == game->continent
-	&&	HOME_X == game->x && HOME_Y == game->y) {
+	if (special_coords[SP_HOME][0] == game->continent
+	&&	special_coords[SP_HOME][1] == game->x
+	&&	special_coords[SP_HOME][2] == game->y) {
 		id = MAX_CASTLES;
 		ctype = home;
 	}
@@ -2793,9 +2794,9 @@ int visit_dwelling(KBgame *game, byte rtype) {
 
 	/* See if it's archmage's alcove */
 	if (
-		ALCOVE_CONTINENT == game->continent
-		&& ALCOVE_X == game->x
-		&& ALCOVE_Y == game->y
+		special_coords[SP_ALCOVE][0] == game->continent
+		&& special_coords[SP_ALCOVE][1] == game->x
+		&& special_coords[SP_ALCOVE][2] == game->y
 	) {
 		return visit_alcove(game);
 	}
