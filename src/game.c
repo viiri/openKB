@@ -4988,6 +4988,14 @@ void unit_try_shoot(KBcombat *war) {
 
 		victim = &war->units[other_side][other_id];
 
+		if (kills == -1) {
+			combat_log("%s shoot %s", troops[u->troop_id].name, troops[victim->troop_id].name, kills);
+			combat_log("The spell seems to have no effect!", 0);
+			/* A turn well spent */
+			u->acted = 1;
+			return;
+		}
+
 		draw_damage(war, victim);
 
 		combat_log("%s shoot %s killing %d", troops[u->troop_id].name, troops[victim->troop_id].name, kills);

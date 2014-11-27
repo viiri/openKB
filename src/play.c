@@ -1343,9 +1343,10 @@ int deal_damage(KBcombat *war, int a_side, int a_id, int t_side, int t_id, int i
 			u->shots--;
 
 			if (troops[u->troop_id].abilities & ABIL_MAGIC) {
-				//if (troops[t->troop_id].abilities & ABIL_IMMUNE) //cancel_attack...?
+				if (troops[t->troop_id].abilities & ABIL_IMMUNE) //cancel_attack
+					return -1;
 				//dmg = 10 druid, 25 archmage
-				dmg = 0;
+				dmg = troops[u->troop_id].ranged_min;
 			}
 			else {
 				dmg = KB_rand(troops[u->troop_id].ranged_min, troops[u->troop_id].ranged_max);
