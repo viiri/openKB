@@ -25,13 +25,17 @@
 #include <string.h>
 #include <unistd.h>
 
-#define DEFAULT_DATA_DIR "/usr/local/games/openkb-data/"
+#define DEFAULT_DATA_DIR "/usr/local/share/"
 #define DEFAULT_SAVE_DIR "/var/games/openkb-saves/"
 #define DEFAULT_CONF_DIR "/usr/local/etc/"
 
 #define SAVE_BASE_DIR "saves" PATH_SEP
 #define DATA_BASE_DIR ""
 #define DATA_LOCAL_DIR "data" PATH_SEP
+
+#ifndef PKGDATADIR
+#define PKGDATADIR DEFAULT_DATA_DIR
+#endif
 
 #if (USE_WINAPI) || (__APPLE__ && __MACH__) /* Win32 or Apple */
 #define CWD_DATA_DIR 1
@@ -382,21 +386,20 @@ int read_env_config(struct KBconfig *conf) {
 	//printf("Data DIR: %s\n", KBconf.data_dir);
 	
 #if (CWD_DATA_DIR == 1)
-	char buf[1024];
-	/* Save the local directory */
-							//TODO: proper local name of *binary*
-	getcwd(buf, 1024);//NULL?
+	char current_dir[1024];
+	getcwd(current_dir, 1024); //might return NULL...
 
-	KB_strcpy(conf->install_dir, buf);
-	KB_strcat(conf->install_dir, DATA_LOCAL_DIR);
+	KB_strcpy(conf->install_dir, current_dir);
 	KB_dirsep(conf->install_dir);
 	KB_strcat(conf->install_dir, DATA_BUNDLE_DIR);
+	KB_dirsep(conf->install_dir);
+	KB_strcat(conf->install_dir, DATA_LOCAL_DIR);
 #else
-	KB_strcpy(conf->install_dir, DATADIR); /* -DDATADIR define, ~= /usr/local/share */
+	KB_strcpy(conf->install_dir, PKGDATADIR); /* PKGDATADIR define, ~= /usr/local/share */
 	KB_dirsep(conf->install_dir);
 	KB_strcat(conf->install_dir, PACKAGE_NAME); /* and we add unixname, so ~= /usr/local/share/openkb */
 #endif
-	
+
 	return 0;
 }
 
