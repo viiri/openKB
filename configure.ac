@@ -62,6 +62,7 @@ AS_IF([test "$HAVE_LIBSDL_IMAGE" = 1], [
 # Checks for header files.
 AC_CHECK_HEADERS([string.h])
 AC_CHECK_HEADERS([malloc.h])
+AC_CHECK_HEADERS([endian.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_INLINE
