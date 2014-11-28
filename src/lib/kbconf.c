@@ -31,6 +31,16 @@
 
 #define SAVE_BASE_DIR "saves" PATH_SEP
 #define DATA_BASE_DIR ""
+#define DATA_LOCAL_DIR "data" PATH_SEP
+
+#if (USE_WINAPI) || (__APPLE__ && __MACH__) /* Win32 or Apple */
+#define CWD_DATA_DIR 1
+#endif
+#ifdef USE_WINAPI /* Win32 */
+#define DATA_BUNDLE_DIR ""
+#else /* Apple */
+#define DATA_BUNDLE_DIR "../Resources"
+#endif
 
 #ifdef USE_WINAPI
 #define CONFIG_BASE_DIR "\\OpenKB\\"
@@ -279,6 +289,12 @@ int read_cmd_config(struct KBconfig *conf, int argc, char *args[]) {
 				continue;
 			}
 
+			if (!KB_strcasecmp(args[i], "--rootdir") && i + 1 < argc) {
+				KB_strcpy(conf->install_dir, args[i + 1]);
+				conf->set[C_install_dir] = 1;
+				continue;
+			}
+
 			if (i == argc - 1) {
 				KB_strcpy(conf->config_file, args[i]);
 				continue;
@@ -305,6 +321,9 @@ void wipe_config(struct KBconfig *conf) {
 
 	conf->data_dir[0] = '\0';
 	conf->set[C_data_dir] = 0;
+
+	conf->install_dir[0] = '\0';
+	conf->set[C_install_dir] = 0;
 
 	conf->fullscreen = 0;
 	conf->set[C_fullscreen] = 0;
@@ -361,11 +380,29 @@ int read_env_config(struct KBconfig *conf) {
 	KB_strcat(conf->data_dir, DATA_BASE_DIR);
 
 	//printf("Data DIR: %s\n", KBconf.data_dir);
+	
+#if (CWD_DATA_DIR == 1)
+	char buf[1024];
+	/* Save the local directory */
+							//TODO: proper local name of *binary*
+	getcwd(buf, 1024);//NULL?
+
+	KB_strcpy(conf->install_dir, buf);
+	KB_strcat(conf->install_dir, DATA_LOCAL_DIR);
+	KB_dirsep(conf->install_dir);
+	KB_strcat(conf->install_dir, DATA_BUNDLE_DIR);
+#else
+	KB_strcpy(conf->install_dir, DATADIR); /* -DDATADIR define, ~= /usr/local/share */
+	KB_dirsep(conf->install_dir);
+	KB_strcat(conf->install_dir, PACKAGE_NAME); /* and we add unixname, so ~= /usr/local/share/openkb */
+#endif
+	
 	return 0;
 }
 
 void report_config(struct KBconfig *conf) {
 	int i;
+	KB_debuglog(0, "Read dir:\t %s\n", conf->install_dir);
 	KB_debuglog(0, "Data dir:\t %s\n", conf->data_dir);
 	KB_debuglog(0, "Save dir:\t %s\n", conf->save_dir);
 
@@ -439,6 +476,7 @@ void apply_config(struct KBconfig* dst, struct KBconfig* src) {
 
 	if (src->set[C_save_dir]) KB_strcpy(dst->save_dir, src->save_dir);
 	if (src->set[C_data_dir]) KB_strcpy(dst->data_dir, src->data_dir);
+	if (src->set[C_install_dir]) KB_strcpy(dst->install_dir, src->install_dir);
 
 	if (src->set[C_fullscreen]) dst->fullscreen = src->fullscreen;
 	if (src->set[C_filter]) dst->filter = src->filter;

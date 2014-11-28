@@ -5761,8 +5761,10 @@ int run_game(KBconfig *conf) {
 	if (!sys) return -1;
 
 	/* Module auto-discovery */
-	if (conf->autodiscover)
+	if (conf->autodiscover) {
+		discover_modules(conf->install_dir, conf);
 		discover_modules(conf->data_dir, conf);
+	}
 
 	/* User-configured modules */
 	register_modules(conf);

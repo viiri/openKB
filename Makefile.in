@@ -13,7 +13,7 @@ bindir=@bindir@
 datadir=@datadir@
 
 
-CFLAGS=@CFLAGS@
+CFLAGS=@CFLAGS@ -DDATADIR=\"$(datadir)\"
 LDFLAGS=@LIBS@
 
 VERSION=@PACKAGE_VERSION@
@@ -139,7 +139,7 @@ dist: vendor-clean vendor clean config $(MAN_PAGES)
 install: all
 	@echo "Making install into $(DESTDIR)"
 	$(INSTALL) openkb $(DESTDIR)$(bindir)/openkb
-	$(INSTALL_DATA) data $(DESTDIR)$(datadir)/openkb-data
+	$(INSTALL_DATA) data $(DESTDIR)$(datadir)/openkb
 	$(INSTALL_DATA) docs/openkb.6 $(DESTDIR)$(mandir)/man6/openkb.6
 
 dist/win/openkb.rc: dist/win/openkb.rc.in

@@ -10,7 +10,7 @@ pack to play the game.
 
 To use the original graphics/maps/sounds from the real game,
 you should have them somewhere you can point openkb to. By
-default, \fI/var/games/openkb-data\fR is used, but you can
+default, \fI/usr/local/share/openkb\fR is used, but you can
 fine-tune the location of each file and directory with a
 command line argument or from config file.
 .SH OPTIONS

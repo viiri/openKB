@@ -57,6 +57,7 @@ typedef void*	(*KBresolve_cb)(KBmodule *mod, int id, int sub_id);
 #define C_config_dir   1
 #define C_save_dir     2
 #define C_data_dir     3
+#define C_install_dir  10
 
 #define C_fullscreen   4
 #define C_filter       5
@@ -71,6 +72,7 @@ typedef struct KBconfig {
 	char config_dir[PATH_LEN];
 	char save_dir[PATH_LEN];
 	char data_dir[PATH_LEN];
+	char install_dir[PATH_LEN];
 
 	int fullscreen;
 	int filter;

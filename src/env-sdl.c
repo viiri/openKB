@@ -99,7 +99,7 @@ KBenv *KB_startENV(KBconfig *conf) {
 	SDL_WM_SetCaption("openkb " PACKAGE_VERSION, "openkb " PACKAGE_VERSION);
 
 	/* Set window icon */
-	iconfile = KB_fastpath(conf->data_dir, "/", "icon_32x32"
+	iconfile = KB_fastpath(conf->install_dir, "/", "icon_32x32"
 #ifdef HAVE_LIBSDL_IMAGE
 	".png"
 #else
