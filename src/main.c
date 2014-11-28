@@ -33,9 +33,40 @@ struct KBconfig KBconf;
 
 extern int run_game(KBconfig *conf);
 
+void dump_version(void) {
+	KB_stdlog("openKB " PACKAGE_VERSION "\n");
+	KB_stdlog("Copyright (C) 2011-2014 openKB AUTHORS\n");
+	KB_stdlog("License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>\n");
+	KB_stdlog("This is free software: you are free to change and redistribute it.\n");
+	KB_stdlog("There is NO WARRANTY, to the extent permitted by law.\n");
+
+	//KB_stdlog("==============================================================================\n");
+	KB_stdlog("Compiled with SDL %d.%d.%d\n",SDL_MAJOR_VERSION,SDL_MINOR_VERSION,SDL_PATCHLEVEL);
+#ifdef HAVE_LIBSDL_IMAGE
+	KB_stdlog("Compiled with SDL_Image\n");
+#endif
+	//* print LGPL license...
+#ifdef HAVE_LIBPNG
+	KB_stdlog("Compiled with libpng\n");
+#endif
+	//* print zlib license..
+#ifdef DEBUG
+	KB_stdlog("Compiled with DEBUG define.\n");
+#endif
+#ifdef USE_WINAPI
+	KB_stdlog("Compiled with Win32Api support.\n");
+#endif
+}
+
 int main(int argc, char* argv[]) {
 
 	int playing = 1;	/* Play 1 game of KB */
+
+	/* Hack -- dump version and exit */
+	if (argc > 1 && !KB_strcasecmp(argv[1], "--version")) {
+		dump_version();
+		return 0;
+	}
 
 	/* Lots of very boring things must happen for a proper initialisation... */
 	KB_stdlog("openKB version " PACKAGE_VERSION "\n");
