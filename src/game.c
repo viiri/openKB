@@ -5502,6 +5502,14 @@ int ai_unit_think(KBcombat *combat) {
 		return unit_try_wait(combat);
 
 	}
+	/* Hack -- if combat occured, force unit swap (to ensure we're not
+	 * pointing to an empty slot) */
+	if (acted == 2) {
+
+		return 1;
+
+	}
+
 	return !acted;
 }
 
@@ -5582,8 +5590,12 @@ int combat_loop(KBgame *game, KBcombat *combat) {
 		if (key > 0 && key < COMBAT_ARROW_KEYS) {
 			int ox = combat_move_offset_x[(key-1)/2];
 			int oy = combat_move_offset_y[(key-1)/2];
-			
-			move_unit(combat, 0, combat->unit_id, ox, oy);
+
+			int acted = move_unit(combat, 0, combat->unit_id, ox, oy);
+
+			/* Hack -- ensure pass, because we can't realy on unit's.acted field to trigger it,
+			 * as the unit might already be dead */
+			if (acted == 2) pass = 1;
 		}
 
 		if (key == COMBAT_SYN_EVENT) {
