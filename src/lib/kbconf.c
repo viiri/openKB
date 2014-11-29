@@ -468,14 +468,9 @@ int find_config(struct KBconfig *conf) {
 	}
 
 	/* Try HOME directory */
-#ifdef USE_WINAPI
-	pPath = (char*)getenv("APPDATA");
-#else
-	pPath = (char*)getenv("HOME");//NULL?
-#endif
-	KB_strcpy(config_dir, pPath);
-	KB_strcat(config_dir, CONFIG_BASE_DIR);
-	KB_strcpy(config_file, config_dir);
+	KB_strcpy(config_dir, conf->config_dir);
+	KB_strcpy(config_file, conf->config_dir);
+	KB_dirsep(config_file);
 	KB_strcat(config_file, CONFIG_INI_NAME);
 	KB_stdlog("Looking for config at '%s'\n", config_file);
 
@@ -489,6 +484,7 @@ int find_config(struct KBconfig *conf) {
 
 	/* Try SYSTEM directory */
 	KB_strcpy(config_file, DEFAULT_CONF_DIR);
+	KB_dirsep(config_file);
 	KB_strcat(config_file, CONFIG_INI_NAME);		
 	KB_stdlog("Looking for config at '%s'\n", config_file);
 	if (!test_config(config_file, 0))
@@ -505,6 +501,7 @@ void apply_config(struct KBconfig* dst, struct KBconfig* src) {
 	if (src->set[C_save_dir]) KB_strcpy(dst->save_dir, src->save_dir);
 	if (src->set[C_data_dir]) KB_strcpy(dst->data_dir, src->data_dir);
 	if (src->set[C_install_dir]) KB_strcpy(dst->install_dir, src->install_dir);
+	if (src->set[C_config_dir]) KB_strcpy(dst->config_dir, src->config_dir);
 
 	if (src->set[C_fullscreen]) dst->fullscreen = src->fullscreen;
 	if (src->set[C_filter]) dst->filter = src->filter;

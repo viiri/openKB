@@ -89,6 +89,8 @@ extern int KB_strcasecmp(const char *left, const char *right);
 
 #endif 
 
+extern char* KB_strtoupper(char *src);
+
 #define KB_strlcat strlcat
 #define KB_strlcpy strlcpy
 
@@ -131,6 +133,7 @@ extern void KB_dirncpy(char *dst, const char *src, unsigned int n);
 #define KB_dircpy(DST, SRC) KB_dirncpy(DST, SRC, sizeof(DST))
 
 
+extern int KB_mkdir(const char *dir, int mode);
 extern int hex2dec(const char *hex_str);
 extern int file_size(const char *filename);
 extern int test_directory(const char *path, int make); 

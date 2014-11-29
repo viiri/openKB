@@ -276,6 +276,46 @@ char* KB_strdup(const char *src) {
 }
 #endif
 
+char* KB_strtoupper(char *src) {
+	int i;
+	char *start = src;
+	while (*src) {
+		*src = toupper(*src);
+		src++;
+	}
+	return start;
+}
+
+#if 0
+/* Create directory. Unlike stdlib mkdir(), allow recursive paths.
+ * Return 0 on success, -1 on error. Currently, stderr can be used
+ * to determine failure cause.  */
+int KB_mkdir(const char *dir, mode_t mode) {
+#ifndef HAVE_MKDIR
+	KB_errlog("[mkdir] No mkdir() found on the system\n");
+	return -1;
+#else
+	char *path = strdup(dir);
+	char *part;
+	part = strtok(path, PATH_SEP);
+	while (part) {
+		if (part != path)
+			*(part-1) = '/';
+		if (test_directory(path, 0) != 0) {
+			if (mkdir(path, mode) == -1) {
+				free(path);
+				return -1;
+			}
+		}
+		part = strtok(NULL, PATH_SEP);
+	}
+
+	free(path);
+	return 0;
+#endif
+}
+#endif
+
 int file_size(const char *filename) { 
 	struct stat status; 
 	if (stat(filename, &status)) return 0; 

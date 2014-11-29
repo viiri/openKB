@@ -85,6 +85,11 @@ int main(int argc, char* argv[]) {
 	wipe_config(&CMDconf);
 	read_cmd_config(&CMDconf, argc, argv);
 
+	/* User requested a specific config dir (for searching) */
+	if (CMDconf.config_dir[0] != '\0') {
+		KB_strcpy(KBconf.config_dir, CMDconf.config_dir);
+	}
+
 	/* User requested a specific config file */
 	if (CMDconf.config_file[0] != '\0') 
 	{
