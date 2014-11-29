@@ -5789,15 +5789,19 @@ void adventure_loop(KBgame *game) {
 			//view_controls(game);
 		}
 
-		if (key == KEY_ACT(FLY)) {
-			game->mount = KBMOUNT_FLY;
-			redraw = 1;
+		if (key == KEY_ACT(FLY) && game->mount == KBMOUNT_RIDE) {
+			if (player_can_fly(game)) {
+				game->mount = KBMOUNT_FLY;
+				redraw = 1;
+			}
 		}
 
 		if (key == KEY_ACT(LAND) && game->mount == KBMOUNT_FLY) {
 			if (game->map[game->continent][game->y][game->x] == 0) {
 				game->mount = KBMOUNT_RIDE;
 				redraw = 1;
+			} else {
+				//Play beep
 			}
 		}
 

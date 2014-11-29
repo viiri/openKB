@@ -616,6 +616,26 @@ int player_has_boat(KBgame *game) {
 	return 1;
 }
 
+/* Return 1 if player can fly, 0 if not */
+int player_can_fly(KBgame *game) {
+	int i;
+	int slots = 0;
+	for (i = 0; i < 5; i++) {
+		if (game->player_numbers[i] == 0) break;
+		/* Non-flying troop */
+		if (!(troops[game->player_troops[i]].abilities & ABIL_FLY)) {
+			KB_stdlog("Can'f fly because %s do not fly\n", troops[game->player_troops[i]].name);
+			return 0;
+		}
+		/* Flying, but unskilled troop */
+		if (troops[game->player_troops[i]].skill_level < 2) {
+			KB_stdlog("Can'f fly because %s are not skilled enough\n", troops[game->player_troops[i]].name);
+			return 0;
+		}
+	}
+	return 1;
+}
+
 /* Return number of free player army slots, 0 if full */
 int player_army_slots(KBgame *game) {
 	int i;

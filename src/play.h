@@ -37,6 +37,8 @@ extern int known_spells(KBgame *game);
 
 extern int has_power(KBgame *game, byte power);
 
+extern int player_can_fly(KBgame *game);
+
 extern int player_army_slots(KBgame *game);
 
 extern int player_army(KBgame *game);
