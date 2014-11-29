@@ -464,6 +464,9 @@ KBgame *spawn_game(char *name, int pclass, int difficulty, byte *land) {
 		}
 	}
 
+	/* Clear fog around starting location */
+	clear_fog(game);
+
 	return game;
 }
 
