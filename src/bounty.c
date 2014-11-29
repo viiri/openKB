@@ -290,7 +290,7 @@ word days_per_difficulty[4] = {
 	200, /* Impossible? */
 };
 
-char *dwelling_names[MAX_DWELLINGS] = {
+char *dwelling_names[MAX_DWELLINGS][32] = {
 	"Plains",
 	"Forest",
 	"Hill",	/* Also known as "Cave" */
@@ -298,7 +298,7 @@ char *dwelling_names[MAX_DWELLINGS] = {
 	"Castle",
 };
 
-char *town_names[MAX_TOWNS] = {
+char *town_names[MAX_TOWNS][32] = {
 	"Riverton",     	//00 (11)
 	"Underfoot",    	//01 (14)
 	"Path's End",   	//02 (0F)
@@ -327,7 +327,7 @@ char *town_names[MAX_TOWNS] = {
 	"Zaezoizu",     	//19 (19)
 };
 
-char *castle_names[MAX_CASTLES + 1] = {
+char *castle_names[MAX_CASTLES + 1][32] = {
 	"Azram",    	//00
 	"Basefit",  	//01
 	"Cancomar", 	//02
@@ -386,7 +386,7 @@ byte town_inversion[MAX_TOWNS] = {
 	/* Zaezoizu */      	0x19, //(19)
 };
 
-char *spell_names[MAX_SPELLS] = {
+char *spell_names[MAX_SPELLS][32] = {
 	"Clone",    	//00
 	"Teleport", 	//01
 	"Fireball", 	//02
@@ -422,7 +422,7 @@ word spell_costs[MAX_SPELLS] = {
 	 500, /* 0D */
 };
 
-char *artifact_names[MAX_ARTIFACTS] = {
+char *artifact_names[MAX_ARTIFACTS][32] = {
 	"The Sword of Prowess",     	//00 (7)
 	"The Shield of Protection", 	//01 (1)
 	"The Crown of Command",     	//02 (2)
@@ -540,7 +540,7 @@ char *morale_names[3] = {
 	"High",
 };
 
-char *continent_names[4] = {
+char *continent_names[4][32] = {
 	"Continentia",
 	"Forestria",
 	"Archipelia",
