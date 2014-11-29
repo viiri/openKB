@@ -1542,6 +1542,12 @@ void view_minimap(KBgame *game, int force_orb) {
 						byte tile = game->map[game->continent][j][i];
 						color = map_colors[tile];
 					}
+
+					/* Blinking Pixel ("You are here") */
+					if (i == game->x && j == game->y) {
+						color = KB_rand(0, 0xFFFFFF);
+					}
+
 					SDL_FillRect(screen, &pixel, color);
 				}
 				/* DOS aestetics: */
