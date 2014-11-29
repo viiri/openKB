@@ -4241,6 +4241,7 @@ void lose_game(KBgame *game) {
 	SDL_Rect full, half;
 	SDL_Rect pos;
 
+	Uint32 *colors = KB_Resolve(COL_TEXT, CS_ENDING);
 	SDL_Surface *image = SDL_LoadRESOURCE(GR_ENDING, 1, 0);
 
 	full.x = local.map.x;
@@ -4258,24 +4259,14 @@ void lose_game(KBgame *game) {
 
 	lines = KB_Resolve(STRL_ENDINGS, 1);
 
-	//TODO: Remove this mess
-	int i, j = 0, n = 19;
-	char *line = lines;
-	for (i = 0; i < n; ) {
-		if (*line == '\0') {
-			i++;
-			*line = '\n';
-		}
-		line++;
-	}
+	KB_strlist_join(lines, '\n');
 
-	/* TODO: Make sure message comes with appropriate "%s the %s" substring
 	sprintf(message,
+		lines,
 		game->name,
 		classes[game->class][game->rank].title);
-	*/
 
-	KB_strcpy(message, lines);
+	//KB_strcpy(message, lines);
 
 	RECT_Pos(&pos, &full);
 	RECT_Size(&pos, image);
@@ -4286,12 +4277,13 @@ void lose_game(KBgame *game) {
 
 	SDL_BlitSurface( image, NULL, sys->screen, &pos );
 
-	SDL_FillRect( sys->screen, &half, 0xFF0000 );
+	SDL_FillRect(sys->screen, &half, colors[COLOR_SELECTION + COLOR_BACKGROUND]); /* dark blue */
 	KB_iloc(half.x, half.y);
+	KB_icolor(colors + COLOR_SELECTION);
 	KB_iprint(message);
 
-   	KB_flip(sys);
-	KB_Pause();
+	KB_flip(sys);
+	while (KB_event(&press_any_key) != 0xFF) { }
 
 	SDL_FreeSurface(image);
 	free(lines);
