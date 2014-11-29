@@ -620,7 +620,7 @@ int match_file(const char *path, const char *filename, char *match) {
 
 	while ((e = KB_readdir(dirp)) != NULL) {
 		//KB_debuglog(0, "Matching: %s with exp %s\n", e->d_name, filename);
-		if (strcmp(filename, e->d_name)) {
+		if (!strcmp(filename, e->d_name)) {
 			KB_strncpy(match, filename, l);
 			found = 2;
 			break;
