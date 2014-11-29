@@ -296,11 +296,36 @@ int read_cmd_config(struct KBconfig *conf, int argc, char *args[]) {
 			if (!KB_strcasecmp(args[i], "--rootdir") && i + 1 < argc) {
 				KB_strcpy(conf->install_dir, args[i + 1]);
 				conf->set[C_install_dir] = 1;
+				i++;
 				continue;
 			}
 
-			if (i == argc - 1) {
-				KB_strcpy(conf->config_file, args[i]);
+			if (!KB_strcasecmp(args[i], "--datadir") && i + 1 < argc) {
+				KB_strcpy(conf->data_dir, args[i + 1]);
+				conf->set[C_data_dir] = 1;
+				i++;
+				continue;
+			}
+
+			if (!KB_strcasecmp(args[i], "--savedir") && i + 1 < argc) {
+				KB_strcpy(conf->save_dir, args[i + 1]);
+				conf->set[C_save_dir] = 1;
+				i++;
+				continue;
+			}
+
+			if (!KB_strcasecmp(args[i], "--configdir") && i + 1 < argc) {
+				KB_strcpy(conf->config_dir, args[i + 1]);
+				conf->set[C_config_dir] = 1;
+				i++;
+				continue;
+			}
+
+			if ((!KB_strcasecmp(args[i], "-c")
+			 || !KB_strcasecmp(args[i], "--config")) && i + 1 < argc) {
+				KB_strcpy(conf->config_file, args[i + 1]);
+				conf->set[C_config_file] = 1;
+				i++;
 				continue;
 			}
 
