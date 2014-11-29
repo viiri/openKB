@@ -37,15 +37,6 @@
 #define PKGDATADIR DEFAULT_DATA_DIR
 #endif
 
-#if (USE_WINAPI) || (__APPLE__ && __MACH__) /* Win32 or Apple */
-#define CWD_DATA_DIR 1
-#endif
-#ifdef USE_WINAPI /* Win32 */
-#define DATA_BUNDLE_DIR ""
-#else /* Apple */
-#define DATA_BUNDLE_DIR "../Resources"
-#endif
-
 #ifdef USE_WINAPI
 #define CONFIG_BASE_DIR "\\OpenKB\\"
 #else
@@ -410,13 +401,11 @@ int read_env_config(struct KBconfig *conf) {
 
 	//printf("Data DIR: %s\n", KBconf.data_dir);
 	
-#if (CWD_DATA_DIR == 1)
+#ifdef USE_WINAPI
 	char current_dir[1024];
 	getcwd(current_dir, 1024); //might return NULL...
 
 	KB_strcpy(conf->install_dir, current_dir);
-	KB_dirsep(conf->install_dir);
-	KB_strcat(conf->install_dir, DATA_BUNDLE_DIR);
 	KB_dirsep(conf->install_dir);
 	KB_strcat(conf->install_dir, DATA_LOCAL_DIR);
 #else
