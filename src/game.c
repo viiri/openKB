@@ -207,6 +207,38 @@ char *text_input(int max_len, int numbers_only, int x, int y, int loc_id, int tr
 	return (done == -1 ? NULL : &entered_name[0]);	
 }
 
+void refill_names() {
+	int i;
+	char *troop_list = KB_Resolve(STRL_TROOPS, 0);
+	char *continent_list = KB_Resolve(STRL_CONTINENTS, 0);
+	char *castle_list = KB_Resolve(STRL_CASTLES, 0);
+	char *town_list = KB_Resolve(STRL_TOWNS, 0);
+	char *spell_list = KB_Resolve(STRL_SPELLS, 0);
+
+	for (i = 0; i < MAX_CONTINENTS; i++) {
+		if (continent_list) KB_strcpy(continent_names[i], KB_strlist_peek(continent_list, i));
+	}
+
+	for (i = 0; i < MAX_TOWNS; i++) {
+		if (town_list) KB_strcpy(town_names[i], KB_strlist_peek(town_list, i));
+		if (castle_list) KB_strcpy(castle_names[i], KB_strlist_peek(castle_list, i));
+	}
+
+	for (i = 0; i < MAX_TROOPS; i++) {
+		if (troop_list) KB_strcpy(troops[i].name, KB_strlist_peek(troop_list, i));
+	}
+
+	for (i = 0; i < MAX_SPELLS; i++) {
+		if (spell_list) KB_strcpy(spell_names[i], KB_strlist_peek(spell_list, i));
+	}
+
+	free(troop_list);
+	free(continent_list);
+	free(castle_list);
+	free(town_list);
+	free(spell_list);
+}
+
 /* resolve any possible data from modules, update static tables with it */
 void refill_rules() {
 	int i, j;
@@ -430,6 +462,7 @@ KBgame *create_game(int pclass) {
 				break;
 			}
 			refill_rules();
+			refill_names();
 			name[0] = toupper(name[0]);
 			game = spawn_game(name, pclass, sel, land);
 			furnish_map(game);/* Hack -- should work somewhat differently */
