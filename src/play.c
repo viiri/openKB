@@ -428,6 +428,13 @@ KBgame *spawn_game(char *name, int pclass, int difficulty, byte *land) {
 		game->player_numbers[i] = 0;
 	}
 
+	/* Set default player options */
+	game->options[0] = 4; /* Delay = 4 */
+	game->options[1] = 1; /* Sounds = On */
+	game->options[2] = 1; /* Walk Beep = On */
+	game->options[3] = 1; /* Animation = On */
+	game->options[4] = 1; /* Army Size = On */
+
 	/* Randomize spells sold in towns */
 	salt_spells(game);
 
