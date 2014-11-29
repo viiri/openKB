@@ -403,7 +403,7 @@ char* DOS_read_strings(KBmodule *mod, int off, int endoff) {
 	KB_File *f;	
 	int n;
 
-	buf = malloc(sizeof(char) * len);
+	buf = malloc(sizeof(char) * (len+1)); /* Extra 1 byte for 0xFF marker */
 	if (buf == NULL) return NULL;
 
 	KB_debuglog(0,"? DOS EXE FILE: %s\n", "KB.EXE");
@@ -415,12 +415,21 @@ char* DOS_read_strings(KBmodule *mod, int off, int endoff) {
 
 	KB_fseek(f, off, 0);
 	n = KB_fread(buf, sizeof(char), len, f);
+	//buf[len-1] = (char)0x00;
+	buf[len] = (char)0xFF;
 	DOS_fclose_exe(f);
 	if (n < len) {
 		free(buf);
 		return NULL;
 	}
 	buf[n - 1] = '\0';
+	buf[n] = (char)0xFF;
+
+	//for (n = 0; n < len; n++) {
+	//	if (buf[n] == '\0')
+	//		buf[n] = '\n';
+	//}
+
 	return buf;
 }
 
@@ -487,6 +496,14 @@ char* DOS_read_credits(KBmodule *mod, int off, int endoff) {
 			buf[used] = '\n';
 			used ++;
 			buf[used] = '\0';
+		}
+
+		/* HACK! End of strlist? */
+		if (*ptr == (char)0xFF) {
+			buf[used] = '\0';
+			used ++;
+			buf[used] = (char)0xFF;
+			break;
 		}
 	}
 
@@ -1266,8 +1283,7 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 		case STRL_SIGNS:
 		{
 			char *buf = DOS_read_strings(mod, KBEXE_POS(exe_type, DOS_SIGNS));
-			//int ptroff = 0x1844D;
-			int len = 0x19815 - 0x191CB;
+			int len = KBEXE_LEN(exe_type, DOS_SIGNS);
 			/* HACK -- do not process failed read_strings result */
 			if (buf == NULL) len = 0;
 			/* Signs need some extra work */
@@ -1289,7 +1305,8 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 		break;
 		case STRL_VNAMES:
 		{
-			return DOS_read_strings(mod, KBEXE_POS(exe_type, DOS_VNAMES));
+			char *buf = DOS_read_strings(mod, KBEXE_POS(exe_type, DOS_VNAMES));
+			return buf;
 			//int ptroff = 0x1842C;
 		}
 		break;
@@ -1336,11 +1353,55 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 		break;
 		case STRL_ENDINGS:
 		{
+			char *buf;
 			/* Returns large buffer of \0-separated strings, forming an ending text */
 			if (sub_id) /* Game lost */
-				return DOS_read_strings(mod, KBEXE_POS(exe_type, DOS_GAME_LOST));
+				buf = DOS_read_strings(mod, KBEXE_POS(exe_type, DOS_GAME_LOST));
 			else    	/* Game won */
-				return DOS_read_strings(mod, KBEXE_POS(exe_type, DOS_GAME_WON));
+				buf = DOS_read_strings(mod, KBEXE_POS(exe_type, DOS_GAME_WON));
+			if (!buf) return NULL;
+			/* Make adjustments */
+			if (sub_id) { /* Game lost */
+				buf = KB_strlist_replace(buf, 0, "Oh, %s the", 1);
+				buf = KB_strlist_replace(buf, 1, "%s, you", 1);
+			} else { /* Game won */
+				buf = KB_strlist_replace(buf, 1, "%s the", 1);
+				buf = KB_strlist_replace(buf, 2, "%s! You", 1);
+			}
+			KB_strlist_debug(buf);
+			return buf;
+			/* Note: this is extremely suboptimal way to do it...*/
+			char *next;
+			int max;
+			int line = 0;
+			int k;
+			int len;
+
+			max = KB_strlist_len(buf) + 10;
+			next = malloc(sizeof(char) * max);
+			len = 0;
+
+			printf("Got strlist: %s\n", buf);
+			for (k = 0; k < max; k++) {
+				int mlen;
+				char *one = KB_strlist_peek(buf, k);
+				printf("next: %s\n", one);
+				if (one == NULL && k == 1) {
+					one = "%s";
+				}
+				mlen = strlen(one);
+				memcpy(&next[len], one, mlen);
+				len += mlen;
+				next[len] = '\0';
+				if (k == 0) {
+					one = "%s";
+					mlen = strlen(one);
+					memcpy(&next[len], one, mlen);
+					len += mlen;
+					next[len] = '\0';
+				}
+			}
+			return next;
 		}
 		break;
 		case SN_TUNE:

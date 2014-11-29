@@ -36,6 +36,105 @@
 
 #define STRL_MAX 1024
 
+byte* GNU_downto_byte(dword *src, int len, int freesrc) {
+	int i;
+	byte *b = malloc(sizeof(byte) * len);
+	for (i = 0; i < len; i++) {
+		b[i] = src[i];
+	}
+	if (freesrc) {
+		free(src);
+	}
+	return b;
+}
+word* GNU_downto_word(dword *src, int len, int freesrc) {
+	int i;
+	word *b = malloc(sizeof(word) * len);
+	for (i = 0; i < len; i++) {
+		b[i] = src[i];
+	}
+	if (freesrc) {
+		free(src);
+	}
+	return b;
+}
+
+char* GNU_string_ini(KBmodule *mod, const char *inifile, const char *module, const char *name, int first, int num, char *dst) {
+
+	int len = num * 32;
+
+	KB_File *fd;
+	char *filename;
+	char line[256];
+	char module_fmt[256];
+	char module_test[256];
+	int module_test_len, name_test_len;
+	int i, section;
+
+	filename = KB_fastpath(mod->slotA_name, "/", inifile);
+	if (filename == NULL) return NULL; /* Out of memory */
+
+	if (dst == NULL) {
+		dst = malloc(sizeof(char) * len);
+		if (dst == NULL) {
+			free(filename);
+			return NULL; /* Out of memory */
+		}
+		memset(dst, 0, sizeof(char) * len);
+		KB_strlist_clear(dst);
+	}
+
+	KB_debuglog(0, "? FREE INI FILE: %s\n", filename);
+
+	fd = KB_fopen(filename, "r");
+	if (fd == NULL) {
+		KB_debuglog(0, "> FAILED TO OPEN, %s\n", filename);
+		free(filename);
+		return NULL;
+	}
+
+	sprintf(module_fmt, "[%s]", module);
+	section = -1;
+	if (strpbrk(module, "%") != NULL) {
+		module_test_len = sprintf(module_test, module_fmt, section + 1);
+	} else {
+		strcpy(module_test, module_fmt);
+		module_test_len = strlen(module_test);
+	}
+	name_test_len = strlen(name);
+
+	int filled = 0;
+	while (KB_fgets(line, sizeof(line), fd)) {
+
+		if (!strncasecmp(line, module_test, module_test_len)) {
+			module_test_len = sprintf(module_test, module_fmt, (++section)+1);
+			continue;
+		}
+		if (section < first) {
+			continue;
+		}
+		if (section > num) {
+			break;
+		}
+
+		if (!strncasecmp(line, name, name_test_len)) {
+			char test[1024];
+			int test_len;
+			char val[256];
+			test_len = sprintf(test, "%s = %%[^\t\n;]", name);
+			if (sscanf(line, test, val) == 1) {
+				KB_strlist_append(dst, val);
+				filled++;
+			}
+			if (filled >= num - first) break;
+		}
+
+	}
+
+	KB_fclose(fd);
+	free(filename);
+	return dst;
+}
 
 dword* GNU_extract_ini(KBmodule *mod, const char *inifile, const char *module, const char *name, int first, int num, dword *dst) {
 	KB_File *fd;
@@ -101,7 +200,7 @@ dword* GNU_extract_ini(KBmodule *mod, const char *inifile, const char *module, c
 				filled++;
 			} else {
 				char buf[16];
-				test_len = sprintf(test, "%s = #%%s", name);
+				test_len = sprintf(test, "%s = #%%6c", name);
 				if (sscanf(line, test, &buf[0]) == 1) {
 					val = hex2dec(buf);
 					dst[section - first] = val;
@@ -172,7 +271,7 @@ Uint32* GNU_ReadMinimapColors(KBmodule *mod, const char *inifile) {
 
 	int i;
 
-	Uint32 *colors = malloc(sizeof(Uint32) * COLORS_MAX);
+	Uint32 *colors = malloc(sizeof(Uint32) * 8);
 	if (colors == NULL) return NULL;
 
 	for (i = 0; i < 8; i++) {
@@ -243,7 +342,7 @@ SDL_Rect* GNU_ReadRect(KBmodule *mod, const char *inifile, int which) {
 	return rect;
 }
 
-char* GNU_read_textfile(KBmodule *mod, const char *textfile) {
+char* GNU_read_textfile(KBmodule *mod, const char *textfile, int split) {
 
 	KB_File *fd;
 	char *filename, *buf;
@@ -269,12 +368,18 @@ char* GNU_read_textfile(KBmodule *mod, const char *textfile) {
 	}
 
 	n = KB_fread(buf, sizeof(char), STRL_MAX, fd);
+	if (buf[n] != '\n') {
+		KB_debuglog(0, "Warning: no newline at the end of file\n");
+	}
 	buf[n] = '\0';
 
-	/* Convert multi-line file to a strlist
-	for (i = 0; i < n; i++)
-		if (buf[i] == '\n') buf[i] = '\0';
-	*/
+	/* Convert multi-line file to a strlist */
+	if (split) {
+		for (i = 0; i < n; i++)
+			if (buf[i] == '\n') buf[i] = '\0';
+		buf[n] = (char)0xFF;
+	}
+
 	KB_fclose(fd);
 	free(filename);
 
@@ -452,7 +557,7 @@ void* GNU_Resolve(KBmodule *mod, int id, int sub_id) {
 		break;
 		case STRL_SIGNS:
 		{
-			char *list = GNU_read_textfile(mod, "signs.txt");
+			char *list = GNU_read_textfile(mod, "signs.txt", 1);
 			/* Convert multi-line file to a strlist (aka "signs need some extra work") */
 			int n = (list ? strlen(list) : 0);
 			int i, j = 0;
@@ -466,7 +571,7 @@ void* GNU_Resolve(KBmodule *mod, int id, int sub_id) {
 		}
 		case STRL_CREDITS:	/* multiple lines of credits */
 		{
-			return GNU_read_textfile(mod, "credits.txt");
+			return GNU_read_textfile(mod, "credits.txt", 0);
 		}
 		break;
 		case STRL_VDESCS:	/* multiple lines of villain description */
@@ -474,14 +579,201 @@ void* GNU_Resolve(KBmodule *mod, int id, int sub_id) {
 			char tmp[128];
 			KB_strcpy(tmp, DOS_villain_names[sub_id]);
 			KB_strcat(tmp, ".txt");
-			return GNU_read_textfile(mod, tmp);
+			return GNU_read_textfile(mod, tmp, 0);
+		}
+		break;
+		case STRL_VNAMES:	/* villain names */
+		{
+			return GNU_string_ini(mod, "villains.ini", "villain%d", "name", 0, 17, NULL);
+		}
+		break;
+		case STRL_TROOPS:	/* troop names */
+		{
+			return GNU_string_ini(mod, "troops.ini", "troop%d", "name", 0, 25, NULL);
+		}
+		break;
+		case STRL_SPELLS:	/* spell names */
+		{
+			return GNU_string_ini(mod, "spells.ini", "spell%d", "name", 0, 14, NULL);
+		}
+		break;
+		case STRL_CONTINENTS:	/* continent names */
+		{
+			return GNU_string_ini(mod, "land.ini", "continent%d", "name", 0, 4, NULL);
+		}
+		break;
+		case STRL_CASTLES:	/* castle names */
+		{
+			return GNU_string_ini(mod, "castles.ini", "castle%d", "name", 0, 26, NULL);
+		}
+		break;
+		case STRL_TOWNS:	/* town names */
+		{
+			return GNU_string_ini(mod, "towns.ini", "town%d", "name", 0, 26, NULL);
+		}
+		break;
+		case STR_VNAME:
+		{
+			return KB_strlist_peek(GNU_Resolve(mod, STRL_VNAMES, 0), sub_id);
+		}
+		break;
+		case STR_CASTLE:
+		{
+			return KB_strlist_peek(GNU_Resolve(mod, STRL_CASTLES, 0), sub_id);
+		}
+		break;
+		case STR_TOWN:
+		{
+			return KB_strlist_peek(GNU_Resolve(mod, STRL_CASTLES, 0), sub_id);
+		}
+		break;
+		case STR_TROOP:
+		{
+			return KB_strlist_peek(GNU_Resolve(mod, STRL_TROOPS, 0), sub_id);
+		}
+		break;
+		case WDAT_VREWARD:
+		{
+			word *reward =
+				GNU_downto_word(
+					GNU_extract_ini(mod, "villains.ini", "villain%d", "reward", 0, 17, NULL)
+					, 17, 1);
+			return reward;
+		}
+		break;
+		case WDAT_SCOST:
+		{
+			word *goldcost =
+				GNU_downto_word(
+					GNU_extract_ini(mod, "spells.ini", "spell%d", "gold", 0, 14, NULL)
+					, 14, 1);
+			return goldcost;
+		}
+		break;
+		case DAT_SPECIALX:
+		{
+			byte *coord =
+				GNU_downto_byte(
+					GNU_extract_ini(mod, "land.ini", "special%d", "x", 0, 2, NULL)
+					, 2, 1);
+			return coord;
+		}
+		break;
+		case DAT_SPECIALY:
+		{
+			byte *coord =
+				GNU_downto_byte(
+					GNU_extract_ini(mod, "land.ini", "special%d", "y", 0, 2, NULL)
+					, 2, 1);
+			return coord;
+		}
+		break;
+		case DAT_SPECIALC:
+		{
+			byte *coord =
+				GNU_downto_byte(
+					GNU_extract_ini(mod, "land.ini", "special%d", "continent", 0, 2, NULL)
+					, 2, 1);
+			return coord;
+		}
+		break;
+		case DAT_CASTLEX:
+		{
+			byte *coord =
+				GNU_downto_byte(
+					GNU_extract_ini(mod, "castles.ini", "castle%d", "x", 0, 26, NULL)
+					, 26, 1);
+			return coord;
+		}
+		break;
+		case DAT_CASTLEY:
+		{
+			byte *coord =
+				GNU_downto_byte(
+					GNU_extract_ini(mod, "castles.ini", "castle%d", "y", 0, 26, NULL)
+					, 26, 1);
+			return coord;
+		}
+		break;
+		case DAT_CASTLEC:
+		{
+			byte *coord =
+				GNU_downto_byte(
+					GNU_extract_ini(mod, "castles.ini", "castle%d", "continent", 0, 26, NULL)
+					, 26, 1);
+			return coord;
+		}
+		break;
+		case DAT_TOWNY:
+		{
+			byte *coord =
+				GNU_downto_byte(
+					GNU_extract_ini(mod, "towns.ini", "town%d", "y", 0, 26, NULL)
+					, 26, 1);
+			return coord;
+		}
+		break;
+		case DAT_TOWNX:
+		{
+			byte *coord =
+				GNU_downto_byte(
+					GNU_extract_ini(mod, "towns.ini", "town%d", "x", 0, 26, NULL)
+					, 26, 1);
+			return coord;
+		}
+		break;
+		case DAT_TOWNINV:
+		{
+			byte *inversion =
+				GNU_downto_byte(
+					GNU_extract_ini(mod, "towns.ini", "town%d", "castle_id", 0, 26, NULL)
+					, 26, 1);
+			return inversion;
+		}
+		break;
+		case DAT_BOATY:
+		{
+			byte *coord =
+				GNU_downto_byte(
+					GNU_extract_ini(mod, "towns.ini", "town%d", "boat_y", 0, 26, NULL)
+					, 26, 1);
+			return coord;
+		}
+		break;
+		case DAT_BOATX:
+		{
+			byte *coord =
+				GNU_downto_byte(
+					GNU_extract_ini(mod, "towns.ini", "town%d", "boat_x", 0, 26, NULL)
+					, 26, 1);
+			return coord;
+		}
+		break;
+		case DAT_NAVY:
+		{
+			byte *coord =
+				GNU_downto_byte(
+					GNU_extract_ini(mod, "land.ini", "continent%d", "nav_y", 0, 26, NULL)
+					, 26, 1);
+			return coord;
+		}
+		break;
+		case DAT_NAVX:
+		{
+			byte *coord =
+				GNU_downto_byte(
+					GNU_extract_ini(mod, "land.ini", "continent%d", "nav_x", 0, 26, NULL)
+					, 26, 1);
+			return coord;
 		}
 		break;
 		case DAT_HPS:  	/* [MAX_TROOPS] hit points for specific troop; subId - undefined */ \
 		{
-			dword *hit_points =
-				GNU_extract_ini(mod, "troops.ini", "troop%d", "hp", 0, 128, NULL);
-			return hit_points;
+			byte *hp =
+				GNU_downto_byte(
+					GNU_extract_ini(mod, "troops.ini", "troop%d", "hp", 0, 25, NULL)
+					, 25, 1);
+			return hp;
 		}
 		break;
 		case DAT_WORLD:
