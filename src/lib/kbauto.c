@@ -261,7 +261,7 @@ int fill_fingerprints(const char *path, KBconfig *conf, struct KBfileid *result,
 
 	if ((dir = KB_opendir(path)) == NULL) {
 		KB_errlog("[auto] Can't access path '%s'\n", path);
-		return;
+		return -1;
 	}
 
 	while ((entry = KB_readdir(dir)) != NULL) {
@@ -321,6 +321,11 @@ void discover_modules(const char *path, KBconfig *conf) {
 	n_result = fill_fingerprints(path, conf, &result[0], 0, MAX_RFILES, &num_files);
 
 	#undef MAX_RFILES
+
+	if (n_result == -1) {
+		KB_stdlog("[auto] Found NO interesting files, wasn't unable to read directory.\n");
+		return;
+	}
 
 	if (!n_result) {
 		KB_stdlog("Found NO interesting files (out of %d), are you sure that is the correct directory?\n", num_files);
