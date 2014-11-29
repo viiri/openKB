@@ -4669,7 +4669,7 @@ KBgamestate adventure_state = {
 		{	{ 0 }, SDLK_u, 0, 0      	},
 		{	{ 0 }, SDLK_v, 0, 0      	},
 		{	{ 0 }, SDLK_w, 0, 0      	},
-		{	{ 0 }, SDLK_q, 0, 0      	},
+		{	{ 0 }, SDLK_q, 0, KFLAG_TRAPSIGNAL },
 
 		{	{ 0 }, SDLK_q, KMOD_CTRL, 0	},
 		{	{ 0 }, SDLK_d, 0, 0      	},
@@ -5657,7 +5657,7 @@ int save_game(KBgame *game) {
 KBgamestate quit_question = {
 	{
 		{	{ 0 }, 0xFF, 0, KFLAG_ANYKEY },
-		{	{ 0 }, SDLK_q, KMOD_CTRL, 0	},
+		{	{ 0 }, SDLK_q, KMOD_CTRL, KFLAG_TRAPSIGNAL },
 		0
 	},
 	0
