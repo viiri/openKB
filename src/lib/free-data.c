@@ -550,6 +550,31 @@ void* GNU_Resolve(KBmodule *mod, int id, int sub_id) {
 			image_suffix = _EXTN;
 		}
 		break;
+		case GR_ENDING:
+		{
+			image_name = "endpic";
+			image_suffix = _EXTN;
+			image_subid = "-0";
+			if (sub_id == 1) image_subid="-1";
+		}
+		break;
+		case GR_ENDTILE:
+		{
+			image_name = "endpic";
+			image_suffix = _EXTN;
+			image_subid = "-2";
+			if (sub_id == 1) image_subid="-3";
+			if (sub_id == 2) image_subid="-4";
+		}
+		break;
+		case STRL_ENDINGS:
+		{
+			if (sub_id)
+				return GNU_read_textfile(mod, "endlose.txt", 1);
+			else
+				return GNU_read_textfile(mod, "endwin.txt", 1);
+		}
+		break;
 		case STR_SIGN:
 		{
 			return KB_strlist_peek(GNU_Resolve(mod, STRL_SIGNS, 0), sub_id);
