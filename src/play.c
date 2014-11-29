@@ -385,6 +385,9 @@ KBgame *spawn_game(char *name, int pclass, int difficulty, byte *land) {
 
 	/* Initialize character */
 	KB_strcpy(game->name, name);
+	KB_strcpy(game->savefile, name);
+	KB_strcat(game->savefile, ".DAT");
+	KB_strtoupper(game->savefile);
 	game->difficulty = difficulty;
 	game->class = pclass;
 	game->days_left = days_per_difficulty[difficulty];
