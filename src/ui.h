@@ -32,6 +32,8 @@
 #define KFLAG_TIMER 	0x10
 #define KFLAG_TIMEKEY	0x20
 
+#define KFLAG_TRAPSIGNAL 0x08
+
 #define KFLAG_SOFTKEY 	(KFLAG_TIMER | KFLAG_TIMEKEY)
 
 /* Fake keycode for "Sync" event */

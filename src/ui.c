@@ -295,7 +295,27 @@ int KB_event(KBgamestate *state) {
 			mouse_x = event.motion.x;
 			mouse_y = event.motion.y;
 		}
-		if ((event.type == SDL_QUIT) ||
+		if ((event.type == SDL_QUIT)) {
+			int found = 0;
+			for (i = 0; i < state->max_spots; i++) {
+				KBhotspot *sp = &state->spots[i];
+				if ((sp->flag & KFLAG_TRAPSIGNAL))
+					{
+						eve = i + 1; /* !!! */
+						if (sp->flag & KFLAG_RETKEY)
+						{
+							eve = 0xFE; /* !!! */
+						}
+						found = 1;
+						break;
+					}
+			}
+			if (!found) {
+				eve = 0xFF;
+				break;
+			}
+		}
+		if (/*(event.type == SDL_QUIT) ||*/
 			(event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE))
 			{
 		 		eve = 0xFF;
