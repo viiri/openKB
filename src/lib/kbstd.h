@@ -66,10 +66,30 @@ extern void  KB_debuglog(int mod, char *fmt, ...);
 extern int KB_rand(int min, int max);
 
 /*
+ * Clear strlist
+ */
+extern int KB_strlist(char *list);
+
+/*
+ * Append value to strlist
+ */
+extern int KB_strlist_append(char *list, const char *value);
+extern int KB_strlist_debug(const char *list);
+
+/*
  * Return Nth word in an asciiz-list
  */
 extern char* KB_strlist_ind(const char *list, int id);
 extern char* KB_strlist_ind_dbg(const char *list, int id, const char *list_name, const char *filename, unsigned int line); /* debug version */
+/*
+ * Return a new asciiz-list made from provided list, but with an 'ind' word
+ * replaced with 'new_value'. If 'freesrc' is true, original list is free()d.
+ */
+extern char* KB_strlist_replace(char *list, int ind, const char *new_value, int freesrc);
+/*
+ * Compact strlist into a string, using 'join' character as separator
+ */
+extern int KB_strlist_join(char *list, const char join);
 /*
  * Match a string in an asciiz-list, return word_index+1 on success, 0 on failure
  */

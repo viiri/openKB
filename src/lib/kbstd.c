@@ -80,18 +80,109 @@ int KB_rand(int min, int max) {
 	return (int)(rand() % (max-min+1) + min);
 }
 
+int KB_strlist_debug(const char *list) {
+	int ind = 0, i = 0;
+	int next = 1;
+	while ((char)list[i] != (char)0xFF) {
+		if (next) {
+			printf("Entry %d:", ind);
+			next = 0;
+		}
+		printf("(%02x)%c ", list[i], list[i]);
+		if (list[i] == '\0') {
+			printf("\n");
+			ind++;
+			next = 1;
+		}
+		i++;
+	}
+	printf("<END>\n");
+	return ind;
+}
+
+int KB_strlist_clear(char *list) {
+	list[0] = (char)0xFF;
+	return 0;
+}
+
+int KB_strlist_append(char *list, const char *value) {
+	int i = KB_strlist_len(list);
+	int n = strlen(value);
+	memcpy(&list[i], value, n);
+	list[i + n] = 0x00;
+	list[i + n + 1] = (char)0xFF;
+	return 0;
+}
+
 int KB_strlist_max(const char *list)
 {
-	int ind = 0, i = 0, n = sizeof(list);
-	while (i < n) {
-		if (list[i++] == '\0') {
+	int ind = 0, i = 0;
+	while ((char)list[i] != (char)0xFF) {
+		if (list[i] == '\0') {
 			ind++;
-			if (i < n && list[i++] == '\0') break;
 		}
+		i++;
 	}
 	return ind;
 }
 
+int KB_strlist_len(const char *list)
+{
+	int i = 0;
+	while ((char)list[i] != (char)0xFF) {
+		i++;
+	}
+	return i;
+}
+
+int KB_strlist_join(char *list, const char join)
+{
+	int i, n;
+	n = KB_strlist_len(list) + 1;
+	for (i = 0; i < n; i++) {
+		if (*list == '\0') {
+			*list = join;
+		}
+		if ((char)*list == (char)0xFF) {
+			*list = '\0';
+		}
+		list++;
+	}
+	return n;
+}
+
+char* KB_strlist_replace(char *list, int ind, const char *new_value, int freesrc)
+{
+	int new_len, i, max, j;
+	char *new_list;
+	char *old_value = KB_strlist_ind(list, ind);
+
+	max = KB_strlist_max(list);
+	if (ind >= max) return NULL;
+
+	new_len = KB_strlist_len(list) - strlen(old_value) + strlen(new_value);
+	new_list = malloc(sizeof(char) * new_len);
+	if (new_list == NULL) return NULL;
+
+	j = 0;
+	for (i = 0; i < max; i++) {
+		const char *element;
+		int n;
+		if (i != ind) {
+			element = KB_strlist_ind(list, i);
+		} else {
+			element = new_value;
+		}
+		n = strlen(element) + 1;
+		memcpy(&new_list[j], element, n);
+		j += n;
+	}
+	new_list[j] = 0xFF;
+	if (freesrc == 1) {
+		free(list);
+	}
+	return new_list;
+}
 
 char* KB_strlist_ind_dbg(const char *list, int id, const char *list_name, const char *filename, unsigned int line)
 {
@@ -113,12 +204,13 @@ char* KB_strlist_ind(const char *list, int id)
 	const char *match = list;
 	int w = 0;
 	while (1) {
+		//printf("%c %02x [%02d]\n", *list, *list, w);
 		if (*list == '\0') {
 			if (w == id) break;
 			w++;
 			list++;
 			match = NULL;
-			if (*list == '\0') break;
+			if ((char)*list == (char)0xFF) break;
 			match = list;
 			continue;
 		}
