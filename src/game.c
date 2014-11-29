@@ -4225,12 +4225,185 @@ int choose_spell(KBgame *game, KBcombat *combat) {
 	return spell_id;
 }
 
+void draw_cartoon_frame(int tick, int frame) {
+
+	int x, y;
+
+	int i;
+	int flip;
+
+	int bridge_len = 2;
+	int hero_prog = 0;
+
+	bridge_len = frame;
+	hero_prog = frame - 5;
+	if (bridge_len > 5) bridge_len = 5;
+	if (hero_prog > 4) hero_prog = 4;
+
+	SDL_Rect *tile = local.map_tile;
+
+	SDL_Surface *grass = SDL_TakeSurface(GR_ENDTILE, 0, 0);
+	SDL_Surface *bridge = SDL_TakeSurface(GR_ENDTILE, 1, 0);
+	SDL_Surface *hero = SDL_TakeSurface(GR_ENDTILE, 2, 0);
+
+	/* Draw grass */
+	for (y = 0; y < 5; y++) {
+		for (x = 0; x < 6; x++) {
+
+			SDL_Rect src = { 0 * tile->w, 0, tile->w, tile->h };
+			SDL_Rect dst = { x * tile->w, y * tile->h, tile->w, tile->h };
+
+			dst.x += local.map.x;
+			dst.y += local.map.y;
+
+			SDL_BlitSurface(grass, &src, sys->screen, &dst);
+
+		}
+	}
+	/* Draw Bridge */
+	x = 4;
+	for (i = 0; i < bridge_len; i++) {
+			y = 4 - i;
+			SDL_Rect src = { 0, 0, tile->w, tile->h };
+			SDL_Rect dst = { x * tile->w, y * tile->h, tile->w, tile->h };
+
+			dst.x += local.map.x;
+			dst.y += local.map.y;
+
+			SDL_BlitSurface(bridge, &src, sys->screen, &dst);
+	}
+	/* Draw hero */
+	x = 4;
+	y = 4 - hero_prog;
+	if (hero_prog >= 0)
+	{
+		SDL_Rect src = { 0, 0, tile->w, tile->h };
+		SDL_Rect dst = { x * tile->w, y * tile->h, tile->w, tile->h	};
+
+		dst.x += local.map.x;
+		dst.y += local.map.y;
+
+		SDL_BlitSurface(hero, &src, sys->screen, &dst);
+	}
+	/* Draw troops */
+	x = 0;
+	y = 0;
+	for (i = 0; i < MAX_TROOPS; i++) {
+
+		SDL_Rect src;
+		SDL_Rect dst;
+
+		SDL_Surface *troop = SDL_TakeSurface(GR_TROOP, i, 1);
+
+		flip = 0;
+		if (x == 5) flip = 1;
+
+		src.w = tile->w;
+		src.h = tile->h;
+		src.x = tick * src.w;
+		src.y = flip * src.h;
+
+		dst.w = tile->w;
+		dst.h = tile->h;
+		dst.x = x * dst.w + local.map.x;
+		dst.y = y * dst.h + local.map.y;
+
+		SDL_BlitSurface(troop, &src, sys->screen, &dst);
+
+		x++;
+		if (x == 4) x = 5;
+		if (x >= 6) {
+			x = 0;
+			y++;
+		}
+	}
+}
+void display_cartoon() {
+	/* Draw "cut scene" */
+	int tick = 0;
+	int frame = 0;
+	int done = 0;
+	while (!done) {
+		int key = KB_event(&press_any_key_interactive);
+		if (key == 0xFF) done = 2;
+		if (key == 2) {
+			tick++;
+			if (tick == 2 || tick == 4) {
+				frame++;
+				if (frame > 10) done = 1;
+			}
+			if (tick > 3) {
+				tick = 0;
+			}
+
+			draw_cartoon_frame(tick, frame);
+			KB_flip(sys);
+		}
+	}
+}
+
 void win_game(KBgame *game) {
+
+	display_cartoon();
+
+	Uint32 *colors = KB_Resolve(COL_TEXT, CS_ENDING);
+
+	char message[1024];
+	char *lines;
+
+	SDL_Rect full, half;
+	SDL_Rect pos;
+
+	SDL_Surface *image = SDL_LoadRESOURCE(GR_ENDING, 0, 0);
+
+	full.x = local.map.x;
+	full.y = local.map.y;
+	full.w = sys->screen->w - local.frames[FRAME_RIGHT]->w - local.map.x;
+	full.h = local.map.h;
+
+	half.x = full.x;
+	half.y = full.y;
+	half.w = full.w - image->w;
+	half.h = full.h;
+
+	pos.x = 0;
+	pos.y = 0;
+
+	lines = KB_Resolve(STRL_ENDINGS, 0);
+
+	KB_strlist_join(lines, '\n');
+
+	sprintf(message,
+		lines,
+		game->name,
+		classes[game->class][game->rank].title);
+
+	//KB_strcpy(message, lines);
+
+	RECT_Pos(&pos, &full);
+	RECT_Size(&pos, image);
+	RECT_Right(&pos, &full);
+	pos.x += full.x;
 
 	KB_TopBox(MSG_CENTERED, "Press 'ESC' to exit");
 
-	KB_Pause();
+	SDL_BlitSurface( image, NULL, sys->screen, &pos );
 
+	SDL_FillRect(sys->screen, &half, colors[COLOR_BACKGROUND]); /* dark blue */
+	KB_iloc(half.x, half.y);
+	KB_icolor(colors);
+	KB_iprint(message);
+
+	KB_iprintf("%d", player_score(game));
+
+	KB_flip(sys);
+
+	while (KB_event(&press_any_key) != 0xFF)
+		{	}
+
+	SDL_FreeSurface(image);
+	free(lines);
+	free(colors);
 }
 
 void lose_game(KBgame *game) {
