@@ -324,13 +324,13 @@ extern byte villain_army_troops[MAX_VILLAINS][5];
 extern word villain_army_numbers[MAX_VILLAINS][5];
 
 extern word days_per_difficulty[4];
-extern char *dwelling_names[MAX_DWELLINGS][32];
-extern char *town_names[MAX_TOWNS][32];
-extern char *castle_names[MAX_CASTLES + 1][32];
+extern char dwelling_names[MAX_DWELLINGS][32];
+extern char town_names[MAX_TOWNS][32];
+extern char castle_names[MAX_CASTLES + 1][32];
 extern byte town_inversion[MAX_CASTLES];
-extern char *spell_names[MAX_SPELLS][32];
+extern char spell_names[MAX_SPELLS][32];
 extern word spell_costs[MAX_SPELLS];
-extern char *artifact_names[MAX_ARTIFACTS][32];
+extern char artifact_names[MAX_ARTIFACTS][32];
 extern byte artifact_powers[MAX_ARTIFACTS];
 extern byte artifact_inversion[MAX_ARTIFACTS];
 extern char *number_names[6];
@@ -347,7 +347,7 @@ extern word min_commission[MAX_CONTINENTS];
 extern word max_commission[MAX_CONTINENTS];
 extern word base_maxspell[MAX_CONTINENTS];
 extern char *morale_names[3];
-extern char *continent_names[MAX_CONTINENTS][32];
+extern char continent_names[MAX_CONTINENTS][32];
 
 extern byte continent_entry[MAX_CONTINENTS][2];	/* [x][y] */
 extern byte castle_difficulty[MAX_CASTLES];
