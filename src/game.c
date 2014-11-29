@@ -5388,7 +5388,22 @@ int ask_quit_game(KBgame *game) {
 
 	save_game(game);
 
-	KB_BottomBox(NULL, "\nYour game has been saved.\n\nPress Control-Q to Quit or\nany other key to continue.", 0);
+	SDL_Rect *text = KB_BottomFrame();
+	SDL_Rect *fs = &sys->font_size;
+
+	/* Header (few pixels up) */
+	KB_iloc(text->x, text->y + fs->h/8);
+	KB_iprint("\n");
+	KB_iprint("Your game has been saved.");
+
+	/* Message */
+	KB_iloc(text->x, text->y);
+	KB_iprint("\n\n\n");
+	KB_ilh(fs->h + fs->h / 8);
+	KB_iprint("Press Control-Q to Quit or\nany other key to continue.");
+
+//	KB_BottomBox(NULL, "\nYour game has been saved.\n\nPress Control-Q to Quit or\nany other key to continue.", 0);
+	KB_flip(sys);
 
 	int done = 0;
 	while (!done) {

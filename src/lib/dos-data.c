@@ -805,13 +805,13 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 			ident = subId_str;
 		}
 		break;
-		case GR_ENDTILE:	/* subId - 0=grass, 1=wall, 2=hero */
+		case GR_ENDTILE:	/* subId - 0=grass, 1=carpet, 2=hero */
 		{
 			/* Ending tile */
 			method = RAW_IMG;
 			middle_name = "endpic";
 			suffix = bpp_names[mod->bpp];
-			snprintf(subId_str, 8, "#%d", sub_id - 2);
+			snprintf(subId_str, 8, "#%d", sub_id + 2);
 			ident = subId_str;
 		}
 		break;
