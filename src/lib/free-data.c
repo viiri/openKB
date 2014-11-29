@@ -851,7 +851,7 @@ void* GNU_Resolve(KBmodule *mod, int id, int sub_id) {
 				"chrome",   /* CS_CHROME   == 9 */
 				"ending",   /* CS_ENDING   == 10 */
 			};
-			if (sub_id < 0 || sub_id > 9) return NULL;
+			if (sub_id < 0 || sub_id > 10) return NULL;
 			return GNU_ReadTextColors(mod, "colors.ini", CS_names[sub_id]);
 		}
 		break;
@@ -862,7 +862,38 @@ void* GNU_Resolve(KBmodule *mod, int id, int sub_id) {
 		break;
 		case COL_MINIMAP:
 		{
-			return GNU_ReadMinimapColors(mod, "colors.ini");
+			Uint32 *arch = GNU_ReadMinimapColors(mod, "colors.ini");
+			enum {
+				SHALLOW_WATER,
+				DEEP_WATER,
+				GRASS,
+				DESERT,
+				ROCK,
+				TREE,
+				CASTLE,
+				MAP_OBJECT,
+			} tile_type = DEEP_WATER;
+			Uint32 *colors;
+			int tile;
+
+			colors = malloc(sizeof(Uint32) * 256);
+			if (colors == NULL) return NULL;
+
+			for (tile = 0; tile < 256; tile++) {
+
+				if ( IS_GRASS(tile) ) tile_type = GRASS;
+				else if ( IS_DEEP_WATER(tile) ) tile_type = DEEP_WATER;
+				else if ( IS_WATER(tile) ) tile_type = SHALLOW_WATER;
+				else if ( IS_DESERT(tile) ) tile_type = DESERT;
+				else if ( IS_ROCK(tile) ) tile_type = ROCK;
+				else if ( IS_TREE(tile) ) tile_type = TREE;
+				else if ( IS_CASTLE(tile) ) tile_type = CASTLE;
+				else if ( IS_MAPOBJECT(tile) || IS_INTERACTIVE(tile)) tile_type = MAP_OBJECT;
+
+				colors[tile] = arch[tile_type];
+			}
+			free(arch);
+			return colors;
 		}
 		break;
 		default: break;
