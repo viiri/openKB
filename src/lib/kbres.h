@@ -76,7 +76,7 @@
 	_(GR_ORBMAP)	/* filled map ; subId - continent index (0-3) */ \
 \
 	_(GR_ENDING)	/* endscreen background ; subId - 0=won, 1=lost */ \
-	_(GR_ENDTILE)	/* endscreen tile ; subId - 0=grass, 1=wall, 2=hero */ \
+	_(GR_ENDTILE)	/* endscreen tile ; subId - 0=grass, 1=carpet, 2=hero */ \
 	_(GR_ENDTILES)	/* endscreen tileset ; subId - undefined */ \
 \
 	_(SN_TUNE)  	/* subId - tune index (0-10) */ \
@@ -97,7 +97,26 @@
 	_(DAT_SPOWER)	/* [4] "spell power" for specific rank; subId - class */ \
 	_(DAT_MAXSPELL)	/* [4] "max spells" for specific rank; subId - class */ \
 	_(DAT_FAMILIAR)	/* [4] "instant army familiar" for specific rank; subId - class */ \
+	_(WDAT_SCOST)	/* [MAX_SPELLS] gold cost for specific spell; subId - undefined */ \
 	_(WDAT_VREWARD)	/* gold reward for specific villain ; subId - villain_id */ \
+	_(DAT_VTROOP)	/* [MAX_VILLAINS * 5] villain troop type; subId - (villain index * 5) + army index */ \
+	_(WDAT_VNUMBER)	/* [MAX_VILLAINS * 5] villain troop count troop count; subId - (villain index * 5) + army index */ \
+	_(DAT_CASTLEX)	/* [MAX_CASTLES] X coordinate for castle ; subId - undefined */ \
+	_(DAT_CASTLEY)	/* [MAX_CASTLES] Y coordinate for castle ; subId - undefined */ \
+	_(DAT_CASTLEC)	/* [MAX_CASTLES] CONTINENT coordinate for castle ; subId - undefined */ \
+	_(DAT_TOWNX)	/* [MAX_TOWNS] X coordinate for town ; subId - undefined */ \
+	_(DAT_TOWNY)	/* [MAX_TOWNS] Y coordinate for town ; subId - undefined */ \
+	_(DAT_TOWNC)	/* [MAX_TOWNS] CONTINENT coordinate for town ; subId - undefined */ \
+	_(DAT_TOWNINV)	/* [MAX_TOWNS] castle_id for town ; subId - undefined */ \
+	_(DAT_BOATX)	/* [MAX_TOWNS] X coordinate for boat ; subId - undefined */ \
+	_(DAT_BOATY)	/* [MAX_TOWNS] Y coordinate for boat ; subId - undefined */ \
+	_(DAT_GATEX)	/* [MAX_TOWNS] X coordinate for town gate ; subId - undefined */ \
+	_(DAT_GATEY)	/* [MAX_TOWNS] Y coordinate for town gate ; subId - undefined */ \
+	_(DAT_NAVX) 	/* [4] X coordinate for continent entry ; subId - undefined */ \
+	_(DAT_NAVY) 	/* [4] Y coordinate for continent entry ; subId - undefined */ \
+	_(DAT_SPECIALX)	/* [2] X coordinate for special location ; subId - undefined */ \
+	_(DAT_SPECIALY)	/* [2] Y coordinate for special location ; subId - undefined */ \
+	_(DAT_SPECIALC)	/* [2] CONTINENT coordinate for special location ; subId - undefined */ \
 	_(DAT_SKILLS)	/* [MAX_TROOPS] skill levels for specific troop; subId - undefined */ \
 	_(DAT_MOVES)	/* [MAX_TROOPS] move rates for specific troop; subId - undefined */ \
 	_(DAT_MELEEMIN)	/* [MAX_TROOPS] melee min for specific troop; subId - undefined */ \
@@ -123,6 +142,8 @@
 	_(STR_TROOP)	/* troop name ; subId - troop index */ \
 	_(STR_MULTI)	/* troops name ; subId - troop index */ \
 	_(STR_RANK) 	/* rank name ; subId - rank + (class index * 4) */ \
+	_(STR_CASTLE) 	/* castle name ; subId - castle index */ \
+	_(STR_TOWN) 	/* town name ; subId - town index */ \
 	_(STR_VNAME)	/* villain name ; subId - villain index */ \
 	_(STR_VDESC)	/* villain description line ; subId - line (villain index * 14) */ \
 	_(STR_ANAME)	/* artifact name ; subId - artifact index */ \
@@ -130,10 +151,14 @@
 	_(STR_CREDIT)	/* a line of credits ; subId - line */ \
 	_(STR_ENDING)	/* line of ending text ; subId - line, 100<=game won, >100=game lost */ \
 \
+	_(STRL_CONTINENTS) /* continent names ; subId - undefined */ \
 	_(STRL_SIGNS)	/* signpost texts ; subId - undefined */ \
 	_(STRL_TROOPS)	/* troop names ; subId - undefined */ \
 	_(STRL_MULTIS)	/* troops names ; subId - undefined */ \
 	_(STRL_RANKS)	/* ranks names ; subId - class id */ \
+	_(STRL_CASTLES)	/* castle names ; subId - undefined */ \
+	_(STRL_TOWNS)	/* town names ; subId - undefined */ \
+	_(STRL_SPELLS)	/* spell names ; subId - undefined */ \
 	_(STRL_VNAMES)	/* villains names ; subId - undefined */ \
 	_(STRL_VDESCS)	/* villains descriptions ; subId - villain id */ \
 	_(STRL_ANAMES)	/* artifact names ; subId - undefined */ \

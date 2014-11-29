@@ -226,7 +226,58 @@ void refill_rules() {
 	byte *maxpop = KB_Resolve(DAT_MAXPOP, 0);
 	byte *growth = KB_Resolve(DAT_GROWTH, 0);
 	byte *abilities = KB_Resolve(DAT_ABILS, 0);
-	word *villain_reward = KB_Resolve(WDAT_VREWARD, 0);	
+	word *villain_reward = KB_Resolve(WDAT_VREWARD, 0);
+	byte *villain_troop_types = KB_Resolve(DAT_VTROOP, 0);
+	word *villain_troop_numbers = KB_Resolve(WDAT_VNUMBER, 0);
+	word *spell_cost = KB_Resolve(WDAT_SCOST, 0);
+
+	byte *castle_x = KB_Resolve(DAT_CASTLEX, 0);
+	byte *castle_y = KB_Resolve(DAT_CASTLEY, 0);
+	byte *castle_c = KB_Resolve(DAT_CASTLEC, 0);
+	byte *town_inv = KB_Resolve(DAT_TOWNINV, 0);
+	byte *town_x = KB_Resolve(DAT_TOWNX, 0);
+	byte *town_y = KB_Resolve(DAT_TOWNY, 0);
+	byte *town_c = KB_Resolve(DAT_TOWNC, 0);
+	byte *boat_x = KB_Resolve(DAT_BOATX, 0);
+	byte *boat_y = KB_Resolve(DAT_BOATY, 0);
+	byte *gate_x = KB_Resolve(DAT_GATEX, 0);
+	byte *gate_y = KB_Resolve(DAT_GATEY, 0);
+	byte *nav_x = KB_Resolve(DAT_NAVX, 0);
+	byte *nav_y = KB_Resolve(DAT_NAVY, 0);
+	byte *special_x = KB_Resolve(DAT_SPECIALX, 0);
+	byte *special_y = KB_Resolve(DAT_SPECIALY, 0);
+	byte *special_c = KB_Resolve(DAT_SPECIALC, 0);
+
+	for (j = 0; j < MAX_SPECIAL_PLACES; j++) {
+		if (special_c) special_coords[j][0] = special_c[j]; //cont
+		if (special_x) special_coords[j][1] = special_x[j]; //x
+		if (special_y) special_coords[j][2] = special_y[j]; //y
+	}
+
+	for (j = 0; j < MAX_CASTLES; j++) {
+		if (castle_c) castle_coords[j][0] = castle_c[j]; //cont
+		if (castle_x) castle_coords[j][1] = castle_x[j]; //x
+		if (castle_y) castle_coords[j][2] = castle_y[j]; //y
+
+		if (town_c) town_coords[j][0] = town_c[j]; //cont
+		if (town_x) town_coords[j][1] = town_x[j]; //x
+		if (town_y) town_coords[j][2] = town_y[j]; //y
+
+		if (town_c) boat_coords[j][0] = town_c[j]; //cont
+		if (boat_x) boat_coords[j][1] = boat_x[j]; //x
+		if (boat_y) boat_coords[j][2] = boat_y[j]; //y
+
+		if (town_c) towngate_coords[j][0] = town_c[j]; //cont
+		if (gate_x) towngate_coords[j][1] = gate_x[j]; //x
+		if (gate_y) towngate_coords[j][2] = gate_y[j]; //y
+
+		if (town_inv) town_inversion[j] = town_inv[j]; //castle_id
+	}
+
+	for (j = 0; j < MAX_CONTINENTS; j++) {
+		if (nav_x) continent_entry[j][0] = nav_x[j]; //x
+		if (nav_y) continent_entry[j][1] = nav_y[j]; //y
+	}
 
 	for (j = 0; j < MAX_CLASSES; j++) {
 		word *commission = KB_Resolve(WDAT_COMM, j);
@@ -256,8 +307,16 @@ void refill_rules() {
 		free(commission);
 	}
 
+	for (j = 0; j < MAX_SPELLS; j++) {
+		if (spell_cost) spell_costs[j] = spell_cost[j];
+	}
+
 	for (i = 0; i < MAX_VILLAINS; i++) {
 		if (villain_reward)	villain_rewards[i] = villain_reward[i];
+		for (j = 0; j < 5; j++) {
+			if (villain_troop_types) villain_army_troops[i][j] = villain_troop_types[i * 5 + j];
+			if (villain_troop_numbers) villain_army_numbers[i][j] = villain_troop_numbers[i * 5 + j];
+		}
 	}
 
 	for (i = 0; i < MAX_TROOPS; i++) {
@@ -294,6 +353,27 @@ void refill_rules() {
 	free(ranged_max);
 	free(ranged_min);
 	free(villain_reward);
+	free(villain_troop_types);
+	free(villain_troop_numbers);
+	free(spell_cost);
+
+	free(castle_x);
+	free(castle_y);
+	free(castle_c);
+	free(town_inv);
+	free(town_x);
+	free(town_y);
+	free(town_c);
+	free(boat_x);
+	free(boat_y);
+	free(gate_x);
+	free(gate_y);
+	free(nav_x);
+	free(nav_y);
+	free(special_x);
+	free(special_y);
+	free(special_c);
+
 }
 
 /* "create game" screen (pick name and difficulty) */
