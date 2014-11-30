@@ -39,6 +39,7 @@
 KBenv *sys = NULL;
 
 void update_ui_frames();
+void draw_location(int loc_id, int troop_id, int frame);
 
 void prepare_resources() {
 
