@@ -3871,7 +3871,7 @@ int clone_army(KBgame *game, KBcombat *war) {
 
 int freeze_army(KBgame *game, KBcombat *war) {
 	
-	int ok, x, y, side, unit_id;
+	int ok, x, y, side, unit_id, turns;
 
 	KBunit *u = &war->units[war->side][war->unit_id];
 
@@ -3895,7 +3895,28 @@ int resurrect_army(KBgame *game, KBcombat *war) {
 	x = u->x;
 	y = u->y;
 
-	ok = pick_target(war, &x, &y, 3);
+	ok = pick_target(war, &x, &y, 4);
+
+	if (ok) {
+
+		side = 0;
+		unit_id = war->umap[y][x] - 1;
+		if (unit_id > 4) { side = 1; unit_id -= 5; }
+
+		turns = freeze_troop(game, war, side, unit_id);
+
+		if (turns == -1) {
+			combat_log("The spell seems to have no effect!", 0);
+			return 0;
+		}
+
+		u = &war->units[side][unit_id];
+
+		combat_log("%s are frozen", troops[u->troop_id].name);
+
+	}
+
+	return ok;
 
 }
 
@@ -5532,6 +5553,15 @@ int ai_unit_think(KBcombat *combat) {
 	int close_target = ai_pick_target(combat, 1);
 
 	int acted = 0;
+
+	/* Check freeze status */
+	if (!acted && u->frozen) {
+
+		u->acted = 1;
+		acted = 1;
+		combat_log("%s are frozen", t->name);
+
+	}
 
 	/* Try shooting */
 	if (!acted && u->shots) {

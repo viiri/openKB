@@ -1158,8 +1158,10 @@ void reset_turn(KBcombat *war) {
 		war->units[j][i].flights = 0;
 		if (troops[war->units[j][i].troop_id].abilities & ABIL_FLY)
 			war->units[j][i].flights = 2;
-		/* End-of-turn abilities */
+		/* End-of-turn effects */
 		if (war->side == 1) {
+			/* Unfreeze */
+			war->units[j][i].frozen = 0;
 			/* Regen */
 			if (troops[war->units[j][i].troop_id].abilities & ABIL_REGEN)
 				war->units[j][i].injury = 0;
@@ -1222,6 +1224,8 @@ void reset_match(KBcombat *war, int castle) {
 		KBunit *u = &war->units[j][i];
 		if (!u->count) continue;
 		u->shots = troops[u->troop_id].ranged_ammo;
+		u->injury = 0;
+		u->frozen = 0;
 		KB_debuglog(0, "Unit: %d, %d, ID: %d\n", u->x, u->y, (j * MAX_UNITS) + i + 1);
 		war->umap[u->y][u->x] = (j * MAX_UNITS) + i + 1;
 	}
@@ -1793,6 +1797,21 @@ int magic_damage(KBgame *game, KBcombat *war, int side, int id, word base_damage
 	int kills = deal_damage(war, side, id, 0, 0, 0, 1, damage, 1);
 
 	return kills;
+}
+
+int freeze_troop(KBgame *game, KBcombat *war, int side, int id) {
+
+	KBunit *u = &war->units[side][id];
+	word damage = 1;
+
+	/* Immune to magic */
+	if (troops[u->troop_id].abilities & ABIL_IMMUNE) {
+		return -1;
+	}
+
+	u->frozen = 1;
+
+	return 1;
 }
 
 int clone_troop(KBgame *game, KBcombat *war, int unit_id) {

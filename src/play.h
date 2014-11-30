@@ -90,6 +90,7 @@ extern void time_stop(KBgame *game);
 extern void raise_control(KBgame *game);
 extern int magic_damage(KBgame *game, KBcombat *war, int side, int id, word base_damage, byte filter);
 extern int clone_troop(KBgame *game, KBcombat *war, int unit_id);
+extern int freeze_troop(KBgame *game, KBcombat *war, int side, int id);
 extern int instant_troop(KBgame *game, byte *troop_id);
 extern int find_villain(KBgame *game);
 
