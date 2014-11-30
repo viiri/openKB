@@ -4642,27 +4642,28 @@ KBgamestate combat_state = {
 #define KBACT_DISMISS_ARMY 	13
 #define KBACT_VIEW_OPTIONS 	14
 #define KBACT_NEW_CONTINENT	15
+#define KBACT_CHEAT     	16
 
 KBgamestate adventure_state = {
 	{
-		{	{ SOFT_WAIT }, SDLK_HOME, 0, KFLAG_SOFTKEY     	},
-		{	{ SOFT_WAIT }, SDLK_7, 0, KFLAG_SOFTKEY      	},
-		{	{ SOFT_WAIT }, SDLK_UP, 0, KFLAG_SOFTKEY      	},
-		{	{ SOFT_WAIT }, SDLK_8, 0, KFLAG_SOFTKEY      	},
-		{	{ SOFT_WAIT }, SDLK_PAGEUP, 0, KFLAG_SOFTKEY   	},
-		{	{ SOFT_WAIT }, SDLK_9, 0, KFLAG_SOFTKEY      	},
+		{	{ SOFT_WAIT }, SDLK_DOWN, 0, KFLAG_SOFTKEY     	},
+		{	{ SOFT_WAIT }, SDLK_2, 0, KFLAG_SOFTKEY      	},
 		{	{ SOFT_WAIT }, SDLK_LEFT, 0, KFLAG_SOFTKEY     	},
 		{	{ SOFT_WAIT }, SDLK_4, 0, KFLAG_SOFTKEY      	},
-		{	{ SOFT_WAIT }, SDLK_SPACE, 0, KFLAG_SOFTKEY    	},
-		{	{ SOFT_WAIT }, SDLK_5, 0, KFLAG_SOFTKEY      	},
 		{	{ SOFT_WAIT }, SDLK_RIGHT, 0, KFLAG_SOFTKEY    	},
 		{	{ SOFT_WAIT }, SDLK_6, 0, KFLAG_SOFTKEY      	},
+		{	{ SOFT_WAIT }, SDLK_UP, 0, KFLAG_SOFTKEY      	},
+		{	{ SOFT_WAIT }, SDLK_8, 0, KFLAG_SOFTKEY      	},
 		{	{ SOFT_WAIT }, SDLK_END, 0, KFLAG_SOFTKEY    	},
 		{	{ SOFT_WAIT }, SDLK_1, 0, KFLAG_SOFTKEY      	},
-		{	{ SOFT_WAIT }, SDLK_DOWN, 0, KFLAG_SOFTKEY     	},
-		{	{ SOFT_WAIT }, SDLK_2, 0, KFLAG_SOFTKEY      	},		
 		{	{ SOFT_WAIT }, SDLK_PAGEDOWN, 0, KFLAG_SOFTKEY 	},
 		{	{ SOFT_WAIT }, SDLK_3, 0, KFLAG_SOFTKEY      	},
+		{	{ SOFT_WAIT }, SDLK_HOME, 0, KFLAG_SOFTKEY     	},
+		{	{ SOFT_WAIT }, SDLK_7, 0, KFLAG_SOFTKEY      	},
+		{	{ SOFT_WAIT }, SDLK_PAGEUP, 0, KFLAG_SOFTKEY   	},
+		{	{ SOFT_WAIT }, SDLK_9, 0, KFLAG_SOFTKEY      	},
+		{	{ SOFT_WAIT }, SDLK_SPACE, 0, KFLAG_SOFTKEY    	},
+		{	{ SOFT_WAIT }, SDLK_5, 0, KFLAG_SOFTKEY      	},
 
 		{	{ 0 }, SDLK_a, 0, 0      	},
 		{	{ 0 }, SDLK_c, 0, 0      	},
@@ -4687,6 +4688,9 @@ KBgamestate adventure_state = {
 	},
 	0
 };
+
+static signed char move_offset_x[9] = {  0,-1, 1, 0, -1, 1,-1, 1,  0 };
+static signed char move_offset_y[9] = { -1, 0, 0, 1, -1,-1, 1, 1, -0 };
 
 void reset_adventure_hotspots() {
 
@@ -4879,7 +4883,7 @@ int options_menu(KBgame *game) {
 				}
 
 				/* Hack -- do not show the "rest" command */
-				if (st->spots[i].hot_key == SDLK_5) { continue; }
+				if (st->spots[i].hot_key == SDLK_5) { store = -1; continue; }
 
 				/* Hack -- Fly/Land/Navigate */
 				if (i == KEY_ACT(FLY)) {
@@ -4919,7 +4923,7 @@ int options_menu(KBgame *game) {
 			continue;
 		}
 
-		if (key == 11) { /* Hack -- Arrow key right */
+		if (key == 5 /*|| key == 20*/ ) { /* Hack -- Arrow key right or 'c' button */
 			key = KEY_ACT(VIEW_CONTROLS);
 			break;
 		}
