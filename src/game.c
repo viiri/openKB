@@ -4571,7 +4571,7 @@ KBgamestate target_state = {
 
 
 #define COMBAT_ARROW_KEYS 16
-#define COMBAT_ACTION_KEYS 10
+#define COMBAT_ACTION_KEYS 11
 
 #define COMBAT_SYN_EVENT (COMBAT_ACTION_KEYS + COMBAT_ARROW_KEYS + 1)
 
@@ -4585,6 +4585,7 @@ KBgamestate target_state = {
 #define COMBAT_WAIT         	7
 #define COMBAT_PASS         	8
 #define COMBAT_VIEW_OPTIONS 	9
+#define COMBAT_CHEAT        	10
 
 KBgamestate combat_state = {
 	{
@@ -4616,6 +4617,7 @@ KBgamestate combat_state = {
 		{	{ 0 }, SDLK_SPACE, 0, 0 	},
 		{	{ 0 }, SDLK_o, 0, 0      	},
 
+		{	{ 0 }, SDLK_F10, 0, 0      	},
 		{	{ SOFT_WAIT }, SDLK_SYN, 0, KFLAG_TIMER },
 		0,
 	},
@@ -4623,7 +4625,7 @@ KBgamestate combat_state = {
 };
 
 #define ARROW_KEYS 18
-#define ACTION_KEYS 16
+#define ACTION_KEYS 17
 
 #define SYN_EVENT (ACTION_KEYS + ARROW_KEYS + 1)
 
@@ -4684,6 +4686,7 @@ KBgamestate adventure_state = {
 		{	{ 0 }, SDLK_o, 0, 0      	},
 		{	{ 0 }, SDLK_n, 0, 0      	},
 
+		{	{ 0 }, SDLK_F10, 0, 0      	},
 		{	{ SOFT_WAIT }, SDLK_SYN, 0, KFLAG_TIMER },
 		0,
 	},
@@ -4704,6 +4707,101 @@ void reset_combat_hotspots() {
 }
 void reset_combat_menu_hotspots() {
 
+}
+
+int debug_cheat_menu(KBgame *game, KBcombat *war) {
+	int i;
+	char *msg = NULL;
+	SDL_Rect *text = KB_BottomBox("Debug command (A-Z) ?", "", 0);
+	int key = 0;
+	KB_flip(sys);
+	while (key == 0 || key == 27) {
+		key = KB_event(&alphabet_letter);
+	}
+	switch (96+key) {
+		case 'x':
+			game->player_troops[0] = 0x01; /* Sprites */
+			game->player_numbers[0] = 1;
+			game->player_troops[1] = 0x14; /* Archmages */
+			game->player_numbers[1] = 1;
+			game->player_troops[2] = 0x15; /* Vampires */
+			game->player_numbers[2] = 1;
+			game->player_troops[3] = 0x17; /* Demons */
+			game->player_numbers[3] = 1;
+			game->player_troops[4] = 0x18; /* Dragons */
+			game->player_numbers[4] = 1;
+			msg = "Flight team";
+		break;
+		case 'a':
+		{
+			KB_BottomBox("Add which troop (A-Z) ?", "", 0);
+			for (i = 0; i < MAX_TROOPS; i++) {
+				KB_stdlog("%c - %s ", i + 'A', troops[i].name);
+			}
+			KB_stdlog("\n");
+			KB_flip(sys);
+			int troop_id = -1;
+			while (troop_id == -1 || troop_id >= MAX_TROOPS) {
+				troop_id = KB_event(&alphabet_letter) - 1;
+			}
+			add_troop(game, troop_id, troop_numbers[troop_id][game->continent] ? troop_numbers[troop_id][game->continent] : 1);
+			msg = "+Troops";
+		}
+		break;
+		case 'w':
+			if (war) {
+				int i;
+				for (i = 0; i < 5; i++) {
+					war->units[1][i].count = 0;
+					war->units[1][i].turn_count = 0;
+				}
+				return 1;
+			}
+			win_game(game);
+		break;
+		case 'l':
+			lose_game(game);
+		break;
+		case 'f':
+			game->mount = KBMOUNT_FLY;
+		break;
+		case 's':
+			game->siege_weapons = 1;
+			msg = "+Siege weapns";
+		break;
+		case 'u':
+			for (i = 0; i < MAX_SPELLS; i++) {
+				game->spells[i]++;
+			}
+			msg = "Learned spells";
+		break;
+		case 'm':
+			if (game->knows_magic) game->spell_power++;
+			game->knows_magic = 1;
+			msg = "Learned magic";
+		break;
+		case 'v':
+			game->leadership += 100;
+			game->base_leadership += 100;
+			msg = "+100 leadership";
+		break;
+		case 'g':
+			game->gold += 5000;
+			msg = "+5000 gold";
+		break;
+		case 'n':
+			if (game->continent+1 < MAX_CONTINENTS)
+				game->continent_found[game->continent+1] = 1;
+			msg = "+Map to next continent";
+		break;
+		default:
+			msg = "No such command";
+		break;
+	}
+
+	if (msg) KB_TopBox(MSG_FLUSH | MSG_WAIT, msg);
+
+	return 0;
 }
 
 int combat_options_menu(KBgame *game) {
@@ -5521,9 +5619,6 @@ int ai_unit_think(KBcombat *combat) {
 static signed char combat_move_offset_x[9] = { -1, 0, 1, -1, 1, -1, 0, 1 };
 static signed char combat_move_offset_y[9] = { -1,-1,-1,  0, 0,  1, 1, 1 };
 
-static signed char move_offset_x[9] = { -1, 0, 1, -1, 0, 1, -1,  0,  1 };
-static signed char move_offset_y[9] = {  1, 1, 1,  0, 0, 0, -1, -1, -1 };
-
 /* Main combat loop (combat screen) */
 /* Returns 1 if combat was won by player, 2 if by AI */ 
 int combat_loop(KBgame *game, KBcombat *combat) {
@@ -5590,6 +5685,11 @@ int combat_loop(KBgame *game, KBcombat *combat) {
 			case KEY_ACT(WAIT):     	pass = unit_try_wait(combat); 	break;
 			case KEY_ACT(PASS):     	unit_try_pass(combat); 	break;
 			default: break;
+		}
+
+		if (key == KEY_ACT(CHEAT)) {
+			pass = debug_cheat_menu(game,combat);
+			redraw = 1;
 		}
 
 		if (key > 0 && key < COMBAT_ARROW_KEYS) {
@@ -5876,6 +5976,11 @@ void adventure_loop(KBgame *game) {
 				temp_death(game);
 				draw_defeat(game);
 			}
+			redraw = 1;
+		}
+
+		if (key == KEY_ACT(CHEAT)) {
+			debug_cheat_menu(game, NULL);
 			redraw = 1;
 		}
 
