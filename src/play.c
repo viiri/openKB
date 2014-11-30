@@ -22,6 +22,9 @@
 
 /* forward-declare: */
 void player_accept_rank(KBgame *game);
+#define UID_AS_SIDE(UID) (UID > 5 ? 1 : 0)
+#define UID_AS_ID(UID) (UID > 5 ? UID - 6 : UID - 1)
+#define PACK_UID(SIDE,ID) (SIDE * 5 + ID + 1)
 
 void roll_creature(int difficulty, byte *id, word *number) {
 	byte index = 0;
@@ -1055,17 +1058,18 @@ int test_victory(KBcombat *war) {
 
 void prepare_units_player(KBcombat *war, int side, KBgame *game) {
 	int i;
+	war->heroes[side] = game;
 	for (i = 0; i < MAX_UNITS; i++)
 	{
 		war->units[side][i].troop_id = game->player_troops[i];
 		war->units[side][i].count = game->player_numbers[i];
 		war->units[side][i].max_count = war->units[side][i].count;
+		war->units[side][i].out_of_control = !unit_under_control(war, side, i);
 		war->units[side][i].y = i;
 		war->units[side][i].x = side * (CLEVEL_W - 1);
 
 		war->spoils[side] += (troops[war->units[side][i].troop_id].spoils_factor * 5) * war->units[side][i].count;
 	}
-	war->heroes[side] = game;
 	war->powers[side] = 0;
 	for (i = 0; i < MAX_ARTIFACTS; i++) {
 		if (game->artifact_found[i]) {
@@ -1084,6 +1088,7 @@ void prepare_units_foe(KBcombat *war, int side, KBgame *game, int continent_id, 
 		war->units[side][i].troop_id = game->foe_troops[continent_id][foe_id][i];
 		war->units[side][i].count = game->foe_numbers[continent_id][foe_id][i];
 		war->units[side][i].max_count = war->units[side][i].count;
+		war->units[side][i].out_of_control = 0;
 
 		war->units[side][i].y = i;
 		war->units[side][i].x = side * (CLEVEL_W - 1);
@@ -1102,6 +1107,7 @@ void prepare_units_castle(KBcombat *war, int side, KBgame *game, int castle_id) 
 		war->units[side][i].troop_id = game->castle_troops[castle_id][i];
 		war->units[side][i].count = game->castle_numbers[castle_id][i];
 		war->units[side][i].max_count = war->units[side][i].count;
+		war->units[side][i].out_of_control = 0;
 		war->units[side][i].y = i;
 		war->units[side][i].x = 0;
 
@@ -1275,6 +1281,7 @@ int next_unit(KBcombat *war) {
 		KBunit *u = &war->units[war->side][i];
 		if (!u->count) continue;
 		if (u->acted) continue;
+		u->out_of_control = !unit_under_control(war, war->side, i);
 		return i;
 	}
 	war->phase++;
@@ -1282,6 +1289,7 @@ int next_unit(KBcombat *war) {
 		KBunit *u = &war->units[war->side][i];
 		if (!u->count) continue;
 		if (u->acted) continue;
+		u->out_of_control = !unit_under_control(war, war->side, i);
 		return i;
 	}
 
@@ -1289,10 +1297,10 @@ int next_unit(KBcombat *war) {
 }
 
 /* Returns 1 if unit "other_id" is touching unit "side/id", 0 otherwise */
-int unit_touching(KBcombat *war, int side, int id, int other_id) {
+int unit_touching(KBcombat *war, int side, int id, int other_side, int other_id) {
 
 	KBunit *u = &war->units[side][id];
-	KBunit *other = &war->units[1 - side][other_id];
+	KBunit *other = &war->units[other_side][other_id];
 
 	int diff_x = u->x - other->x;
 	int diff_y = u->y - other->y;
@@ -1307,12 +1315,20 @@ int unit_touching(KBcombat *war, int side, int id, int other_id) {
 
 /* See if any enemy units are touching this one */
 int unit_surrounded(KBcombat *war, int side, int id) {
-	int i;
+	int i, j;
 	for (i = 0; i < MAX_UNITS; i++) {
 		if (!war->units[1-side][i].count) continue;
-		if (unit_touching(war, side, id, i)) return 1;
+		if (unit_touching(war, side, id, 1-side, i)) return 1;
 	}
 	return 0;
+}
+
+/* Returns 1 if under control, 0 if out-of-control */
+int unit_under_control(KBcombat *war, int side, int id) {
+	KBunit *u = &war->units[side][id];
+	if (!war->heroes[side]) return 1;
+	if (!u->count) return -1;
+	return army_leadership(war->heroes[side], u->troop_id) > 0;
 }
 
 word units_killed(dword damage, byte hp) {
@@ -1435,7 +1451,7 @@ int deal_damage(KBcombat *war, int a_side, int a_id, int t_side, int t_id, int i
 		final_damage = (total * skill_diff) / 10;
 
 		if (war->heroes[a_side]) {
-			if (army_leadership(war->heroes[a_side], a_id) > 0) {//unit_under_control(war, a_side, a_id)) {
+			if (unit_under_control(war, a_side, a_id)) {
 				byte morale = troop_morale(war->heroes[a_side], a_id); // 0, 1, 2
 				if (morale == 1) { //low == * 0.5f
 					final_damage /= 2;
@@ -1619,9 +1635,7 @@ void unit_closest_offset(KBcombat *war, int side, int id, int position_x, int po
 
 			if (war->omap[position_y + j][position_x + i]) dist = max_dist; /* Obstacle */
 			if ((position_x != origin_x || position_y != origin_y)
-			&& war->umap[position_y + j][position_x + i]) dist = max_dist; /* Enemy, but we're not interested */
-			if (war->umap[position_y + j][position_x + i] - 1 >= MAX_UNITS
-			&& war->umap[position_y + j][position_x + i] - 1 != side * MAX_UNITS + id) dist = max_dist; /* Friend */
+			&& war->umap[position_y + j][position_x + i]) dist = max_dist; /* Unit, but we're not interested */
 
 			//printf("Dist is: %d (%08x) vs [%08x]\n", dist, dist, picked_dist);
 
@@ -1653,17 +1667,13 @@ void unit_move_offset(KBcombat *war, int side, int id, int other_full_id, int *o
 
 	KBunit *u, *other;
 
-	other_side = 0;
-	other_id = other_full_id;
-
-	if (other_id >= MAX_UNITS) {
-		other_id -= MAX_UNITS;
-		other_side = 1;
-	}
+	other_side = UID_AS_SIDE(other_full_id);
+	other_id = UID_AS_ID(other_full_id);
 
  	u = &war->units[side][id];
  	other = &war->units[other_side][other_id];
- 	char *name = troops[u->troop_id].name;
+	//char *name = troops[u->troop_id].name;
+	//char *name2 = troops[other->troop_id].name;
 
 	unit_closest_offset(war, side, id, u->x, u->y, u->x, u->y, other->x, other->y, ox, oy);
 }
@@ -1677,13 +1687,8 @@ void unit_fly_offset(KBcombat *war, int side, int id, int other_full_id, int *tx
 
 	KBunit *u, *other;
 
-	other_side = 0;
-	other_id = other_full_id;
-
-	if (other_id >= MAX_UNITS) {
-		other_id -= MAX_UNITS;
-		other_side = 1;
-	}
+	other_side = UID_AS_SIDE(other_full_id);
+	other_id = UID_AS_ID(other_full_id);
 
  	u = &war->units[side][id];
  	other = &war->units[other_side][other_id];

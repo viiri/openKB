@@ -272,6 +272,7 @@ typedef struct KBunit {
 	byte flights;
 
 	byte frozen;
+	byte out_of_control;
 
 	byte y;
 	byte x;

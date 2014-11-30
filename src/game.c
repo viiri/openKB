@@ -3378,6 +3378,11 @@ void draw_defeat(KBgame *game) {
 	free(snd_defeat);
 }
 
+/* Combat-helping macros */
+#define UID_AS_SIDE(UID) (UID > 5 ? 1 : 0)
+#define UID_AS_ID(UID) (UID > 5 ? UID - 6 : UID - 1)
+#define PACK_UID(SIDE,ID) (SIDE * 5 + ID + 1)
+
 void hit_unit(KBcombat *war, int a_side, int a_id, int t_side, int t_id) {
 	int kills;
 	KBunit *u = &war->units[a_side][a_id];
@@ -3428,22 +3433,17 @@ int move_unit(KBcombat *war, int side, int id, int ox, int oy) {
 	/* An other troop ... */
 	if (war->umap[ny][nx]) {
 
-		/* Left side */
-		if (side == 0) {
-			/* Meets left side! -- Friendly troop */
-			if (war->umap[ny][nx] >= 1 && war->umap[ny][nx] <= MAX_UNITS) return 0;
-			/* Otherwise -- Hostile troop */
+		int other_side = UID_AS_SIDE(war->umap[ny][nx]);
+		int other_id = UID_AS_ID(war->umap[ny][nx]);
+		KBunit *other = &war->units[other_side][other_id];
 
-			hit_unit(war, 0, id, 1, war->umap[ny][nx] - MAX_UNITS - 1);
+		/* Friends */
+		if (side == other_side) {
+			/* And both are under control */
+			if (!u->out_of_control && !other->out_of_control) return 0;
 		}
-		/* Right side */
-		else {
-			/* Meets right sie! -- Friendly troop */
-			if (war->umap[ny][nx] >= (MAX_UNITS+1) && war->umap[ny][nx] <= (MAX_UNITS*2)) return 0;
-			/* Otherwise -- Hostile troop */
 
-			hit_unit(war, 1, id, 0, war->umap[ny][nx] - 1);
-		}
+		hit_unit(war, side, id, other_side, other_id);
 
 		return 2;
 	}
@@ -5213,7 +5213,7 @@ void draw_combat_statusbar(KBcombat *war) {
 	/* Status bar */
 	SDL_FillRect(sys->screen, &local.status, colors[COLOR_BACKGROUND]);
 
-	if (war->side) return;
+	if (war->side || war->units[war->side][war->unit_id].out_of_control) return;
 
 	KB_icolor(colors);
 	KB_iloc(local.status.x, local.status.y + sys->font_size.h / 8);
@@ -5284,8 +5284,9 @@ int pick_target(KBcombat *war, int *x, int *y, int filter) {
 			} else if (filter >= 2) {
 				if (war->umap[_y][_x]) {
 					int side = (war->umap[_y][_x] <= MAX_UNITS ? 0 : 1);
-					if (filter == 3) accept = (side == 0 ? 1 : 0);
-					else if (filter == 4) accept = (side == 1 ? 1 : 0);
+					int out_of_control = war->units[side][war->umap[_y][_x] - side*5].out_of_control;
+					if (filter == 3) accept = (side == 0 && !out_of_control ? 1 : 0);
+					else if (filter == 4) accept = (side == 1 || out_of_control ? 1 : 0);
 					else accept = 1;
 				}
 			}
@@ -5476,18 +5477,24 @@ void unit_ranged_damage(KBcombat *war, int other_side, int other_id) {
 
 int ai_pick_target(KBcombat *combat, int nearby) {
 
+	int under_control = !combat->units[combat->side][combat->unit_id].out_of_control;
 	int far = 1 - nearby;
 	int side = 1 - combat->side;
 	int pick = -1;
-	int i;
+	int i, j;
+	for (j = 0; j < MAX_SIDES; j++) {
+	side = j;
 	for (i = 0; i < MAX_UNITS; i++) {
 		KBunit *u = &combat->units[side][i];
 		if (!u->count) continue;
 
-		if (nearby && !unit_touching(combat, side, i, combat->unit_id)) continue; 
+		if (side == combat->side && i == combat->unit_id) continue;
+		if (side == combat->side && under_control) continue;
+
+		if (nearby && !unit_touching(combat, side, i, combat->side, combat->unit_id)) continue;
 
 		if (pick != -1) {
-			KBunit *picked = &combat->units[side][pick];
+			KBunit *picked = &combat->units[UID_AS_SIDE(pick)][UID_AS_ID(pick)];
 			//printf("Comparing %s shots %d vs shots %d of picked %d\n", far ? "far" : "near", u->shots, picked->shots, pick);
 			/* Units that shoot have higher priority */
 			if (far) {
@@ -5501,14 +5508,17 @@ int ai_pick_target(KBcombat *combat, int nearby) {
 			}
 		}
 		/* Save new one */
-		pick = i;
+		pick = PACK_UID(side, i);
 		//printf("Picked unit %d\n", pick);
+	}
 	}
 
 	if (pick != -1) {
+		side = UID_AS_SIDE(pick);
+		i = UID_AS_ID(pick);
 		char *name = troops[combat->units[combat->side][combat->unit_id].troop_id].name;
-		char *name2 = troops[combat->units[side][pick].troop_id].name;
-		printf("Unit %s picked %s as it's %s target\n", name, name2, nearby ? "near" : "far");	
+		char *name2 = troops[combat->units[side][i].troop_id].name;
+		printf("%s %s picked %s %s as it's %s target\n", combat->side ? "AI" : "OOC", name, side ? "AI" : "Player", name2, nearby ? "near" : "far");
 	}
 
 	return pick;
@@ -5641,7 +5651,8 @@ int combat_loop(KBgame *game, KBcombat *combat) {
 
 		if (key == 0xFF) done = 2;
 
-		if (combat->side != 0 && key != COMBAT_SYN_EVENT)
+		if (key != COMBAT_SYN_EVENT &&
+			(combat->side != 0 || combat->units[combat->side][combat->unit_id].out_of_control))
 		{
 			/* Discard input during CPU turn */
 			key = 0;
@@ -5696,18 +5707,15 @@ int combat_loop(KBgame *game, KBcombat *combat) {
 			int ox = combat_move_offset_x[(key-1)/2];
 			int oy = combat_move_offset_y[(key-1)/2];
 
-			int acted = move_unit(combat, 0, combat->unit_id, ox, oy);
-
-			/* Hack -- ensure pass, because we can't realy on unit's.acted field to trigger it,
-			 * as the unit might already be dead */
-			if (acted == 2) pass = 1;
+			move_unit(combat, 0, combat->unit_id, ox, oy);
 		}
 
 		if (key == COMBAT_SYN_EVENT) {
 
 			if (++combat->units[combat->side][combat->unit_id].frame > 3) {
 				combat->units[combat->side][combat->unit_id].frame = 0;
-				if (combat->side == 1) pass = ai_unit_think(combat); /* AI makes his move */
+				if (combat->side == 1 || combat->units[combat->side][combat->unit_id].out_of_control
+				) pass = ai_unit_think(combat); /* AI makes his move */
 			}
 
 			frame++;
@@ -5738,6 +5746,15 @@ int combat_loop(KBgame *game, KBcombat *combat) {
 				if (next == -1) next_turn(combat);
 				else
 					combat->unit_id = next;
+
+				if (next != -1 && combat->side == 0
+				&& combat->units[combat->side][combat->unit_id]. out_of_control) {
+					combat_log("%s are out of control!",
+					troops[
+					combat->units[combat->side][combat->unit_id] . troop_id
+					].name
+					);
+				}
 
 			}
 
