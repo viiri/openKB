@@ -5274,6 +5274,7 @@ int controls_menu(KBgame *game, int combat) {
 	enum {
 		CTRL_NUMERIC,
 		CTRL_BOOL,
+		CTRL_NUMERIC8,
 	};
 	int item_types[] = {
 		CTRL_NUMERIC,	/* Delay */
@@ -5281,7 +5282,7 @@ int controls_menu(KBgame *game, int combat) {
 		CTRL_BOOL,  	/* Walk Beep */
 		CTRL_BOOL,  	/* Animation */
 		CTRL_BOOL,  	/* Army Size */
-		CTRL_NUMERIC,	/* ??? */
+		CTRL_NUMERIC8,  /* CGA Palette */
 	};
 	char* item_names[] = {
 		"Delay",
@@ -5289,15 +5290,22 @@ int controls_menu(KBgame *game, int combat) {
 		"Walk Beep",
 		"Animation",
 		"Army Size",
-		"CGA Palette",//?
+		"CGA",
 		"\0",
 	};
+	int item_offsets[6] = { 0 };
 
 	int max_items = 6;
+	int vis_items = 0;
 
 	int key = 0;
 	int done = 0;
 	int redraw = 1;
+
+	char defmopt[16] = { 1, 1, 1, 1, 1, 0 };
+	byte *mopt = KB_Resolve(DAT_MENUCONTROLS, 0);
+	int freemopt = 1;
+	if (mopt == NULL) { mopt = &defmopt; freemopt = 0; }
 
 	KB_iloc(local.status.x, local.status.y + sys->font_size.h / 8);
 
@@ -5311,6 +5319,14 @@ int controls_menu(KBgame *game, int combat) {
 	KB_icurs(10, 0);
 	KB_iprint(" Controls ");
 
+	int i;
+	for (i = 0; i < max_items; i++) {
+		if (mopt[i]) {
+			item_offsets[vis_items] = i;
+			vis_items++;
+		}
+	}
+
 	while (!done) {
 		if (redraw == 1) {
 			redraw = 0;
@@ -5321,7 +5337,7 @@ int controls_menu(KBgame *game, int combat) {
 			SDL_Rect *left_frame = local.frames[FRAME_LEFT];
 			Uint32 *colors = local.message_colors;
 
-			RECT_Text((&border), 6, 20);
+			RECT_Text((&border), vis_items + 1, 20);
 
 			border.h += fs->h / 8;
 			border.y = bar_frame->y + bar_frame->h;
@@ -5335,19 +5351,28 @@ int controls_menu(KBgame *game, int combat) {
 			int i, j = 0, k = 0;
 			for (i = 0; i < max_items; i++) {
 
-				if (item_names[j][0] == '\0') break;
+				if (item_names[i][0] == '\0') break;
 
 				/* Hack -- do not show the "CGA palette" command */
-				if (i == 5) { continue; }
+				if (mopt[i] == 0) { continue; }
+
+				j = item_offsets[k];
+printf("Drawing item %d, which is item %d, %s\n", i, j, item_names[j]);
+				/* Update mouse hotspot */
+				settings_selection.spots[i+6].coords.x = border.x + fs->w;
+				settings_selection.spots[i+6].coords.y = border.y + fs->h / 8 + k * (fs->h + fs->h/8);
+				settings_selection.spots[i+6].coords.w = border.w - fs->w;
+				settings_selection.spots[i+6].coords.h = fs->h + fs->h / 8;
 
 				KB_iloc(border.x + fs->w, border.y + fs->h / 8 + k * (fs->h + fs->h/8));
 				KB_icolor(colors);
 				KB_iprintf("%c %s", '1' + k, item_names[j]);
 				
-				if (item_types[j] == CTRL_NUMERIC) {
-					int n;
-					KB_icurs(8, 0);
-					for (n = 0; n < 10; n++) {
+				if (item_types[j] == CTRL_NUMERIC || item_types[j] == CTRL_NUMERIC8) {
+					int n, m = 10;
+					if (item_types[j] == CTRL_NUMERIC8) m = 8;
+					KB_icurs(8 + (10 - m), 0);
+					for (n = 0; n < m; n++) {
 						if (n == game->options[i])
 							KB_icolor(colors + COLOR_SELECTION);
 						else
@@ -5376,7 +5401,7 @@ int controls_menu(KBgame *game, int combat) {
 
 				}
 
-				j++;
+				//j++;
 				k++;
 			}
 
@@ -5391,7 +5416,7 @@ int controls_menu(KBgame *game, int combat) {
 		}
 
 		if (key >= 7 && key < 7 + max_items) {
-			int n = key - 7;
+			int n = item_offsets[key - 7];
 			if (item_types[n] == CTRL_BOOL) {
 
 				game->options[n] = 1 - game->options[n];
@@ -5400,6 +5425,11 @@ int controls_menu(KBgame *game, int combat) {
 
 				game->options[n]++;
 				if (game->options[n] > 9) game->options[n] = 0;
+
+			} else if (item_types[n] == CTRL_NUMERIC8) {
+
+				game->options[n]++;
+				if (game->options[n] > 7) game->options[n] = 0;
 
 			}
 			redraw = 1;
@@ -5430,6 +5460,7 @@ int controls_menu(KBgame *game, int combat) {
 	reset_adventure_hotspots();
 	reset_adventure_menu_hotspots(); /* pop */
 
+	if (freemopt) free(mopt);
 
 	return key;
 }

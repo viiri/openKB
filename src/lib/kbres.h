@@ -87,6 +87,7 @@
 \
 	_(DAT_WORLD)	/* complete world map ; subId - undefined */ \
 	_(DAT_LAND) 	/* map for specific continent ; subId - continent index */ \
+	_(DAT_MENUCONTROLS)	/* [16?] applicable options from global known set ; subId - undefined */ \
 	_(WDAT_SGOLD)	/* [4] starting gold for specific class; subId - undefined */ \
 	_(WDAT_STROOP)	/* [2] starting troop type; subId - class */ \
 	_(WDAT_SNUMBER)	/* [2] starting troop count; subId - class */ \

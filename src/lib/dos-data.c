@@ -1435,6 +1435,15 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 			return DOS_word_array(mod, KBEXE_OFFSET(exe_type, DOS_VREWARDS), 17);
 		}
 		break;
+		case DAT_MENUCONTROLS:
+		{
+			byte *opt = malloc(sizeof(byte) * 16);
+			memset(opt, 0, 16);
+			memset(opt, 1, 5);
+			if (mod->bpp == 2) opt[5] = 1;
+			return opt;
+		}
+		break;
 		case DAT_WORLD:
 		{
 			KB_File *f;
