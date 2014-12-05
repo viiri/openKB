@@ -27,9 +27,13 @@
 /* Global/main session */
 KBsession local = { NULL };
 
-#define _NON { 0 }
-#define _TIME(INTERVAL) { INTERVAL, 0 }
-#define _AREA(X,Y,W,H) { X, Y, W, H }
+#define _NON { 0 }, { 0 }
+#define _TIME(INTERVAL) { 0 }, { INTERVAL, 0 }
+#define _AREA(X,Y,W,H) { X, Y, W, H }, { 0 }
+
+#define __NON { 0 }
+#define __TIME(INTERVAL) { INTERVAL, 0 }
+#define __AREA(X,Y,W,H) { X, Y, W, H }
 
 KBgamestate debug_menu = {
 	{

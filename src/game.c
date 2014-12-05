@@ -991,10 +991,13 @@ void KB_DrawMapTile(SDL_Surface *dest, SDL_Rect *dest_rect,	SDL_Surface *tileset
 }
 
 
+#define _NON { 0 }, { 0 }
+#define __NON { 0 }
+
 KBgamestate yes_no_question = {
 	{
-		{	{ 0 }, SDLK_y, 0, 0      	},
-		{	{ 0 }, SDLK_n, 0, 0      	},
+		{	_NON, SDLK_y, 0, 0      	},
+		{	_NON, SDLK_n, 0, 0      	},
 		0
 	},
 	0
@@ -1002,13 +1005,13 @@ KBgamestate yes_no_question = {
 
 KBgamestate five_choices = {
 	{
-		{	{ 0 }, SDLK_a, 0, 0      	},
-		{	{ 0 }, SDLK_b, 0, 0      	},
-		{	{ 0 }, SDLK_c, 0, 0      	},
-		{	{ 0 }, SDLK_d, 0, 0      	},
-		{	{ 0 }, SDLK_e, 0, 0      	},
+		{	_NON, SDLK_a, 0, 0      	},
+		{	_NON, SDLK_b, 0, 0      	},
+		{	_NON, SDLK_c, 0, 0      	},
+		{	_NON, SDLK_d, 0, 0      	},
+		{	_NON, SDLK_e, 0, 0      	},
 
-		{	{ 90 }, SDLK_SYN, 0, KFLAG_TIMER },
+		{	__NON, { 90 }, SDLK_SYN, 0, KFLAG_TIMER },
 		0,
 	},
 	0
@@ -1016,14 +1019,14 @@ KBgamestate five_choices = {
 
 KBgamestate five_choices_and_space = {
 	{
-		{	{ 0 }, SDLK_a, 0, 0      	},
-		{	{ 0 }, SDLK_b, 0, 0      	},
-		{	{ 0 }, SDLK_c, 0, 0      	},
-		{	{ 0 }, SDLK_d, 0, 0      	},
-		{	{ 0 }, SDLK_e, 0, 0      	},
-		{	{ 0 }, SDLK_SPACE, 0, 0    	},
+		{	_NON, SDLK_a, 0, 0      	},
+		{	_NON, SDLK_b, 0, 0      	},
+		{	_NON, SDLK_c, 0, 0      	},
+		{	_NON, SDLK_d, 0, 0      	},
+		{	_NON, SDLK_e, 0, 0      	},
+		{	_NON, SDLK_SPACE, 0, 0    	},
 
-		{	{ 90 }, SDLK_SYN, 0, KFLAG_TIMER },
+		{	__NON, { 90 }, SDLK_SYN, 0, KFLAG_TIMER },
 		0,
 	},
 	0
@@ -1457,7 +1460,7 @@ void view_puzzle(KBgame *game) {
 
 KBgamestate minimap_toggle = {
 	{
-		{	{ 0 }, SDLK_SPACE, 0, 0      	},
+		{	__NON, SDLK_SPACE, 0, 0      	},
 		0
 	},
 	0
@@ -1885,17 +1888,17 @@ void view_army(KBgame *game) {
 
 KBgamestate numeric_choices = {
 	{
-		{	{ 0 }, SDLK_1, 0, 0      	},
-		{	{ 0 }, SDLK_2, 0, 0      	},
-		{	{ 0 }, SDLK_3, 0, 0      	},
-		{	{ 0 }, SDLK_4, 0, 0      	},
-		{	{ 0 }, SDLK_5, 0, 0      	},
-		{	{ 0 }, SDLK_6, 0, 0      	},
-		{	{ 0 }, SDLK_7, 0, 0      	},
-		{	{ 0 }, SDLK_8, 0, 0      	},
-		{	{ 0 }, SDLK_9, 0, 0      	},
+		{	_NON, SDLK_1, 0, 0      	},
+		{	_NON, SDLK_2, 0, 0      	},
+		{	_NON, SDLK_3, 0, 0      	},
+		{	_NON, SDLK_4, 0, 0      	},
+		{	_NON, SDLK_5, 0, 0      	},
+		{	_NON, SDLK_6, 0, 0      	},
+		{	_NON, SDLK_7, 0, 0      	},
+		{	_NON, SDLK_8, 0, 0      	},
+		{	_NON, SDLK_9, 0, 0      	},
 
-		{	{ 60 }, SDLK_SYN, 0, KFLAG_TIMER },
+		{	__NON, { 60 }, SDLK_SYN, 0, KFLAG_TIMER },
 		0,
 	},
 	0
@@ -2050,10 +2053,10 @@ void dismiss_army(KBgame *game) {
 
 KBgamestate throne_room_or_barracks = {
 	{
-		{	{ 0, 0, 0, 0 }, SDLK_a, 0, 0      	},
-		{	{ 0, 0, 0, 0 }, SDLK_b, 0, 0      	},
+		{	{ 0, 0, 0, 0 }, _NON, SDLK_a, 0, 0      	},
+		{	{ 0, 0, 0, 0 }, _NON, SDLK_b, 0, 0      	},
 
-		{	{ SOFT_WAIT }, SDLK_SYN, 0, KFLAG_TIMER },
+		{	__NON, { SOFT_WAIT }, SDLK_SYN, 0, KFLAG_TIMER },
 		0,
 	},
 	0
@@ -3048,10 +3051,10 @@ void read_signpost(KBgame *game) {
 
 KBgamestate two_choices = {
 	{
-		{	{ 0 }, SDLK_a, 0, 0      	},
-		{	{ 0 }, SDLK_b, 0, 0      	},
+		{	_NON, SDLK_a, 0, 0      	},
+		{	_NON, SDLK_b, 0, 0      	},
 
-		{	{ 60 }, SDLK_SYN, 0, KFLAG_TIMER },
+		{	__NON, { 60 }, SDLK_SYN, 0, KFLAG_TIMER },
 		0,
 	},
 	0
@@ -3732,15 +3735,15 @@ void no_spell_banner() {
 
 KBgamestate seven_choices = {
 	{
-		{	{ 0 }, SDLK_a, 0, 0      	},
-		{	{ 0 }, SDLK_b, 0, 0      	},
-		{	{ 0 }, SDLK_c, 0, 0      	},
-		{	{ 0 }, SDLK_d, 0, 0      	},
-		{	{ 0 }, SDLK_e, 0, 0      	},
-		{	{ 0 }, SDLK_f, 0, 0      	},
-		{	{ 0 }, SDLK_g, 0, 0      	},
+		{	_NON, SDLK_a, 0, 0      	},
+		{	_NON, SDLK_b, 0, 0      	},
+		{	_NON, SDLK_c, 0, 0      	},
+		{	_NON, SDLK_d, 0, 0      	},
+		{	_NON, SDLK_e, 0, 0      	},
+		{	_NON, SDLK_f, 0, 0      	},
+		{	_NON, SDLK_g, 0, 0      	},
 
-		{	{ 60 }, SDLK_SYN, 0, KFLAG_TIMER },
+		{	__NON, { 60 }, SDLK_SYN, 0, KFLAG_TIMER },
 		0,
 	},
 	0
@@ -3748,11 +3751,10 @@ KBgamestate seven_choices = {
 
 KBgamestate cross_choice = {
 	{
-		{	{ 0 }, SDLK_LEFT, 0, 0      	},
-		{	{ 0 }, SDLK_UP, 0, 0      	},
-		{	{ 0 }, SDLK_DOWN, 0, 0      	},
-		{	{ 0 }, SDLK_RIGHT, 0, 0      	},
-
+		{	_NON, SDLK_LEFT, 0, 0      	},
+		{	_NON, SDLK_UP, 0, 0      	},
+		{	_NON, SDLK_DOWN, 0, 0      	},
+		{	_NON, SDLK_RIGHT, 0, 0      	},
 		0,
 	},
 	0
@@ -4565,24 +4567,24 @@ int ask_search(KBgame *game, int *weekend) {
 
 KBgamestate target_state = {
 	{
-		{	{ SOFT_WAIT }, SDLK_HOME, 0, KFLAG_SOFTKEY     	},
-		{	{ SOFT_WAIT }, SDLK_7, 0, KFLAG_SOFTKEY      	},
-		{	{ SOFT_WAIT }, SDLK_UP, 0, KFLAG_SOFTKEY      	},
-		{	{ SOFT_WAIT }, SDLK_8, 0, KFLAG_SOFTKEY      	},
-		{	{ SOFT_WAIT }, SDLK_PAGEUP, 0, KFLAG_SOFTKEY   	},
-		{	{ SOFT_WAIT }, SDLK_9, 0, KFLAG_SOFTKEY      	},
-		{	{ SOFT_WAIT }, SDLK_LEFT, 0, KFLAG_SOFTKEY     	},
-		{	{ SOFT_WAIT }, SDLK_4, 0, KFLAG_SOFTKEY      	},
-		{	{ SOFT_WAIT }, SDLK_RIGHT, 0, KFLAG_SOFTKEY    	},
-		{	{ SOFT_WAIT }, SDLK_6, 0, KFLAG_SOFTKEY      	},
-		{	{ SOFT_WAIT }, SDLK_END, 0, KFLAG_SOFTKEY    	},
-		{	{ SOFT_WAIT }, SDLK_1, 0, KFLAG_SOFTKEY      	},
-		{	{ SOFT_WAIT }, SDLK_DOWN, 0, KFLAG_SOFTKEY     	},
-		{	{ SOFT_WAIT }, SDLK_2, 0, KFLAG_SOFTKEY      	},
-		{	{ SOFT_WAIT }, SDLK_PAGEDOWN, 0, KFLAG_SOFTKEY 	},
-		{	{ SOFT_WAIT }, SDLK_3, 0, KFLAG_SOFTKEY      	},
+		{	__NON, { SOFT_WAIT }, SDLK_HOME, 0, KFLAG_SOFTKEY     	},
+		{	__NON, { SOFT_WAIT }, SDLK_7, 0, KFLAG_SOFTKEY      	},
+		{	__NON, { SOFT_WAIT }, SDLK_UP, 0, KFLAG_SOFTKEY      	},
+		{	__NON, { SOFT_WAIT }, SDLK_8, 0, KFLAG_SOFTKEY      	},
+		{	__NON, { SOFT_WAIT }, SDLK_PAGEUP, 0, KFLAG_SOFTKEY   	},
+		{	__NON, { SOFT_WAIT }, SDLK_9, 0, KFLAG_SOFTKEY      	},
+		{	__NON, { SOFT_WAIT }, SDLK_LEFT, 0, KFLAG_SOFTKEY     	},
+		{	__NON, { SOFT_WAIT }, SDLK_4, 0, KFLAG_SOFTKEY      	},
+		{	__NON, { SOFT_WAIT }, SDLK_RIGHT, 0, KFLAG_SOFTKEY    	},
+		{	__NON, { SOFT_WAIT }, SDLK_6, 0, KFLAG_SOFTKEY      	},
+		{	__NON, { SOFT_WAIT }, SDLK_END, 0, KFLAG_SOFTKEY    	},
+		{	__NON, { SOFT_WAIT }, SDLK_1, 0, KFLAG_SOFTKEY      	},
+		{	__NON, { SOFT_WAIT }, SDLK_DOWN, 0, KFLAG_SOFTKEY     	},
+		{	__NON, { SOFT_WAIT }, SDLK_2, 0, KFLAG_SOFTKEY      	},
+		{	__NON, { SOFT_WAIT }, SDLK_PAGEDOWN, 0, KFLAG_SOFTKEY 	},
+		{	__NON, { SOFT_WAIT }, SDLK_3, 0, KFLAG_SOFTKEY      	},
 
-		{	{ 0 }, SDLK_RETURN, 0, 0      	},
+		{	_NON, SDLK_RETURN, 0, 0      	},
 
 		{	{ SOFT_WAIT }, SDLK_SYN, 0, KFLAG_TIMER },
 		0,
@@ -4607,39 +4609,41 @@ KBgamestate target_state = {
 #define COMBAT_PASS         	8
 #define COMBAT_VIEW_OPTIONS 	9
 #define COMBAT_CHEAT        	10
+#define COMBAT_CLICK        	11
 
 KBgamestate combat_state = {
 	{
-		{	{ SOFT_WAIT }, SDLK_HOME, 0, KFLAG_SOFTKEY     	},
-		{	{ SOFT_WAIT }, SDLK_7, 0, KFLAG_SOFTKEY      	},
-		{	{ SOFT_WAIT }, SDLK_UP, 0, KFLAG_SOFTKEY      	},
-		{	{ SOFT_WAIT }, SDLK_8, 0, KFLAG_SOFTKEY      	},
-		{	{ SOFT_WAIT }, SDLK_PAGEUP, 0, KFLAG_SOFTKEY   	},
-		{	{ SOFT_WAIT }, SDLK_9, 0, KFLAG_SOFTKEY      	},
-		{	{ SOFT_WAIT }, SDLK_LEFT, 0, KFLAG_SOFTKEY     	},
-		{	{ SOFT_WAIT }, SDLK_4, 0, KFLAG_SOFTKEY      	},
-		{	{ SOFT_WAIT }, SDLK_RIGHT, 0, KFLAG_SOFTKEY    	},
-		{	{ SOFT_WAIT }, SDLK_6, 0, KFLAG_SOFTKEY      	},
-		{	{ SOFT_WAIT }, SDLK_END, 0, KFLAG_SOFTKEY    	},
-		{	{ SOFT_WAIT }, SDLK_1, 0, KFLAG_SOFTKEY      	},
-		{	{ SOFT_WAIT }, SDLK_DOWN, 0, KFLAG_SOFTKEY     	},
-		{	{ SOFT_WAIT }, SDLK_2, 0, KFLAG_SOFTKEY      	},
-		{	{ SOFT_WAIT }, SDLK_PAGEDOWN, 0, KFLAG_SOFTKEY 	},
-		{	{ SOFT_WAIT }, SDLK_3, 0, KFLAG_SOFTKEY      	},
+		{	__NON, { SOFT_WAIT }, SDLK_HOME, 0, KFLAG_SOFTKEY     	},
+		{	__NON, { SOFT_WAIT }, SDLK_7, 0, KFLAG_SOFTKEY      	},
+		{	__NON, { SOFT_WAIT }, SDLK_UP, 0, KFLAG_SOFTKEY      	},
+		{	__NON, { SOFT_WAIT }, SDLK_8, 0, KFLAG_SOFTKEY      	},
+		{	__NON, { SOFT_WAIT }, SDLK_PAGEUP, 0, KFLAG_SOFTKEY   	},
+		{	__NON, { SOFT_WAIT }, SDLK_9, 0, KFLAG_SOFTKEY      	},
+		{	__NON, { SOFT_WAIT }, SDLK_LEFT, 0, KFLAG_SOFTKEY     	},
+		{	__NON, { SOFT_WAIT }, SDLK_4, 0, KFLAG_SOFTKEY      	},
+		{	__NON, { SOFT_WAIT }, SDLK_RIGHT, 0, KFLAG_SOFTKEY    	},
+		{	__NON, { SOFT_WAIT }, SDLK_6, 0, KFLAG_SOFTKEY      	},
+		{	__NON, { SOFT_WAIT }, SDLK_END, 0, KFLAG_SOFTKEY    	},
+		{	__NON, { SOFT_WAIT }, SDLK_1, 0, KFLAG_SOFTKEY      	},
+		{	__NON, { SOFT_WAIT }, SDLK_DOWN, 0, KFLAG_SOFTKEY     	},
+		{	__NON, { SOFT_WAIT }, SDLK_2, 0, KFLAG_SOFTKEY      	},
+		{	__NON, { SOFT_WAIT }, SDLK_PAGEDOWN, 0, KFLAG_SOFTKEY 	},
+		{	__NON, { SOFT_WAIT }, SDLK_3, 0, KFLAG_SOFTKEY      	},
 
-		{	{ 0 }, SDLK_a, 0, 0      	},
-		{	{ 0 }, SDLK_c, 0, 0      	},
-		{	{ 0 }, SDLK_f, 0, 0      	},
-		{	{ 0 }, SDLK_g, 0, 0      	},
-		{	{ 0 }, SDLK_s, 0, 0      	},
-		{	{ 0 }, SDLK_u, 0, 0      	},
-		{	{ 0 }, SDLK_v, 0, 0      	},
-		{	{ 0 }, SDLK_w, 0, 0      	},
-		{	{ 0 }, SDLK_SPACE, 0, 0 	},
-		{	{ 0 }, SDLK_o, 0, 0      	},
+		{	_NON, SDLK_a, 0, 0      	},
+		{	_NON, SDLK_c, 0, 0      	},
+		{	_NON, SDLK_f, 0, 0      	},
+		{	_NON, SDLK_g, 0, 0      	},
+		{	_NON, SDLK_s, 0, 0      	},
+		{	_NON, SDLK_u, 0, 0      	},
+		{	_NON, SDLK_v, 0, 0      	},
+		{	_NON, SDLK_w, 0, 0      	},
+		{	_NON, SDLK_SPACE, 0, 0 	},
+		{	_NON, SDLK_o, 0, 0      	},
 
-		{	{ 0 }, SDLK_F10, 0, 0      	},
-		{	{ SOFT_WAIT }, SDLK_SYN, 0, KFLAG_TIMER },
+		{	_NON, SDLK_F10, 0, 0      	},
+		{	{0,0,0,0}, {0,0}, SDLK_CLICK, 0, KFLAG_GRID      	},
+		{	__NON, { SOFT_WAIT }, SDLK_SYN, 0, KFLAG_TIMER },
 		0,
 	},
 	0
@@ -4670,45 +4674,45 @@ KBgamestate combat_state = {
 
 KBgamestate adventure_state = {
 	{
-		{	{ SOFT_WAIT }, SDLK_DOWN, 0, KFLAG_SOFTKEY     	},
-		{	{ SOFT_WAIT }, SDLK_2, 0, KFLAG_SOFTKEY      	},
-		{	{ SOFT_WAIT }, SDLK_LEFT, 0, KFLAG_SOFTKEY     	},
-		{	{ SOFT_WAIT }, SDLK_4, 0, KFLAG_SOFTKEY      	},
-		{	{ SOFT_WAIT }, SDLK_RIGHT, 0, KFLAG_SOFTKEY    	},
-		{	{ SOFT_WAIT }, SDLK_6, 0, KFLAG_SOFTKEY      	},
-		{	{ SOFT_WAIT }, SDLK_UP, 0, KFLAG_SOFTKEY      	},
-		{	{ SOFT_WAIT }, SDLK_8, 0, KFLAG_SOFTKEY      	},
-		{	{ SOFT_WAIT }, SDLK_END, 0, KFLAG_SOFTKEY    	},
-		{	{ SOFT_WAIT }, SDLK_1, 0, KFLAG_SOFTKEY      	},
-		{	{ SOFT_WAIT }, SDLK_PAGEDOWN, 0, KFLAG_SOFTKEY 	},
-		{	{ SOFT_WAIT }, SDLK_3, 0, KFLAG_SOFTKEY      	},
-		{	{ SOFT_WAIT }, SDLK_HOME, 0, KFLAG_SOFTKEY     	},
-		{	{ SOFT_WAIT }, SDLK_7, 0, KFLAG_SOFTKEY      	},
-		{	{ SOFT_WAIT }, SDLK_PAGEUP, 0, KFLAG_SOFTKEY   	},
-		{	{ SOFT_WAIT }, SDLK_9, 0, KFLAG_SOFTKEY      	},
-		{	{ SOFT_WAIT }, SDLK_SPACE, 0, KFLAG_SOFTKEY    	},
-		{	{ SOFT_WAIT }, SDLK_5, 0, KFLAG_SOFTKEY      	},
+		{	__NON, { SOFT_WAIT }, SDLK_DOWN, 0, KFLAG_SOFTKEY     	},
+		{	__NON, { SOFT_WAIT }, SDLK_2, 0, KFLAG_SOFTKEY      	},
+		{	__NON, { SOFT_WAIT }, SDLK_LEFT, 0, KFLAG_SOFTKEY     	},
+		{	__NON, { SOFT_WAIT }, SDLK_4, 0, KFLAG_SOFTKEY      	},
+		{	__NON, { SOFT_WAIT }, SDLK_RIGHT, 0, KFLAG_SOFTKEY    	},
+		{	__NON, { SOFT_WAIT }, SDLK_6, 0, KFLAG_SOFTKEY      	},
+		{	__NON, { SOFT_WAIT }, SDLK_UP, 0, KFLAG_SOFTKEY      	},
+		{	__NON, { SOFT_WAIT }, SDLK_8, 0, KFLAG_SOFTKEY      	},
+		{	__NON, { SOFT_WAIT }, SDLK_END, 0, KFLAG_SOFTKEY    	},
+		{	__NON, { SOFT_WAIT }, SDLK_1, 0, KFLAG_SOFTKEY      	},
+		{	__NON, { SOFT_WAIT }, SDLK_PAGEDOWN, 0, KFLAG_SOFTKEY 	},
+		{	__NON, { SOFT_WAIT }, SDLK_3, 0, KFLAG_SOFTKEY      	},
+		{	__NON, { SOFT_WAIT }, SDLK_HOME, 0, KFLAG_SOFTKEY     	},
+		{	__NON, { SOFT_WAIT }, SDLK_7, 0, KFLAG_SOFTKEY      	},
+		{	__NON, { SOFT_WAIT }, SDLK_PAGEUP, 0, KFLAG_SOFTKEY   	},
+		{	__NON, { SOFT_WAIT }, SDLK_9, 0, KFLAG_SOFTKEY      	},
+		{	__NON, { SOFT_WAIT }, SDLK_SPACE, 0, KFLAG_SOFTKEY    	},
+		{	__NON, { SOFT_WAIT }, SDLK_5, 0, KFLAG_SOFTKEY      	},
 
-		{	{ 0 }, SDLK_a, 0, 0      	},
-		{	{ 0 }, SDLK_c, 0, 0      	},
-		{	{ 0 }, SDLK_f, 0, 0      	},
-		{	{ 0 }, SDLK_l, 0, 0      	},		
-		{	{ 0 }, SDLK_i, 0, 0      	},
-		{	{ 0 }, SDLK_m, 0, 0      	},
-		{	{ 0 }, SDLK_p, 0, 0      	},
-		{	{ 0 }, SDLK_s, 0, 0      	},
-		{	{ 0 }, SDLK_u, 0, 0      	},
-		{	{ 0 }, SDLK_v, 0, 0      	},
-		{	{ 0 }, SDLK_w, 0, 0      	},
-		{	{ 0 }, SDLK_q, 0, KFLAG_TRAPSIGNAL },
+		{	_NON, SDLK_a, 0, 0      	},
+		{	_NON, SDLK_c, 0, 0      	},
+		{	_NON, SDLK_f, 0, 0      	},
+		{	_NON, SDLK_l, 0, 0      	},
+		{	_NON, SDLK_i, 0, 0      	},
+		{	_NON, SDLK_m, 0, 0      	},
+		{	_NON, SDLK_p, 0, 0      	},
+		{	_NON, SDLK_s, 0, 0      	},
+		{	_NON, SDLK_u, 0, 0      	},
+		{	_NON, SDLK_v, 0, 0      	},
+		{	_NON, SDLK_w, 0, 0      	},
+		{	_NON, SDLK_q, 0, KFLAG_TRAPSIGNAL },
 
-		{	{ 0 }, SDLK_q, KMOD_CTRL, 0	},
-		{	{ 0 }, SDLK_d, 0, 0      	},
-		{	{ 0 }, SDLK_o, 0, 0      	},
-		{	{ 0 }, SDLK_n, 0, 0      	},
+		{	_NON, SDLK_q, KMOD_CTRL, 0	},
+		{	_NON, SDLK_d, 0, 0      	},
+		{	_NON, SDLK_o, 0, 0      	},
+		{	_NON, SDLK_n, 0, 0      	},
 
-		{	{ 0 }, SDLK_F10, 0, 0      	},
-		{	{ SOFT_WAIT }, SDLK_SYN, 0, KFLAG_TIMER },
+		{	_NON, SDLK_F10, 0, 0      	},
+		{	__NON, { SOFT_WAIT }, SDLK_SYN, 0, KFLAG_TIMER },
 		0,
 	},
 	0
@@ -5826,8 +5830,8 @@ int save_game(KBgame *game) {
 
 KBgamestate quit_question = {
 	{
-		{	{ 0 }, 0xFF, 0, KFLAG_ANYKEY },
-		{	{ 0 }, SDLK_q, KMOD_CTRL, KFLAG_TRAPSIGNAL },
+		{	_NON, 0xFF, 0, KFLAG_ANYKEY },
+		{	_NON, SDLK_q, KMOD_CTRL, KFLAG_TRAPSIGNAL },
 		0
 	},
 	0

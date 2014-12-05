@@ -80,8 +80,14 @@ extern KBsession local;
  */
 typedef struct KBhotspot {
 
+	SDL_Rect coords;
 	union {
-		SDL_Rect coords;
+		struct {
+			word grid_x;
+			word grid_y;
+			word cell_w;
+			word cell_h;
+		};
 		struct {
 			Uint32 resolution;
 			Uint32 passed;
