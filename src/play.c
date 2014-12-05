@@ -1387,6 +1387,7 @@ int compact_units(KBcombat *war) {
 					memcpy(&war->units[j][k], &war->units[j][k+1], sizeof(KBunit));
 					//printf("Copying %d to %d\n", k+1, k);
 					war->units[j][k+1].count = 0;
+					war->units[j][k+1].turn_count = 0;
 				}
 			}
 		}
@@ -1577,7 +1578,7 @@ void unit_relocate(KBcombat *war, int side, int id, int nx, int ny) {
 	KBunit *u = &war->units[side][id];
 
 	war->umap[u->y][u->x] = 0;
-	war->umap[ny][nx] = (side * MAX_UNITS) + id + 1;
+	war->umap[ny][nx] = PACK_UID(side, id);
 
 	u->x = nx;
 	u->y = ny;
