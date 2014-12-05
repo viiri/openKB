@@ -3384,6 +3384,7 @@ void draw_defeat(KBgame *game) {
 /* Combat-helping macros */
 #define UID_AS_SIDE(UID) (UID > 5 ? 1 : 0)
 #define UID_AS_ID(UID) (UID > 5 ? UID - 6 : UID - 1)
+#define UID_AS_PAIR(UID) UID_AS_SIDE(UID), UID_AS_ID(UID)
 #define PACK_UID(SIDE,ID) (SIDE * 5 + ID + 1)
 
 void hit_unit(KBcombat *war, int a_side, int a_id, int t_side, int t_id) {
@@ -5761,6 +5762,12 @@ int combat_loop(KBgame *game, KBcombat *combat) {
 			redraw = 1;
 		}
 
+		if (!combat->units[combat->side][combat->unit_id].count) {
+			/* After player/AI moves, currently selected unit might be dead */
+			/* If this happens, silently move to the next one */
+			pass = 1;
+		}
+
 		if (pass || combat->units[combat->side][combat->unit_id].acted) {
 
 			combat->units[combat->side][combat->unit_id].frame = 0;
@@ -5782,8 +5789,7 @@ int combat_loop(KBgame *game, KBcombat *combat) {
 				else
 					combat->unit_id = next;
 
-				if (next != -1 && combat->side == 0
-				&& combat->units[combat->side][combat->unit_id]. out_of_control) {
+				if (combat->units[combat->side][combat->unit_id]. out_of_control) {
 					combat_log("%s are out of control!",
 					troops[
 					combat->units[combat->side][combat->unit_id] . troop_id

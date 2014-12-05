@@ -1373,13 +1373,6 @@ int compact_units(KBcombat *war) {
 	for (j = 0; j < MAX_SIDES; j++) {
 		for (i = 0; i < MAX_UNITS - 1; i++) {
 			if (!war->units[j][i].count) {
-				if (war->side == j && war->unit_id == i) {
-					/* If pointing on dead unit, move pointer to next one */
-					/* Eventually, we can end up pointing to a dead one anyway,
-					 * thus, we must also ensure each time "compact" occurs,
-					 * we check for pass event (i.e. probably select next unit) */
-					war->unit_id++;
-				}
 				for (k = i; k < MAX_UNITS - 1; k++) {
 
 					u = &war->units[j][k];
