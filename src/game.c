@@ -4742,10 +4742,143 @@ static signed char move_offset_y[9] = { -1, 0, 0, 1, -1,-1, 1, 1, -0 };
 
 void reset_adventure_hotspots() {
 
+	SDL_Rect *tile = local.map_tile;
+	KBgamestate *st = &adventure_state;
+	SDL_Rect *rect;
+
+	int i, j, k, l;
+	for (k = 0; k < ARROW_KEYS; k++) {
+		l = k % 2 + 1;
+		j = move_offset_y[k / 2] * -l;
+		i = move_offset_x[k / 2] *  l;
+
+		rect = &st->spots[k].coords;
+
+		rect->w = tile->w;
+		rect->h = tile->h;
+		rect->x = (2 + i) * (tile->w) + local.map.x;
+		rect->y = (2 + j) * (tile->h) + local.map.y;
+	}
 }
 void reset_adventure_menu_hotspots() {
 
+	KBgamestate *st = &adventure_state;
+
+	SDL_Rect *right_frame = local.frames[FRAME_RIGHT];
+	SDL_Surface *purse = SDL_TakeSurface(GR_PURSE, 0, 0);
+
+	SDL_Rect *map = &local.map;
+	SDL_Rect *fs = &sys->font_size;
+
+	int i, j, max;
+
+	int relate[7] = {
+		/* sidebar */
+		SDLK_i, /* 0 -- contract -> view contract */
+		SDLK_a, /* 1 -- siege weapons -> view army */
+		SDLK_u, /* 2 -- magic ability -> view spells */
+		SDLK_p, /* 3 -- puzzle overview -> view puzzle map */
+		SDLK_v, /* 4 -- gold -> view character */
+		/* statusbar */
+		SDLK_o, /* 5 -- options -> options menu */
+		SDLK_c, /* 6 -- controls -> controls menu */
+	};
+	int topoff[2] = {
+		0, // strlen('')
+		10,// strlen(' Options /')
+	};
+	int toplen[2] = {
+		9, // strlen(' Options ')
+		10, // strlen(' Controls ')
+	};
+
+	max = st->max_spots ? st->max_spots : MAX_HOTSPOTS;
+
+	/** Sidebar **/
+	for (i = 0; i < 5; i++) {
+		for (j = 0; j < max; j++) {
+			if (st->spots[j].hot_key == relate[i]) {
+				SDL_Rect *rect = &st->spots[j].coords;
+
+				rect->x = sys->screen->w - right_frame->w - purse->w;
+				rect->y = map->y + purse->h * i;
+
+				rect->w = purse->w;
+				rect->h = purse->h;
+				break;
+			}
+		}
+	}
+
+	/** Statusbar **/
+	for (i = 0; i < 2; i++) {
+		for (j = 0; j < max; j++) {
+			if (st->spots[j].hot_key == relate[5+i]) {
+				SDL_Rect *rect = &st->spots[j].coords;
+
+				rect->x = local.status.x + topoff[i] * fs->w;
+				rect->y = local.status.y - fs->h / 8;
+
+				rect->w = toplen[i] * fs->w;
+				rect->h = fs->h + fs->h / 2;
+
+				if (i == 0) { /* emulate "arrow left" in controls menu */
+					settings_selection.spots[3].coords.x = rect->x;
+					settings_selection.spots[3].coords.y = rect->y;
+					settings_selection.spots[3].coords.w = rect->w;
+					settings_selection.spots[3].coords.h = rect->h;
+				}
+				#if 0
+				if (i == 1) { /* emulate "arrow right" in options menu */
+					adventure_state.spots[4].coords.x = rect->x;
+					adventure_state.spots[4].coords.y = rect->y;
+					adventure_state.spots[4].coords.w = rect->w;
+					adventure_state.spots[4].coords.h = rect->h;
+					adventure_state.spots[19].coords.h = 0;
+					adventure_state.spots[19].coords.h = 0;
+				}
+				#endif
+				break;
+			}
+		}
+	}
 }
+void reset_adventure_dropdown_hotspots() {
+
+	KBgamestate *st = &adventure_state;
+
+	SDL_Rect *right_frame = local.frames[FRAME_RIGHT];
+	SDL_Surface *purse = SDL_TakeSurface(GR_PURSE, 0, 0);
+
+	SDL_Rect *map = &local.map;
+	SDL_Rect *fs = &sys->font_size;
+
+	int i, j, max;
+	int offset = strlen(" Options /");
+	int len = strlen(" Controls ");
+
+	for (j = 0; j < st->max_spots; j++) {
+		if (st->spots[j].hot_key == SDLK_c) {
+
+			SDL_Rect *rect = &st->spots[j].coords;
+
+			rect->x = local.status.x + offset * fs->w;
+			rect->y = local.status.y - fs->h / 8;
+
+			rect->w = len * fs->w;
+			rect->h = fs->h + fs->h / 2;
+
+			/* emulate "arrow right" */
+			adventure_state.spots[4].coords.x = rect->x;
+			adventure_state.spots[4].coords.y = rect->y;
+			adventure_state.spots[4].coords.w = rect->w;
+			adventure_state.spots[4].coords.h = rect->h;
+			adventure_state.spots[19].coords.w = 0;
+			adventure_state.spots[19].coords.h = 0;
+		}
+	}
+}
+
 void reset_combat_hotspots() {
 
 }
@@ -4992,6 +5125,7 @@ int options_menu(KBgame *game) {
 	KB_iprintf(" Options ");
 
 	KB_reset(&adventure_state);
+	reset_adventure_dropdown_hotspots();
 
 	while (!done) {
 		if (redraw == 1) {
@@ -5078,6 +5212,9 @@ int options_menu(KBgame *game) {
 
 #undef KEY_ACT
 	}
+
+	reset_adventure_hotspots();
+	reset_adventure_menu_hotspots(); /* pop */
 
 	return key;
 }
@@ -5239,6 +5376,9 @@ int controls_menu(KBgame *game, int combat) {
 	}
 
 	KB_reset(&adventure_state);
+	reset_adventure_hotspots();
+	reset_adventure_menu_hotspots(); /* pop */
+
 
 	return key;
 }
@@ -6055,6 +6195,9 @@ void adventure_loop(KBgame *game) {
 	int weekend = 0;
 
 #define KEY_ACT(ACT) (ARROW_KEYS + 1 + KBACT_ ## ACT)
+
+	reset_adventure_hotspots();
+	reset_adventure_menu_hotspots();
 
 	while (!done) {
 
