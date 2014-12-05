@@ -473,8 +473,9 @@ KBgame *create_game(int pclass) {
 
 		if (redraw) {
 
-			SDL_TextRect(screen, &menu, colors[COLOR_TEXT], colors[COLOR_BACKGROUND], 1);
+			SDL_TextRect(screen, &menu, colors[COLOR_FRAME], colors[COLOR_BACKGROUND], 1);
 
+			KB_icolor(colors);
 			KB_iloc(menu.x + fs->w, menu.y + fs->h);	
 			KB_iprintf(" %-9s Name: ", classes[pclass][0].title);
 
