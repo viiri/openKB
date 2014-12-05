@@ -210,6 +210,7 @@ extern const char *KBresid_names[];
 #define EGA_WHITE 	15
 #define EGA_DVIOLET EGA_MAGENTA
 #define EGA_DYELLOW EGA_BROWN
+#define EGA_DWHITE  EGA_GREY
 
 /* Possible values for COL_TEXT subid: */
 #define CS_GENERIC	0
