@@ -3461,6 +3461,23 @@ int move_unit(KBcombat *war, int side, int id, int ox, int oy) {
 	return 1;
 }
 
+int fly_unit(KBcombat *war, int side, int id, int nx, int ny) {
+	KBunit *u = &war->units[side][id];
+	KBtroop *t = &troops[u->troop_id];
+
+	/* Actually move */
+	unit_relocate(war, side, id, nx, ny);
+
+	/* Spend 1 flight point */
+	u->flights--;
+	if (!u->flights) u->acted = 1;
+
+	draw_combat(war);
+	combat_log("%s fly", t->name);
+
+	return 1;
+}
+
 /* TOH: */ int combat_loop(KBgame *game, KBcombat *combat);
 int run_combat(KBgame *game, int mode, int id) {
 
@@ -5410,17 +5427,8 @@ void unit_try_fly(KBcombat *war) {
 	ok = pick_target(war, &nx, &ny, 1);
 
 	if (ok) {
-		/* Actually move */
-		war->umap[u->y][u->x] = 0;
-		war->umap[ny][nx] = (war->side * MAX_UNITS) + war->unit_id + 1;
-
-		u->x = nx;
-		u->y = ny;
-
-		/* Spend 1 flight point */
-		u->flights--;
-		if (!u->flights) u->acted = 1;
-	} 
+		fly_unit(war, war->side, war->unit_id, nx, ny);
+	}
 }
 
 void unit_try_shoot(KBcombat *war) {
@@ -5575,11 +5583,10 @@ int ai_unit_think(KBcombat *combat) {
 
 			int far_target = ai_pick_target(combat, 0);
 			if (far_target != -1) {
-				KBunit *target = &combat->units[1-combat->side][far_target];
 				//shoot_projectile(combat, far_target);
-				
+
 				/* Actualy shoot */
-				unit_ranged_damage(combat, 1-combat->side, far_target);
+				unit_ranged_damage(combat, UID_AS_SIDE(far_target), UID_AS_ID(far_target));
 
 				acted = 1;
 			}
@@ -5596,15 +5603,9 @@ int ai_unit_think(KBcombat *combat) {
 
 		unit_fly_offset(combat, combat->side, combat->unit_id, far_target, &nx, &ny);
 
-		if (nx != u->x && ny != u->y) {
-			/* Actually move */
-			unit_relocate(combat, combat->side, combat->unit_id, nx, ny);
+			/* Actually fly */
+			acted = fly_unit(combat, combat->side, combat->unit_id, nx, ny);
 
-			/* Spend 1 flight point */
-			u->flights--;
-			if (!u->flights) u->acted = 1;
-
-			acted = 1;
 		} else {
 			printf("...but there's no way to fly there...\n");
 		}
