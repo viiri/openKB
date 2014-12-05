@@ -4907,13 +4907,18 @@ void setup_grid(KBgamestate *st, int start_x, int start_y, int cell_w, int cell_
 int debug_cheat_menu(KBgame *game, KBcombat *war) {
 	int i;
 	char *msg = NULL;
-	SDL_Rect *text = KB_BottomBox("Debug command (A-Z) ?", "", 0);
+	SDL_Rect *text = KB_BottomBox(NULL, "Debug command (A-Z) ?", 0);
 	int key = 0;
 	KB_flip(sys);
 	while (key == 0 || key == 27) {
 		key = KB_event(&alphabet_letter);
 	}
+	KB_iprintf(" %c\n", 96+key);
 	switch (96+key) {
+		case 'a':
+			auto_battle = 1 - auto_battle;
+			msg = auto_battle ? "Auto-combat ON" : "Auto-combat OFF";
+		break;
 		case 'x':
 			game->player_troops[0] = 0x01; /* Sprites */
 			game->player_numbers[0] = 1;
@@ -4927,9 +4932,21 @@ int debug_cheat_menu(KBgame *game, KBcombat *war) {
 			game->player_numbers[4] = 1;
 			msg = "Flight team";
 		break;
-		case 'a':
+		case 'r':
 		{
-			KB_BottomBox("Add which troop (A-Z) ?", "", 0);
+			KB_iprint("Seed: ");
+			int cx, cy;
+			KB_getpos(sys, &cx, &cy);
+			char *txt = text_input(4, 1, cx, cy, 0xff,00);
+			if (!txt) return;
+			int val = atoi(txt);
+			srand(val);
+			msg = "RNG Seeded";
+		}
+		break;
+		case 't':
+		{
+			KB_iprint("Add which troop (A-Z) ?");
 			for (i = 0; i < MAX_TROOPS; i++) {
 				KB_stdlog("%c - %s ", i + 'A', troops[i].name);
 			}
@@ -4938,9 +4955,20 @@ int debug_cheat_menu(KBgame *game, KBcombat *war) {
 			int troop_id = -1;
 			while (troop_id == -1 || troop_id >= MAX_TROOPS) {
 				troop_id = KB_event(&alphabet_letter) - 1;
+				if (troop_id == 0xFF) return;
 			}
-			add_troop(game, troop_id, troop_numbers[troop_id][game->continent] ? troop_numbers[troop_id][game->continent] : 1);
-			msg = "+Troops";
+			KB_iprintf(" %c\n", 'A' + troop_id);
+			KB_iprintf(" %s,\n How many? (MAX) ", troops[troop_id].name);
+			int cx, cy;
+			KB_getpos(sys, &cx, &cy);
+			char *txt = text_input(4, 1, cx, cy, 0xff,00);
+			if (!txt) return;
+			int val = atoi(txt);
+			if (val <= 0) val = troop_numbers[troop_id][game->continent];
+			if (val <= 0) val = 1;
+			add_troop(game, troop_id, val);
+			KB_iprint("\n");
+			return;
 		}
 		break;
 		case 'w':
@@ -4953,16 +4981,19 @@ int debug_cheat_menu(KBgame *game, KBcombat *war) {
 				return 1;
 			}
 			win_game(game);
+			return;
 		break;
 		case 'l':
 			lose_game(game);
+			return;
 		break;
 		case 'f':
 			game->mount = KBMOUNT_FLY;
+			msg = "Flying";
 		break;
 		case 's':
 			game->siege_weapons = 1;
-			msg = "+Siege weapns";
+			msg = "Got siege weapons";
 		break;
 		case 'u':
 			for (i = 0; i < MAX_SPELLS; i++) {
@@ -4994,7 +5025,9 @@ int debug_cheat_menu(KBgame *game, KBcombat *war) {
 		break;
 	}
 
-	if (msg) KB_TopBox(MSG_FLUSH | MSG_WAIT, msg);
+	KB_iprint(msg);
+	KB_flip(sys);
+	KB_Wait();
 
 	return 0;
 }
