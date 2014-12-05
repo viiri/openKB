@@ -3900,21 +3900,6 @@ int freeze_army(KBgame *game, KBcombat *war) {
 	x = u->x;
 	y = u->y;
 
-	ok = pick_target(war, &x, &y, 3);
-
-}
-
-int resurrect_army(KBgame *game, KBcombat *war) {
-
-	int ok, x, y, side, unit_id;
-
-	KBunit *u = &war->units[war->side][war->unit_id];
-
-	KB_TopBox(MSG_CENTERED, "Select army to Resurrect");
-
-	x = u->x;
-	y = u->y;
-
 	ok = pick_target(war, &x, &y, 4);
 
 	if (ok) {
