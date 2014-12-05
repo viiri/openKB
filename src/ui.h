@@ -34,10 +34,16 @@
 
 #define KFLAG_TRAPSIGNAL 0x08
 
+#define KFLAG_GRID 0x80
+
 #define KFLAG_SOFTKEY 	(KFLAG_TIMER | KFLAG_TIMEKEY)
 
 /* Fake keycode for "Sync" event */
 #define SDLK_SYN 0x16
+
+/* Fake keycode for "Grid" event */
+#define SDLK_CLICK 0x01
+
 
 /* Delays */
 #define SOFT_WAIT 150

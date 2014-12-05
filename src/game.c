@@ -4612,7 +4612,7 @@ KBgamestate target_state = {
 
 
 #define COMBAT_ARROW_KEYS 16
-#define COMBAT_ACTION_KEYS 11
+#define COMBAT_ACTION_KEYS 12
 
 #define COMBAT_SYN_EVENT (COMBAT_ACTION_KEYS + COMBAT_ARROW_KEYS + 1)
 
@@ -5650,6 +5650,87 @@ int ai_unit_think(KBcombat *combat) {
 	return !acted;
 }
 
+/* "grid_heurisitc" -- given a currently selected unit and an arbitary combat tile,
+ * determine what will happen if player performs a click on such tile.
+ * returns a value from this enum:
+ */
+enum {
+	COMBAT_INTENT_NONE = 0,
+	COMBAT_INTENT_WAIT,
+	COMBAT_INTENT_MOVE,
+	COMBAT_INTENT_CANT_MOVE,
+	COMBAT_INTENT_FLY,
+	COMBAT_INTENT_CANT_FLY,
+	COMBAT_INTENT_MELEE,
+	COMBAT_INTENT_SHOOT,
+	COMBAT_INTENT_CANT_SHOOT,
+};
+int grid_heuristic(KBcombat *combat, int side, int id, int x, int y, int *uid, int *nx, int *ny) {
+	KBunit *u = &combat->units[combat->side][combat->unit_id];
+
+	int u_uid = PACK_UID(side, id);
+	int o_uid;
+
+	int nearby = 1;
+
+	int diff_x = u->x - x;
+	int diff_y = u->y - y;
+	/* Poor man's abs */
+	if (diff_x < 0) diff_x = -diff_x;
+	if (diff_y < 0) diff_y = -diff_y;
+
+	if (diff_x > 1 || diff_y > 1) nearby = 0;
+
+	*nx = x;
+	*ny = y;
+
+	if ((o_uid = combat->umap[y][x])) { /* Unit */
+
+		*uid = o_uid;
+
+		if (u_uid == o_uid) { /* Self */
+			return COMBAT_INTENT_WAIT;
+		}
+		else if (units_are_friendly(combat, side, id, UID_AS_PAIR(o_uid))) { /* Friend */
+			return COMBAT_INTENT_NONE;
+		}
+		else if (nearby) { /* Enemy, close */
+			*nx = x - u->x;
+			*ny = y - u->y;
+			return COMBAT_INTENT_MELEE;
+		} else { /* Enemy, far */
+			if (u->shots && !unit_surrounded(combat, side, id)) {
+				return COMBAT_INTENT_SHOOT;
+			} else if (troops[u->troop_id].ranged_ammo) {
+				return COMBAT_INTENT_CANT_SHOOT;
+			} else {
+				return COMBAT_INTENT_NONE;
+			}
+		}
+	}
+
+	if (combat->omap[y][x]) {
+		/* Obstacle */
+		return COMBAT_INTENT_CANT_MOVE;
+	} else if (nearby) {
+		/* Nearby open space */
+		*nx = x - u->x;
+		*ny = y - u->y;
+		return COMBAT_INTENT_MOVE;
+	} else {
+		/* Far open space */
+		if (u->flights) {
+			return COMBAT_INTENT_FLY;
+		} else if (troops[u->troop_id].abilities & ABIL_FLY) {
+			return COMBAT_INTENT_CANT_FLY;
+		} else {
+			return COMBAT_INTENT_CANT_MOVE;
+		}
+	}
+	/* Should never reach this place, but just in case: */
+	return -1;
+}
+
 static signed char combat_move_offset_x[9] = { -1, 0, 1, -1, 1, -1, 0, 1 };
 static signed char combat_move_offset_y[9] = { -1,-1,-1,  0, 0,  1, 1, 1 };
 
@@ -5670,17 +5751,13 @@ int combat_loop(KBgame *game, KBcombat *combat) {
 
 #define KEY_ACT(ACT) (COMBAT_ARROW_KEYS + 1 + COMBAT_ ## ACT)
 
+	KB_reset(&combat_state);
+	setup_grid(&combat_state, local.map.x, local.map.y, local.map_tile->w, local.map_tile->h, CLEVEL_W, CLEVEL_H);
+
 	while (!done) {
 		key = KB_event(&combat_state);
 
 		if (key == 0xFF) done = 2;
-
-		if (key != COMBAT_SYN_EVENT &&
-			(combat->side != 0 || combat->units[combat->side][combat->unit_id].out_of_control))
-		{
-			/* Discard input during CPU turn */
-			key = 0;
-		}
 
 		if (key == KEY_ACT(VIEW_OPTIONS) || key == KEY_ACT(VIEW_CONTROLS)) {
 			int redraw_under = 0;
@@ -5695,6 +5772,56 @@ int combat_loop(KBgame *game, KBcombat *combat) {
 					key = controls_menu(game, 1);
 				redraw_under = 1;
 			} while (key == KEY_ACT(VIEW_OPTIONS) || key == KEY_ACT(VIEW_CONTROLS));
+		}
+
+		if (key == KEY_ACT(CHEAT)) {
+			pass = debug_cheat_menu(game,combat);
+			redraw = 1;
+		}
+
+		if (key != COMBAT_SYN_EVENT &&
+			(auto_battle || combat->side != 0 || combat->units[combat->side][combat->unit_id].out_of_control))
+		{
+			/* Discard input during CPU turn */
+			key = 0;
+		}
+
+		if (key == KEY_ACT(CLICK)) {
+			int i = key - 1 ;//combat_state.hover;
+			int x = combat_state.spots[i].grid_x;
+			int y = combat_state.spots[i].grid_y;
+			printf("%d> CLICKED ON GRID <%d> got %d,%d\n",key,combat_state.hover, x,y);
+			int uid, nx, ny;
+			int intent = grid_heuristic(combat, combat->side, combat->unit_id, x, y, &uid, &nx, &ny);
+			printf("Got intent: %d, x^: %d, y^: %d\n", intent, nx, ny);
+			switch(intent) {
+				case COMBAT_INTENT_MOVE:
+				case COMBAT_INTENT_MELEE:
+					for (i = 0; i < COMBAT_ARROW_KEYS; i++)
+						if (combat_move_offset_x[i] == nx
+						&& combat_move_offset_y[i] == ny) {
+							key = i*2+1;
+							break;
+						}
+				break;
+				case COMBAT_INTENT_WAIT:
+					key = KEY_ACT(WAIT);
+				break;
+				case COMBAT_INTENT_FLY:
+					fly_unit(combat, combat->side, combat->unit_id, nx, ny);
+				break;
+				case COMBAT_INTENT_SHOOT:
+					unit_ranged_damage(combat, UID_AS_SIDE(uid), UID_AS_ID(uid));
+				break;
+				case COMBAT_INTENT_CANT_SHOOT:
+					combat_error("Can't Shoot", NULL);
+				break;
+				case COMBAT_INTENT_CANT_FLY:
+					combat_error("Can't Fly", NULL);
+				break;
+				case COMBAT_INTENT_NONE:
+				default: break;
+			}
 		}
 
 		switch (key) {

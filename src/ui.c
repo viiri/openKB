@@ -411,9 +411,25 @@ int KB_event(KBgamestate *state) {
 	/* Over a hotspot */
 	if (new_hover != -1) {
 		state->hover = new_hover;
+		/* In a grid */
+		if (state->spots[new_hover].flag & KFLAG_GRID) {
+			mouse_x -= state->spots[new_hover].coords.x;//start_x
+			mouse_y -= state->spots[new_hover].coords.y;//start_x
+			state->spots[new_hover].grid_x = mouse_x / state->spots[new_hover].cell_w;
+			state->spots[new_hover].grid_y = mouse_y / state->spots[new_hover].cell_h;
+			/*
+			printf("Fishing inside grid <%d> (%d,%d)\n",
+			new_hover,
+			state->spots[new_hover].grid_x,
+			state->spots[new_hover].grid_y
+			);*/
+		}
+		/* And clicking */
 		if (click != -1) {
 			eve = new_hover + 1; /* !!! */
 			if (state->spots[new_hover].flag & KFLAG_RETKEY)
+				eve = state->spots[new_hover].hot_key;
+			if (state->spots[new_hover].flag & KFLAG_ANYKEY)
 				eve = state->spots[new_hover].hot_key;
 		}
 	}
