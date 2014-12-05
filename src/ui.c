@@ -508,6 +508,8 @@ void SDL_TextRect(SDL_Surface *dest, SDL_Rect *r, Uint32 fore, Uint32 back, int 
 	else inprint(dest, "\x15", i, r->y);
 	inprint(dest, "\x12", r->x, r->y + r->h - fs->h);/* Bottom-left */
 	inprint(dest, "\x13", i, r->y + r->h - fs->h);/* Bottom-right */
+
+	KB_iloc(r->x, r->y);
 }
 
 
@@ -648,7 +650,7 @@ SDL_Rect* KB_BottomBox(const char *header, const char *str, byte flag) {
 
 	/* Message */
 	KB_iloc(text->x, text->y + fs->h/4);
-	if (header) KB_iprint("\n\n");	
+	if (header) KB_iprint("\n\n");
 	if (flag & MSG_PADDED) KB_iloc(text->x, text->y + fs->h * 5);
 	KB_iprint(str);
 
