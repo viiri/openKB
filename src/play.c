@@ -1335,6 +1335,16 @@ int unit_under_control(KBcombat *war, int side, int id) {
 	return army_leadership(war->heroes[side], u->troop_id) > 0;
 }
 
+/* Returns 1 if units are friendly, 0 if hostile */
+int units_are_friendly(KBcombat *war, int a_side, int a_id, int o_side, int o_id) {
+	KBunit *u = &war->units[a_side][a_id];
+	KBunit *o = &war->units[o_side][o_id];
+	/* Out-of-control units have no friends */
+	if (u->out_of_control || o->out_of_control) return 0;
+	/* Same side */
+	return a_side == o_side;
+}
+
 word units_killed(dword damage, byte hp) {
 	return damage / hp;
 }
