@@ -3940,6 +3940,21 @@ int resurrect_army(KBgame *game, KBcombat *war) {
 
 }
 
+int resurrect_army(KBgame *game, KBcombat *war) {
+
+	int ok, x, y, side, unit_id;
+
+	KBunit *u = &war->units[war->side][war->unit_id];
+
+	KB_TopBox(MSG_CENTERED, "Select army to Resurrect");
+
+	x = u->x;
+	y = u->y;
+
+	ok = pick_target(war, &x, &y, 3);
+
+}
+
 int damage_army(KBgame *game, KBcombat *war, word base_damage, byte spell_id) {
 
 	char msg[128];
