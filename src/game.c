@@ -4886,6 +4886,24 @@ void reset_combat_menu_hotspots() {
 
 }
 
+void setup_grid(KBgamestate *st, int start_x, int start_y, int cell_w, int cell_h, int max_cols, int max_rows) {
+	int i;
+	int max = st->max_spots ? st->max_spots : MAX_HOTSPOTS;
+	for (i = 0; i < max; i++) {
+		if (st->spots[i].flag & KFLAG_GRID) {
+			st->spots[i].cell_w = cell_w;
+			st->spots[i].cell_h = cell_h;
+			st->spots[i].grid_x = -1;
+			st->spots[i].grid_y = -1;
+
+			st->spots[i].coords.w = cell_w * max_cols;
+			st->spots[i].coords.h = cell_h * max_rows;
+			st->spots[i].coords.x = start_x;
+			st->spots[i].coords.y = start_y;
+		}
+	}
+}
+
 int debug_cheat_menu(KBgame *game, KBcombat *war) {
 	int i;
 	char *msg = NULL;
