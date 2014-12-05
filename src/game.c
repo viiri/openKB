@@ -5611,11 +5611,6 @@ int ai_unit_think(KBcombat *combat) {
 			printf("...but there's no way to fly there...\n");
 		}
 
-		if (acted == 1) {
-			draw_combat(combat);//refresh screen
-			combat_log("%s fly", t->name);
-		}
-
 		//draw_status("Unitia fly");
 		//KB_flip(sys);
 		//SDL_Delay(300);
@@ -5649,13 +5644,6 @@ int ai_unit_think(KBcombat *combat) {
 	if (!acted) {
 
 		return unit_try_wait(combat);
-
-	}
-	/* Hack -- if combat occured, force unit swap (to ensure we're not
-	 * pointing to an empty slot) */
-	if (acted == 2) {
-
-		return 1;
 
 	}
 
