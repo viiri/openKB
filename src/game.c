@@ -5745,6 +5745,8 @@ int ai_unit_think(KBcombat *combat) {
 
 		unit_fly_offset(combat, combat->side, combat->unit_id, far_target, &nx, &ny);
 
+		if (nx != u->x || ny != u->y) {
+
 			/* Actually fly */
 			acted = fly_unit(combat, combat->side, combat->unit_id, nx, ny);
 
