@@ -1320,9 +1320,13 @@ int unit_touching(KBcombat *war, int side, int id, int other_side, int other_id)
 /* See if any enemy units are touching this one */
 int unit_surrounded(KBcombat *war, int side, int id) {
 	int i, j;
+	for (j = 0; j < MAX_SIDES; j++) {
 	for (i = 0; i < MAX_UNITS; i++) {
-		if (!war->units[1-side][i].count) continue;
-		if (unit_touching(war, side, id, 1-side, i)) return 1;
+		if (!war->units[j][i].count) continue;
+		if (side == j && id == i) continue;
+		if (units_are_friendly(war, side, id, j, i)) continue;
+		if (unit_touching(war, side, id, j, i)) return 1;
+	}
 	}
 	return 0;
 }
