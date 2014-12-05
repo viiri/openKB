@@ -5251,7 +5251,7 @@ int options_menu(KBgame *game) {
 			continue;
 		}
 
-		if (key == 5 /*|| key == 20*/ ) { /* Hack -- Arrow key right or 'c' button */
+		if (key == 5 /*|| key == 20*/ ) { /* Hack -- Arrow key right//or 'c' button */
 			key = KEY_ACT(VIEW_CONTROLS);
 			break;
 		}
@@ -5663,9 +5663,8 @@ void unit_try_shoot(KBcombat *war) {
 
 	KBunit *u = &war->units[war->side][war->unit_id];
 
-	// TODO: display "Can't Shoot" message for units that can't shoot
 	if (!u->shots || unit_surrounded(war, war->side, war->unit_id)) {
-		KB_TopBox(MSG_WAIT | MSG_PADDED, "Can't Shoot");
+		combat_error("Can't Shoot", NULL);
 		return;
 	}
 
