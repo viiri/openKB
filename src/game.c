@@ -416,7 +416,7 @@ KBgame *create_game(int pclass) {
 
 	SDL_Surface *screen = sys->screen;
 
-	Uint32 *colors = KB_Resolve(COL_TEXT, CS_CHROME);
+	Uint32 *colors = KB_Resolve(COL_TEXT, CS_GENERIC);
 
 	int key = 0;
 	int done = 0;
