@@ -147,7 +147,7 @@ KBgame* KB_loadDAT(const char* filename) {
 			char test_bits = READ_BYTE(p);
 			for (k = 0; k < 8; k++) {
 				char one_bit = ((test_bits & (0x01 << k)) >> k) & 0x01;
-				game->fog[n][y][x + 8 - k] = one_bit;
+				game->fog[n][y][x + 7 - k] = one_bit;
 			}
 		}
 	}
@@ -387,7 +387,7 @@ int KB_saveDAT(const char* filename, KBgame *game) {
 		for (x = 0; x < LEVEL_W; x += 8) {
 			char one_byte = 0;
 			for (k = 0; k < 8; k++) {
-				char one_bit = (game->fog[n][y][x + 8 - k] & 0x01) << k;
+				char one_bit = (game->fog[n][y][x + 7 - k] & 0x01) << k;
 				one_byte |= one_bit;
 			}
 			WRITE_BYTE(p, one_byte);
