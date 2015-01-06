@@ -695,6 +695,115 @@ SDL_Rect DOS_frame_map =
 SDL_Rect DOS_frame_tile =	/* Size of one tile */
 	{	0, 0, DOS_TILE_W, DOS_TILE_H };
 
+Uint32* DOS_CGA_ColorScheme(KBmodule *mod, int sub_id) {
+
+	/* 0=black,1=cyan,2=magenta,3=white */
+	byte cga_scheme_chrome_index[] = {
+		0,	// background
+		3,	// text1
+		3,	// text2
+		3,	// text3
+		3,	// text4
+		1,	// shadow1
+		1,	// shadow2
+		3,	// frame1
+		3,	// frame2
+		3,	// sel_background
+		0,	// sel_text1
+		0,	// sel_text2
+		0,	// sel_text3
+		0,	// sel_text4
+		1,	// sel_shadow1
+		1,	// sel_shadow2
+		3,	// sel_frame1
+		3,	// sel_frame2
+	};
+	byte cga_scheme_minimap_index[] = {
+		2,	// background
+		3,	// text1
+		3,	// text2
+		3,	// text3
+		3,	// text4
+		1,	// shadow1
+		1,	// shadow2
+		3,	// frame1
+		3,	// frame2
+		2,	// sel_background
+		0,	// sel_text1
+		0,	// sel_text2
+		0,	// sel_text3
+		0,	// sel_text4
+		1,	// sel_shadow1
+		1,	// sel_shadow2
+		3,	// sel_frame1
+		3,	// sel_frame2
+	};
+	byte cga_scheme_char_index[] = {
+		0,	// background
+		3,	// text1
+		3,	// text2
+		3,	// text3
+		3,	// text4
+		1,	// shadow1
+		1,	// shadow2
+		2,	// frame1
+		2,	// frame2
+		0,	// sel_background
+		3,	// sel_text1
+		3,	// sel_text2
+		3,	// sel_text3
+		3,	// sel_text4
+		1,	// sel_shadow1
+		1,	// sel_shadow2
+		2,	// sel_frame1
+		2,	// sel_frame2
+	};
+
+	int i;
+	byte *cptr;
+	Uint32 *colors;
+
+	DOS_Cache *cache = mod->cache;
+
+	colors = malloc(sizeof(Uint32) * COLORS_MAX);
+	if (colors == NULL) return NULL;
+
+	switch (sub_id) {
+		case CS_MINIMAP:
+			cptr = cga_scheme_minimap_index;
+		break;
+		case CS_VIEWCHAR:
+			cptr = cga_scheme_char_index;
+		break;
+		default:
+			cptr = cga_scheme_chrome_index;
+		break;
+	}
+
+	for (i = 0; i < COLORS_MAX; i++) {
+		colors[i] = ega_pallete_rgb[cga_palletes_ega[cache->cga_index][cptr[i]]];
+	}
+
+	return colors;
+}
+
+SDL_Color* DOS_CGAPalette(KBmodule *mod) {
+	SDL_Color *pal;
+	int i;
+	DOS_Cache *cache = mod->cache;
+
+	pal = malloc(sizeof(SDL_Color) * 256);
+	if (pal == NULL) return NULL;
+
+	for (i = 0; i < 4; i++) {
+		SDL_Color *col = &ega_pallete_sdl[cga_palletes_ega[cache->cga_index][i]];
+		pal[i].r = col->r;
+		pal[i].g = col->g;
+		pal[i].b = col->b;
+	}
+	return pal;
+}
+
 
 void DOS_AdjustSlots(KBmodule *mod) {
 
