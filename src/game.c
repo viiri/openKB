@@ -87,8 +87,12 @@ void free_resources() {
 }
 
 void update_ui_colors(KBgame *game) {
+	/* this needs to happen on difficulty change (or CGA) */
 	if (local.status_colors) free(local.status_colors);
 	local.status_colors = KB_Resolve(COL_TEXT, CS_STATUS_1 + game->difficulty);
+	/* this needs to happen for CGA */
+	if (local.message_colors) free(local.message_colors);
+	local.message_colors = KB_Resolve(COL_TEXT, CS_GENERIC);
 }
 
 void update_ui_frames() {
@@ -1480,13 +1484,13 @@ void view_minimap(KBgame *game, int force_orb) {
 	border.y += fs->h;
 	border.x -= fs->w * 3;
 
-	Uint32 *colors = local.message_colors;
+	Uint32 *colors = KB_Resolve(COL_TEXT, CS_MINIMAP);
 
 	Uint32 *map_colors = KB_Resolve(COL_MINIMAP, 0);
 
 	SDL_Surface *tile = SDL_LoadRESOURCE(GR_PURSE, 0, 0);
 
-	SDL_TextRect(sys->screen, &border, colors[COLOR_BACKGROUND], colors[COLOR_TEXT], 1);
+	SDL_TextRect(sys->screen, &border, colors[COLOR_FRAME], colors[COLOR_BACKGROUND], 1);
 
 	SDL_Rect map;
 
@@ -1538,7 +1542,7 @@ void view_minimap(KBgame *game, int force_orb) {
 			for (j = 0; j < LEVEL_H; j++) {
 				for (i = 0; i < LEVEL_W; i++) {
 		
-					Uint32 color = 0;
+					Uint32 color = map_colors[0xFF];
 		
 					pixel.x = map.x + (i * pixel.w);
 					pixel.y = map.y + ((LEVEL_H - j - 1) * pixel.h);
@@ -5431,6 +5435,31 @@ printf("Drawing item %d, which is item %d, %s\n", i, j, item_names[j]);
 				game->options[n]++;
 				if (game->options[n] > 7) game->options[n] = 0;
 
+			}
+			if (n == 5) { /* HACK! Refresh CGA Palette */
+				int old_ind = game->options[n] - 1;
+				if (old_ind < 0) old_ind = 7;
+				SDL_Color* old_pal = KB_Resolve(PAL_PALETTE, old_ind);
+				SDL_Color* new_pal = KB_Resolve(PAL_PALETTE, game->options[n]); /* <!-- this changes module internal state */
+				Uint32 old_pal32[4] = {
+					SDL_MapRGB(sys->screen->format, old_pal[0].r, old_pal[0].g, old_pal[0].b),
+					SDL_MapRGB(sys->screen->format, old_pal[1].r, old_pal[1].g, old_pal[1].b),
+					SDL_MapRGB(sys->screen->format, old_pal[2].r, old_pal[2].g, old_pal[2].b),
+					SDL_MapRGB(sys->screen->format, old_pal[3].r, old_pal[3].g, old_pal[3].b),
+				};
+				Uint32 new_pal32[4] = {
+					SDL_MapRGB(sys->screen->format, new_pal[0].r, new_pal[0].g, new_pal[0].b),
+					SDL_MapRGB(sys->screen->format, new_pal[1].r, new_pal[1].g, new_pal[1].b),
+					SDL_MapRGB(sys->screen->format, new_pal[2].r, new_pal[2].g, new_pal[2].b),
+					SDL_MapRGB(sys->screen->format, new_pal[3].r, new_pal[3].g, new_pal[3].b),
+				};
+				SDL_Rect full = { 0, 0, sys->screen->w, sys->screen->h };
+				SDL_ReplaceColors(sys->screen, &full, old_pal32, new_pal32, 4);
+				free(new_pal);
+				free(old_pal);
+
+				update_ui_colors(game);
+				SDL_FreeCachedSurfaces();
 			}
 			redraw = 1;
 			continue;

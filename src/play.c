@@ -438,6 +438,7 @@ KBgame *spawn_game(char *name, int pclass, int difficulty, byte *land) {
 	game->options[2] = 1; /* Walk Beep = On */
 	game->options[3] = 1; /* Animation = On */
 	game->options[4] = 1; /* Army Size = On */
+	game->options[5] = 1; /* CGA Pal = 1 */
 
 	/* Randomize spells sold in towns */
 	salt_spells(game);

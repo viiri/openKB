@@ -87,6 +87,8 @@ int DOS_exe_offsets[][4] = {
 typedef struct DOS_Cache {
 
 	SDL_Color *vga_palette;
+	SDL_Color *cga_palette;
+	byte cga_index;
 
 	struct tunGroup *tunes;
 
@@ -223,6 +225,12 @@ void DOS_SetPalette(KBmodule *mod, SDL_Surface *dst, int bpp) {
 	DOS_Cache *ch = mod->cache;
 	if (ch) {
 		SDL_Color *pal = ch->vga_palette;
+
+		if (ch->cga_palette) {
+
+			pal = ch->cga_palette;
+
+		}
 
 		if (pal) {
 
@@ -718,13 +726,18 @@ void DOS_Init(KBmodule *mod) {
 
 	DOS_AdjustSlots(mod);
 
-	if (cache) { 
+	if (cache) {
 		/* Init */
+		cache->cga_palette = NULL;
 		cache->vga_palette = NULL;
 		cache->exe_file = NULL;
 		/* Set */
 		mod->cache = cache;
 		/* Pre-cache some things */
+		if (mod->bpp == 2) {
+			cache->cga_index = 1;
+			cache->cga_palette = DOS_CGAPalette(mod);
+		}
 		if (mod->bpp == 8) {
 			cache->vga_palette = DOS_ReadPalette(mod, "MCGA.DRV");
 		}
@@ -741,6 +754,7 @@ void DOS_Stop(KBmodule *mod) {
 	}
 
 	free(cache->vga_palette);
+	free(cache->cga_palette);
 	free(cache->tunes);
 	free(mod->cache);
 }
@@ -962,8 +976,8 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 			mrect.w -= 1; mrect.h -= 1;
 			/* Use color "4" (red) for EGA and above, color "2" (magenta) for CGA and below */
 			SDL_FillRect(piece, &mrect, (mod->bpp < 3 ? 2 : 4)); 
-			/* Use generic palette :( */
-			DOS_SetColors(piece, mod->bpp);
+			/* For CGA sake use non-generic palette */
+			DOS_SetPalette(mod, piece, mod->bpp);
 			return piece;
 		}
 		break;
@@ -1015,6 +1029,18 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 			middle_name = DOS_location_names[sub_id];
 		}
 		break;
+		case PAL_PALETTE:
+		{
+			if (mod->bpp == 2) { /* CGA mode */
+				DOS_Cache* cache = mod->cache;
+				if (sub_id > 7 || sub_id < 0) return NULL;
+				cache->cga_index = sub_id;
+				free(cache->cga_palette);
+				cache->cga_palette = DOS_CGAPalette(mod);
+				return DOS_CGAPalette(mod);
+			}
+			return NULL;
+		}
 		case COL_DWELLING:
 		{
 			byte ega_dwelling_index[5] = {
@@ -1030,6 +1056,10 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 			if (colors == NULL) return NULL;
 			for (i = 0; i < 5; i++) {
 				colors[i] = ega_pallete_rgb[ega_dwelling_index[i]];
+
+				if (mod->bpp == 2) { /* CGA */
+					colors[i] = 0; /* black */
+				}
 			}
 			return colors;
 		}
@@ -1056,8 +1086,19 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 				EGA_WHITE,
 				EGA_DRED,
 			};
+			byte cga_minimap_index[8] = {
+				1, // water is cyan
+				1, // water is cyan
+				2, // grass is magenta
+				3, // desert is white
+				0, // rock is black
+				1, // tree is cyan
+				3, // castle is white
+				2, // hotspot is magenta
+			};
 			Uint32 *colors;
 			int tile;
+			byte cga_index = ((DOS_Cache*)mod->cache)->cga_index;
 
 			colors = malloc(sizeof(Uint32) * 256);
 			if (colors == NULL) return NULL;
@@ -1074,12 +1115,22 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 				else if ( IS_MAPOBJECT(tile) || IS_INTERACTIVE(tile)) tile_type = MAP_OBJECT;
 
 				colors[tile] = ega_pallete_rgb[ega_minimap_index[tile_type]];
+
+				if (mod->bpp == 2) { /* CGA */
+					colors[tile] = ega_pallete_rgb[cga_palletes_ega[cga_index][ cga_minimap_index[tile_type] ] ];
+				}
+			}
+			/* Fog color */
+			colors[0xFF] = ega_pallete_rgb[EGA_BLACK];
+			if (mod->bpp == 2) { /* CGA */
+				colors[0xFF] = ega_pallete_rgb[cga_palletes_ega[cga_index][ 0 ]];
 			}
 			return colors;
 		}
 		break;
 		case COL_TEXT:
 		{
+			if (mod->bpp == 2) return DOS_CGA_ColorScheme(mod, sub_id);
 			byte ega_scheme_status_index[] = {
 				EGA_DRED,	// background
 				EGA_WHITE,	// text1
@@ -1258,6 +1309,7 @@ void* DOS_Resolve(KBmodule *mod, int id, int sub_id) {
 					ega_scheme_status_index[COLOR_BACKGROUND] =
 						ega_scheme_status_replacers[sub_id - 1];
 					break;
+				case CS_MINIMAP:	/* Minimap text */
 				case CS_GENERIC:
 				default: /* Default Message Box */
 					ega_index_ptr = ega_scheme_mb_index;

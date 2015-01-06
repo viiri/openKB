@@ -222,8 +222,9 @@ extern const char *KBresid_names[];
 #define CS_MINIMENU	6
 #define CS_VIEWCHAR	7
 #define CS_VIEWARMY	8
-#define CS_CHROME	9
-#define CS_ENDING	10
+#define CS_MINIMAP	9
+#define CS_CHROME	10
+#define CS_ENDING	11
 
 /* Color scheme for COL_TEXT: */
 enum {
@@ -305,6 +306,7 @@ inline void SDL_ClonePalette(SDL_Surface *dst, SDL_Surface *src);
 extern void SDL_BlitXBPP(const char *src, SDL_Surface *dest, SDL_Rect *dstrect, int bpp);
 extern void SDL_BlitMASK(const char *src, SDL_Surface *dest, SDL_Rect *dstrect);
 extern void SDL_ReplaceIndex(SDL_Surface *dest, SDL_Rect *dstrect, byte search, byte replace);
+extern void SDL_ReplaceColors(SDL_Surface *dest, SDL_Rect *dstrect, Uint32* search, Uint32* replace, int n);
 
 /* Simple palette manipulation */
 extern void put_mono_pal(SDL_Surface *dest);
@@ -312,7 +314,9 @@ extern void put_cga_pal(SDL_Surface *dest);
 extern void put_ega_pal(SDL_Surface *dest);
 extern void put_vga_pal(SDL_Surface *dest);
 extern void put_color_pal(SDL_Surface *dest, Uint32 fore, Uint32 back);
-extern Uint32 ega_pallete_rgb[16]; 
+extern Uint8 cga_palletes_ega[8][4];
+extern Uint32 ega_pallete_rgb[16];
+extern SDL_Color ega_pallete_sdl[16];
 
 /* Tileset factories (make single SDL_Surface from multiple ones) */
 SDL_Surface* KB_LoadTileset_TILES(SDL_Rect *tilesize, KBresolve_cb resolve, KBmodule *mod);

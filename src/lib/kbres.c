@@ -110,6 +110,19 @@ void SDL_ReplaceIndex(SDL_Surface *dest, SDL_Rect *dstrect, byte search, byte re
 		if (++x >= dstrect->w) { x = 0; y++; }
 	}
 }
+void SDL_ReplaceColors(SDL_Surface *dest, SDL_Rect *dstrect, Uint32 *search, Uint32 *replace, int n)
+{
+	Uint32 *p;
+	dword x = 0, y = 0;
+	int i;
+	while (y < dstrect->h) {
+		p = (Uint32*) dest->pixels + (y + dstrect->y) * dest->w + (x + dstrect->x);
+		for (i = 0; i < n; i++) {
+			if (*p == search[i]) { *p = replace[i]; break; }
+		}
+		if (++x >= dstrect->w) { x = 0; y++; }
+	}
+}
 
 Uint8 herc_pallete_ega[16] =
 {
@@ -117,6 +130,57 @@ Uint8 herc_pallete_ega[16] =
 	15, // 01
 	15, // 02
 	15, // 03
+};
+
+Uint8 cga_palletes_ega[8][4] = {
+	{ /* Palette 0 */
+		EGA_BLACK,  // 00 // black
+		EGA_DGREEN, // 01 // cyan
+		EGA_DRED,   // 02 // magenta
+		EGA_BROWN,  // 03 // white
+	},
+	{ /* Palette 1 - default */
+		EGA_BLACK,   // 00 // black
+		EGA_DCYAN,   // 01 // cyan
+		EGA_MAGENTA, // 02 // magenta
+		EGA_DWHITE,  // 03 // white
+	},
+	{ /* Palette 2 */
+		EGA_BLACK,  // 00 // black
+		EGA_GREEN,  // 01 // cyan
+		EGA_RED,    // 02 // magenta
+		EGA_YELLOW, // 03 // white
+	},
+	{ /* Palette 3 */
+		EGA_BLACK,  // 00 // black
+		EGA_CYAN,   // 01 // cyan
+		EGA_VIOLET, // 02 // magenta
+		EGA_WHITE,  // 03 // white
+	},
+	{ /* Palette 4 */
+		EGA_DBLUE,  // 00 // black
+		EGA_DGREEN, // 01 // cyan
+		EGA_DRED,   // 02 // magenta
+		EGA_BROWN,  // 03 // white
+	},
+	{ /* Palette 5 */
+		EGA_DBLUE,   // 00 // black
+		EGA_DCYAN,   // 01 // cyan
+		EGA_MAGENTA, // 02 // magenta
+		EGA_DWHITE,  // 03 // white
+	},
+	{ /* Palette 6 */
+		EGA_DBLUE,  // 00 // black
+		EGA_GREEN,  // 01 // cyan
+		EGA_RED,    // 02 // magenta
+		EGA_YELLOW, // 03 // white
+	},
+	{ /* Palette 7 */
+		EGA_DBLUE,  // 00 // black
+		EGA_CYAN,   // 01 // cyan
+		EGA_VIOLET, // 02 // magenta
+		EGA_WHITE,  // 03 // white
+	},
 };
 
 Uint8 cga_pallete_ega[16] =
@@ -127,15 +191,44 @@ Uint8 cga_pallete_ega[16] =
 	7, // 03 // white // bin:11
 };
 
-Uint32 ega_pallete_rgb[16] = 
+Uint32 ega_pallete_rgb[16] =
 {
 	0x000000, // 00 // dark black
 	0x0000AA, // 01 // dark blue
 	0x00AA00, // 02 // dark green
-	0x00AAAA, // 03 // cyan	0xAA0000, // 04 // dark red
+	0x00AAAA, // 03 // cyan
+	0xAA0000, // 04 // dark red
 	0xAA00AA, // 05 // magenta
- 	0xAA5500, // 06 // brown
-	0xAAAAAA, // 07 // dark white / light gray 	0x555555, // 08 // dark gray / light black	0x5555FF, // 09 // light blue	0x55FF55, // 10 // light green	0x55FFFF, // 11 // light cyan	0xFF5555, // 12 // light red	0xFF55FF, // 13 // light magenta	0xFFFF55, // 14 // light yellow	0xFFFFFF, // 15 // bright white};
+	0xAA5500, // 06 // brown
+	0xAAAAAA, // 07 // dark white / light gray
+	0x555555, // 08 // dark gray / light black
+	0x5555FF, // 09 // light blue
+	0x55FF55, // 10 // light green
+	0x55FFFF, // 11 // light cyan
+	0xFF5555, // 12 // light red
+	0xFF55FF, // 13 // light magenta
+	0xFFFF55, // 14 // light yellow
+	0xFFFFFF, // 15 // bright white
+};
+SDL_Color ega_pallete_sdl[16] =
+{
+	{ 0x00,0x00,0x00 }, // 00 // dark black
+	{ 0x00,0x00,0xAA }, // 01 // dark blue
+	{ 0x00,0xAA,0x00 }, // 02 // dark green
+	{ 0x00,0xAA,0xAA }, // 03 // cyan
+	{ 0xAA,0x00,0x00 }, // 04 // dark red
+	{ 0xAA,0x00,0xAA }, // 05 // magenta
+	{ 0xAA,0x55,0x00 }, // 06 // brown
+	{ 0xAA,0xAA,0xAA }, // 07 // dark white / light gray
+	{ 0x55,0x55,0x55 }, // 08 // dark gray / light black
+	{ 0x55,0x55,0xFF }, // 09 // light blue
+	{ 0x55,0xFF,0x55 }, // 10 // light green
+	{ 0x55,0xFF,0xFF }, // 11 // light cyan
+	{ 0xFF,0x55,0x55 }, // 12 // light red
+	{ 0xFF,0x55,0xFF }, // 13 // light magenta
+	{ 0xFF,0xFF,0x55 }, // 14 // light yellow
+	{ 0xFF,0xFF,0xFF }, // 15 // bright white
+};
 
 
 void put_mono_pal(SDL_Surface *dest)
