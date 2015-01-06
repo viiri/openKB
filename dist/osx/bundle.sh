@@ -53,12 +53,19 @@ for dylib in $DYLIBS; do
 	install_name_tool -change $dylib @executable_path/$NAME $APP/Contents/MacOS/openkb
 done
 
+cp $TOPDIR/dist/osx/launch_openkb.sh $APP/Contents/MacOS/launch_openkb.sh
+
 # Step 3.
 # Copy data and Info.plist.
 
 #cp $TOPDIR/dist/osx/Info.plist.in $APP/Contents/Info.plist
 sed s/@VERSION@/$VERSION/ $TOPDIR/dist/osx/Info.plist.in > $APP/Contents/Info.plist
 cp -r $TOPDIR/data $APP/Contents/Resources
+
+# Hack! For some reason, icon_32x32.png when being read by Mac version,
+# crashes the program. Since it's not needed anyways, remove it.
+rm $APP/Contents/Resources/data/icon_32x32.png
+# TODO: Fix this properly.
 
 # Step 4.
 # Create iconset.

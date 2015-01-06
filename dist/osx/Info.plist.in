@@ -9,7 +9,7 @@
   <key>CFBundleIdentifier</key>
   <string>org.sourceforge.openkb</string>
   <key>CFBundleExecutable</key>
-  <string>openkb</string>
+  <string>launch_openkb.sh</string>
   <key>CFBundleIconFile</key>
   <string>openkb.icns</string>
   <key>CFBundleShortVersionString</key>
