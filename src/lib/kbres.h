@@ -39,7 +39,7 @@
 	_(GR_TITLE) 	/* game title ; subId - undefined */ \
 	_(GR_TROOP) 	/* troop spritesheet ; subId - troop index */ \
 	_(GR_TILE)  	/* single map tile ; subId - tile index */ \
-	_(GR_TILESET)	/* while map tileset ; subId - continent flavor */ \
+	_(GR_TILESET)	/* whole map tileset ; subId - continent flavor */ \
 	_(GR_TILEROW)	/* a row of tiles ; subId - row index (1 row = 36 tiles) */ \
 	_(GR_TILESALT)	/* continent flavor tiles ; subId - 0=full; 1-3=continent */ \
 	_(GR_VILLAIN)	/* villain portrait ; subId - villain index */ \

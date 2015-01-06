@@ -1506,7 +1506,7 @@ void view_minimap(KBgame *game, int force_orb) {
 	KB_iprintf("   %s", continent_names[game->continent]);
 
 	KB_iloc(border.x + fs->w, border.y + map.h + (fs->h*2) - fs->h/2);
-	KB_iprintf("X=%d Position Y=%d", game->x, game->y);
+	KB_iprintf("X=%2d Position Y=%2d", game->x, game->y);
 
 	int done = 0;
 	int redraw = 1;
@@ -2054,8 +2054,8 @@ void dismiss_army(KBgame *game) {
 
 KBgamestate throne_room_or_barracks = {
 	{
-		{	{ 0, 0, 0, 0 }, _NON, SDLK_a, 0, 0      	},
-		{	{ 0, 0, 0, 0 }, _NON, SDLK_b, 0, 0      	},
+		{	{ 0, 0, 0, 0 }, __NON, SDLK_a, 0, 0      	},
+		{	{ 0, 0, 0, 0 }, __NON, SDLK_b, 0, 0      	},
 
 		{	__NON, { SOFT_WAIT }, SDLK_SYN, 0, KFLAG_TIMER },
 		0,
@@ -4935,7 +4935,7 @@ int debug_cheat_menu(KBgame *game, KBcombat *war) {
 		case 'r':
 		{
 			KB_iprint("Seed: ");
-			int cx, cy;
+			word cx, cy;
 			KB_getpos(sys, &cx, &cy);
 			char *txt = text_input(4, 1, cx, cy, 0xff,00);
 			if (!txt) return;
@@ -4959,7 +4959,7 @@ int debug_cheat_menu(KBgame *game, KBcombat *war) {
 			}
 			KB_iprintf(" %c\n", 'A' + troop_id);
 			KB_iprintf(" %s,\n How many? (MAX) ", troops[troop_id].name);
-			int cx, cy;
+			word cx, cy;
 			KB_getpos(sys, &cx, &cy);
 			char *txt = text_input(4, 1, cx, cy, 0xff,00);
 			if (!txt) return;
@@ -5302,10 +5302,10 @@ int controls_menu(KBgame *game, int combat) {
 	int done = 0;
 	int redraw = 1;
 
-	char defmopt[16] = { 1, 1, 1, 1, 1, 0 };
+	byte default_option_mask[16] = { 1, 1, 1, 1, 1, 0 };
 	byte *mopt = KB_Resolve(DAT_MENUCONTROLS, 0);
 	int freemopt = 1;
-	if (mopt == NULL) { mopt = &defmopt; freemopt = 0; }
+	if (mopt == NULL) { mopt = default_option_mask; freemopt = 0; }
 
 	KB_iloc(local.status.x, local.status.y + sys->font_size.h / 8);
 
@@ -6329,6 +6329,7 @@ void adventure_loop(KBgame *game) {
 		}
 
 		if (key == KEY_ACT(VIEW_CONTRACT)) {
+			draw_sidebar(game, 0);
 			view_contract(game);
 		}
 

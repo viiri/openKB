@@ -114,9 +114,10 @@ KBenv *KB_startENV(KBconfig *conf) {
 #endif
 	if (!nsys->icon) {
 		KB_errlog("Couldn't open icon file: %s\n", iconfile);
+	} else {
+		SDL_WM_SetIcon(nsys->icon, NULL);
 	}
 	free(iconfile);
-	SDL_WM_SetIcon(nsys->icon, NULL);
 
 	if (conf->sound) {
 		/* Open audio device */
